@@ -52,3 +52,9 @@ dotnet restore            # Restore NuGet packages
 - Implicit usings enabled
 - Default launch URLs: http://localhost:5173, https://localhost:7191
 - Development environment configured for hot reload and browser launch
+
+## Important Nots
+- Use the "~/Projects/dev-prompts/RULES.md" file for additional rules and
+guidance for development.
+- Use the "~/Projects/dev-prompts/[file-name].md" files for development tasks.
+- Update README.md and CLAUDE.md whenever applicable.
