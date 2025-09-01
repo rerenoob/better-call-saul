@@ -42,7 +42,7 @@ Better Call Saul is an AI-powered legal assistance platform designed specificall
 
 ## Technical Architecture
 - Blazor Server application with .NET 8 backend
-- AI/ML integration for case analysis and prediction
+- Generative AI integration for case analysis and prediction
 - Secure document processing and data storage
 - API integrations with legal databases and research tools
 - Cloud-native deployment with enterprise-grade security
