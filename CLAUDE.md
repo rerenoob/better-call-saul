@@ -3,6 +3,8 @@
 guidance for development.
 - Use the "~/Projects/dev-prompts/[file-name].md" files for development tasks.
 - Update README.md and CLAUDE.md whenever applicable.
+- Do not make any code changes before reading the RULES.md file mentioned above.
+- Do not add code attribution in git commit
 
 # CLAUDE.md
 
