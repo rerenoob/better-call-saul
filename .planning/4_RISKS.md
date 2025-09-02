@@ -5,60 +5,69 @@
 
 ## Top Risks
 
-### Risk 1: Legal Database API Access & Integration
-**Impact Level:** Critical  
-**Probability:** High  
-**Description:** Unable to secure API access to legal databases or facing complex integration challenges that delay core functionality.
+### Risk 1: Legal Database API Access & Integration (DEFERRED TO PHASE 2)
+**Impact Level:** Medium (was Critical)  
+**Probability:** Medium (was High)  
+**Description:** Unable to secure API access to legal databases for Phase 2 expansion.
 
 **Mitigation Strategy:**
-- **Immediate**: Identify alternative legal data sources and fallback options
-- **Short-term**: Develop mock API services for development while pursuing access
-- **Long-term**: Establish partnerships with multiple legal database providers
-- **Contingency**: Implement manual research workflow as fallback
+- **MVP Approach**: Remove dependency on external legal databases for initial version
+- **Research Phase**: Investigate Westlaw, LexisNexis, and free alternatives like Justia
+- **Timeline**: 4-6 weeks before Phase 2 development begins
+- **Owner**: Technical Lead + Legal Domain Expert
+- **Contingency**: Focus on document analysis and basic AI recommendations without external research
 
-### Risk 2: Generative AI Accuracy & Hallucination
+### Risk 2: AI Analysis Accuracy for Legal Content
 **Impact Level:** High  
 **Probability:** Medium  
-**Description:** Generative AI models may produce inaccurate legal analysis, hallucinations, or inconsistent reasoning that could lead to poor legal advice.
+**Description:** AI may produce inaccurate or inappropriate legal analysis due to lack of legal domain specialization.
 
 **Mitigation Strategy:**
-- **Immediate**: Start with rule-based analysis augmented by LLM reasoning
-- **Short-term**: Implement rigorous prompt engineering and validation layers
-- **Long-term**: Fine-tune models on legal domain data with human feedback
-- **Contingency**: Use human-in-the-loop validation for all critical legal recommendations
+- **Immediate**: Start with basic document summarization and simple recommendations
+- **Week 1-2**: Develop and test legal-specific prompts with sample documents
+- **Week 3-4**: Implement confidence scoring and uncertainty indicators
+- **Owner**: AI Specialist + Legal Domain Expert
+- **Validation**: All AI outputs flagged as "AI-generated, requires review"
+- **Contingency**: Limit AI to document extraction and basic summaries only
 
-### Risk 3: Regulatory Compliance & Data Privacy
-**Impact Level:** Critical  
-**Probability:** High  
-**Description:** Failure to meet legal industry regulations for data handling, privacy, and security could prevent deployment.
+### Risk 3: Data Security & Privacy (SIMPLIFIED FOR MVP)
+**Impact Level:** Medium (was Critical)  
+**Probability:** Low (was High)  
+**Description:** Basic security vulnerabilities in MVP could expose sensitive documents.
 
 **Mitigation Strategy:**
-- **Immediate**: Engage legal counsel early for compliance requirements
-- **Short-term**: Implement strict data encryption and access controls
-- **Long-term**: Pursue industry certifications (SOC 2, HIPAA if applicable)
-- **Contingency**: Design for data residency and jurisdiction-specific compliance
+- **Immediate**: Use sample/anonymized documents for all MVP testing
+- **Week 1**: Implement basic file upload validation and secure storage
+- **Week 2**: Add basic authentication and session management
+- **Owner**: Lead Developer
+- **MVP Limitation**: No production legal documents until Phase 2 security review
+- **Phase 2 Planning**: Full regulatory compliance assessment scheduled for Week 8-10
 
-### Risk 4: User Adoption & Workflow Integration
+### Risk 4: User Adoption & Usability
 **Impact Level:** High  
 **Probability:** Medium  
-**Description:** Public defenders may resist adopting new technology or struggle to integrate it into existing workflows.
+**Description:** Target users may find MVP interface confusing or not valuable enough to continue using.
 
 **Mitigation Strategy:**
-- **Immediate**: Conduct user research with target audience early
-- **Short-term**: Design for incremental adoption and minimal workflow disruption
-- **Long-term**: Provide comprehensive training and support resources
-- **Contingency**: Offer phased rollout with super-user support
+- **Week 2-3**: Conduct user interviews with 3-5 public defenders
+- **Week 4-5**: User testing sessions with paper prototypes
+- **Week 6-7**: MVP user testing with real feedback incorporation
+- **Owner**: UX Lead + Legal Domain Expert
+- **Success Metrics**: 70%+ users can complete core workflow without assistance
+- **Contingency**: Pivot to different user interface approach based on feedback
 
-### Risk 5: Performance at Scale
+### Risk 5: Azure OpenAI API Costs & Rate Limits
 **Impact Level:** Medium  
-**Probability:** Low  
-**Description:** System may not perform adequately under high load with large document processing and AI analysis demands.
+**Probability:** Medium  
+**Description:** Unexpected API costs or rate limiting could impact MVP testing and demonstration.
 
 **Mitigation Strategy:**
-- **Immediate**: Design for scalability from architecture outset
-- **Short-term**: Implement performance monitoring and load testing early
-- **Long-term**: Use cloud auto-scaling and optimized processing pipelines
-- **Contingency**: Implement queuing and batch processing for resource-intensive operations
+- **Week 1**: Set up Azure billing alerts and usage monitoring
+- **Ongoing**: Implement request caching and optimize prompt efficiency
+- **Budget**: Allocate $200/month for MVP testing phase
+- **Owner**: Technical Lead
+- **Monitoring**: Weekly cost review and usage analysis
+- **Contingency**: Switch to smaller/cheaper models or reduce analysis frequency
 
 ## Risk Categorization
 
@@ -87,23 +96,33 @@
 
 ## Mitigation Timeline
 
-### Immediate (Next 2 weeks)
-- Identify alternative data sources
-- Begin compliance requirement gathering
-- Start user research sessions
+### Week 1-2 (Setup Phase)
+- Set up Azure OpenAI API with billing alerts
+- Implement basic file upload validation
+- Begin user research interviews
+- Create sample legal documents for testing
 
-### Short-term (Next month)
-- Establish API integration proof of concepts
-- Develop rule-based analysis with LLM augmentation
-- Implement core security controls
+### Week 3-4 (Development Phase)
+- Test and refine legal AI prompts
+- Implement basic authentication system
+- Conduct user testing sessions
+- Monitor API usage and costs
 
-### Ongoing
-- Continuous AI performance improvement and fine-tuning
-- Regular compliance audits
-- User feedback incorporation
+### Week 5-6 (Validation Phase)
+- User testing with MVP prototype
+- AI accuracy testing with sample documents
+- Security review of local deployment
+- Plan Phase 2 risk assessment
+
+### Week 7-8 (Refinement Phase)
+- Incorporate user feedback
+- Optimize AI prompt performance
+- Document lessons learned for Phase 2
+- Begin Phase 2 planning with updated risk profile
 
 ## Next Steps
-1. Assign risk owners for each critical risk
-2. Develop detailed mitigation action plans
-3. Establish regular risk review meetings
-4. Create risk tracking dashboard
+1. **Week 1**: Assign specific owners to each risk (Technical Lead, UX Lead, AI Specialist)
+2. **Week 2**: Set up weekly risk review meetings with team
+3. **Ongoing**: Update risk assessment based on MVP development learnings
+4. **Week 6**: Conduct mid-MVP risk review and adjust Phase 2 planning
+5. **Week 8**: Complete comprehensive risk assessment for Phase 2 planning

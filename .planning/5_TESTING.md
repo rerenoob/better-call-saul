@@ -3,107 +3,106 @@
 **Created:** August 31, 2025  
 **Version:** 1.0
 
-## Core Test Categories
+## MVP Test Categories
 
 ### 1. Unit Testing
-**Scope**: Individual components and services  
-**Tools**: xUnit, Moq, NSubstitute  
-**Coverage Target**: 80%+ for business logic
+**Scope**: Core business logic and services  
+**Tools**: xUnit (built-in with .NET 8)  
+**Coverage Target**: 60%+ for MVP business logic
 
 **Key Areas**:
-- Document processing services
-- Generative AI analysis algorithms  
-- API client implementations
+- Document text extraction services
+- AI client service for Azure OpenAI
 - Authentication logic
-- Business rule validation
+- Case management operations
+- File validation and processing
 
 ### 2. Integration Testing
-**Scope**: Component interactions and data flow  
-**Tools**: TestServer, HttpClient, Test containers  
-**Coverage Target**: Critical path coverage
+**Scope**: Database and external service integration  
+**Tools**: TestServer, HttpClient, SQL Server LocalDB  
+**Coverage Target**: Core workflow coverage
 
 **Key Areas**:
-- Database integration (EF Core)
-- Azure service integrations (Blob Storage, etc.)
-- Legal API integrations
-- Authentication flow
-- Document processing pipeline
+- Entity Framework Core with LocalDB
+- Azure OpenAI API integration
+- Authentication flow end-to-end
+- Document upload and storage
+- Case creation and document association
 
 ### 3. UI/Component Testing
-**Scope**: Blazor component functionality  
-**Tools**: bUnit, Playwright  
-**Coverage Target**: Core user workflows
+**Scope**: Basic Blazor component functionality  
+**Tools**: bUnit for critical components  
+**Coverage Target**: Key user interactions
 
 **Key Areas**:
-- Case management interface
-- Document upload and review
-- Analysis results display
-- User navigation and workflow
+- Document upload component
+- Case list and detail pages
+- AI analysis results display
+- Login/logout functionality
 
-### 4. End-to-End Testing
-**Scope**: Complete user workflows  
-**Tools**: Playwright, Selenium  
-**Coverage Target**: Key user journeys
+### 4. Manual Testing
+**Scope**: Complete user workflows (manual for MVP)  
+**Tools**: Manual testing with test scenarios  
+**Coverage Target**: Core user journey
 
 **Key Scenarios**:
 - User registration and login
 - Case creation and document upload
-- Generative AI analysis execution
-- Legal research integration
-- Results review and decision making
+- AI analysis execution and results review
+- Document text extraction validation
+- Error handling (invalid files, API failures)
 
-### 5. Performance Testing
-**Scope**: System performance under load  
-**Tools**: k6, Azure Load Testing  
-**Coverage Target**: Response time and throughput SLAs
+### 5. Basic Performance Testing
+**Scope**: Single-user performance validation  
+**Tools**: Manual timing and basic monitoring  
+**Coverage Target**: Acceptable response times
 
 **Key Metrics**:
-- Document processing time
-- API response times
-- Concurrent user capacity
-- Database query performance
+- Document upload and processing time (<30 seconds)
+- AI analysis response time (<60 seconds)
+- Page load times (<3 seconds)
+- File size limits and handling
 
-### 6. Security Testing
-**Scope**: Data protection and access controls  
-**Tools**: OWASP ZAP, custom security tests  
-**Coverage Target**: All security-critical functionality
+### 6. Basic Security Testing
+**Scope**: Essential security for MVP  
+**Tools**: Manual security testing, basic validation  
+**Coverage Target**: Critical security areas
 
 **Key Areas**:
-- Authentication and authorization
-- Data encryption at rest and in transit
-- File upload security
-- API endpoint protection
-- Audit logging
+- Authentication bypass attempts
+- File upload validation (malicious files)
+- Basic authorization (user can only see their cases)
+- API key protection
+- Sample data only (no production data)
 
-## Critical Test Scenarios
+## MVP Critical Test Scenarios
 
 ### Document Processing
-- [ ] PDF document upload and extraction
+- [ ] PDF document upload and text extraction
 - [ ] DOCX document processing
-- [ ] Large file handling (>100MB)
-- [ ] Malicious file detection
-- [ ] Extraction accuracy validation
+- [ ] File size limits (max 10MB for MVP)
+- [ ] Invalid file type rejection
+- [ ] Basic text extraction accuracy
 
-### Generative AI Analysis
-- [ ] Case viability scoring accuracy with reasoning
-- [ ] Plea deal recommendation logic with explanations
-- [ ] Risk factor identification and narrative analysis
-- [ ] Analysis consistency and hallucination detection
-- [ ] Performance under various document types and lengths
+### AI Analysis
+- [ ] Document summary generation
+- [ ] Basic recommendation output (proceed/review)
+- [ ] API error handling when service unavailable
+- [ ] Response time within acceptable limits
+- [ ] AI response quality with sample legal documents
 
-### Legal Research Integration
-- [ ] API search functionality
-- [ ] Result parsing and display
-- [ ] Error handling for API failures
-- [ ] Rate limiting compliance
-- [ ] Search relevance validation
+### Case Management
+- [ ] Create new case with basic information
+- [ ] Associate documents with cases
+- [ ] View case list and details
+- [ ] Edit case information
+- [ ] Delete cases (with confirmation)
 
 ### User Workflows
-- [ ] End-to-end case management
-- [ ] Document review and annotation
-- [ ] Analysis result interpretation
-- [ ] Decision tracking and outcomes
-- [ ] Multi-user collaboration
+- [ ] Complete workflow: register → login → create case → upload document → get AI analysis
+- [ ] User can navigate between all major features
+- [ ] Proper logout and session handling
+- [ ] Error messages are helpful and clear
 
 ## Edge Cases
 
@@ -128,41 +127,33 @@
 - Browser compatibility issues
 - Accessibility requirements
 
-## Testing Environment Strategy
+## MVP Testing Environment Strategy
 
 ### Development Environment
-- Local database with test data
-- Mock external APIs
-- Automated test execution
-- Code coverage reporting
+- SQL Server LocalDB with sample data
+- Real Azure OpenAI API (with budget limits)
+- Manual test execution
+- Basic test result tracking
 
-### Staging Environment
-- Production-like infrastructure
-- Real external API integrations
-- Performance testing suite
-- User acceptance testing
+### Demo Environment
+- Same as development but with clean sample data
+- Prepared demo scenarios and test cases
+- User testing sessions with public defenders
+- Feedback collection and tracking
 
-### Production Testing
-- Canary deployments
-- A/B testing for new features
-- Real-user monitoring
-- Gradual feature rollouts
+## MVP Automated vs Manual Testing
 
-## Automated vs Manual Testing
+### Automated (40% target)
+- Unit tests for core business logic
+- Basic integration tests
+- Simple API testing
 
-### Automated (80% target)
-- Unit and integration tests
-- API contract testing
-- UI component testing
-- Performance regression tests
-- Security scanning
-
-### Manual (20% target)
+### Manual (60% target)
+- User workflow testing
+- AI response quality validation
+- Error handling scenarios
+- Cross-browser compatibility
 - User experience validation
-- Complex legal scenario testing
-- Exploratory testing
-- Accessibility compliance
-- Real-world workflow testing
 
 ## Testing Tools & Frameworks
 
@@ -187,26 +178,27 @@
 - **SonarQube**: Code quality and security
 - **Azure Security Center**: Cloud security
 
-## Test Data Strategy
+## MVP Test Data Strategy
 
-### Synthetic Data
-- Generated legal documents
-- Mock case data
-- Anonymized real-world patterns
+### Sample Data Only
+- Created sample legal documents (PDFs and DOCX)
+- Mock case scenarios for different document types
+- No real legal data or sensitive information
 
-### Production-like Data
-- Sanitized real case data (with permissions)
-- Real legal database responses
-- Actual document formats and structures
+### Data Sources
+- Public domain legal documents
+- Created fictional case scenarios
+- Simple test documents for edge cases
 
 ### Data Management
-- Version-controlled test data
-- Data refresh procedures
-- Privacy-compliant data handling
+- Test documents stored in repository
+- Clear labeling as sample/test data only
+- Easy to reproduce test scenarios
 
 ## Next Steps
-1. Set up test infrastructure and tooling
-2. Develop test data generation strategies
-3. Create detailed test case specifications
-4. Establish test automation pipeline
-5. Define quality gates and metrics
+1. **Week 1**: Set up basic xUnit test project
+2. **Week 2**: Create sample legal documents for testing
+3. **Week 3-4**: Write unit tests as features are developed
+4. **Week 5**: Conduct user testing sessions
+5. **Week 6**: Manual testing of complete workflows
+6. **Post-MVP**: Plan comprehensive testing strategy for Phase 2

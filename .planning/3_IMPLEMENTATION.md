@@ -3,136 +3,148 @@
 **Created:** August 31, 2025  
 **Version:** 1.0
 
-## Task Breakdown
+## MVP Task Breakdown
 
-### Task 1: Core Infrastructure Setup
-**ID:** INFRA-001  
-**Title:** Azure Infrastructure and Project Foundation  
-**Description:** Set up Azure resources, project structure, and core infrastructure components  
-**Complexity:** Medium  
+### Task 1: Local Development Environment Setup
+**ID:** DEV-001  
+**Title:** Local Development Foundation  
+**Description:** Set up local development environment with basic project structure  
+**Complexity:** Low  
 **Dependencies:** None  
+**Estimated Time:** 1-2 days  
 **Acceptance Criteria:**
-- Azure resources provisioned (App Service, SQL Database, Blob Storage)
-- Project structure established with proper separation of concerns
-- Basic CI/CD pipeline configured
-- Development environment ready for team
+- SQL Server LocalDB configured and tested
+- Project builds and runs locally with `dotnet run`
+- Basic Entity Framework models created
+- Local file storage directory structure established
 
-### Task 2: Authentication & Authorization System
+### Task 2: Basic Authentication System
 **ID:** AUTH-002  
-**Title:** Secure User Authentication  
-**Description:** Implement secure login system with role-based access control  
-**Complexity:** High  
-**Dependencies:** INFRA-001  
+**Title:** Simple User Authentication  
+**Description:** Implement basic login system using ASP.NET Core Identity  
+**Complexity:** Medium  
+**Dependencies:** DEV-001  
+**Estimated Time:** 2-3 days  
 **Acceptance Criteria:**
-- User registration and login functionality
-- Role-based access control (Admin, Attorney, Viewer)
-- Secure session management
-- Audit logging for security compliance
+- User registration and login with email/password
+- Basic role support (Admin, User)
+- Session management with logout functionality
+- Simple password reset capability
 
-### Task 3: Document Upload & Processing
+### Task 3: Document Upload & Text Extraction
 **ID:** DOC-003  
-**Title:** Secure Document Handling System  
-**Description:** Implement file upload, storage, and basic document processing  
-**Complexity:** High  
-**Dependencies:** INFRA-001, AUTH-002  
+**Title:** Basic Document Processing  
+**Description:** Implement file upload and text extraction using local libraries  
+**Complexity:** Medium  
+**Dependencies:** AUTH-002  
+**Estimated Time:** 3-4 days  
 **Acceptance Criteria:**
-- Secure file upload with validation
-- Azure Blob Storage integration
-- Basic document metadata extraction
-- File management interface
+- File upload component for PDF and DOCX files
+- Basic file validation (size, type, security)
+- Text extraction using iTextSharp and OpenXML SDK
+- Local file storage with organized directory structure
 
-### Task 4: Case Management Foundation
+### Task 4: Simple Case Management
 **ID:** CASE-004  
-**Title:** Core Case Management System  
-**Description:** Build basic case entity management and workflow  
+**Title:** Basic Case CRUD Operations  
+**Description:** Create simple case management with document associations  
 **Complexity:** Medium  
-**Dependencies:** AUTH-002, DOC-003  
+**Dependencies:** DOC-003  
+**Estimated Time:** 2-3 days  
 **Acceptance Criteria:**
-- Case entity model with relationships
-- Basic CRUD operations for cases
-- Case list and detail views
-- Simple workflow state management
+- Case entity with basic properties (title, description, status, created date)
+- Create, view, edit, delete cases
+- Associate uploaded documents with cases
+- Simple case list and detail pages
 
-### Task 5: Legal Database Integration
-**ID:** API-005  
-**Title:** Legal Research API Integration  
-**Description:** Integrate with legal database APIs for case law research  
-**Complexity:** High  
-**Dependencies:** INFRA-001  
-**Acceptance Criteria:**
-- API client implementation for legal databases
-- Search functionality integration
-- Results parsing and display
-- Error handling and rate limiting
-
-### Task 6: Generative AI Analysis Module
-**ID:** AI-006  
-**Title:** Core Generative AI Analysis Framework  
-**Description:** Implement Generative AI pipeline for natural language case analysis and reasoning  
-**Complexity:** High  
-**Dependencies:** DOC-003, CASE-004  
-**Acceptance Criteria:**
-- Document analysis and text extraction pipeline
-- LLM integration for case assessment and reasoning
-- Natural language recommendations with explanations
-- Analysis history and reasoning trail tracking
-
-### Task 7: Workflow Optimization Tools
-**ID:** WORKFLOW-007  
-**Title:** Case Prioritization System  
-**Description:** Implement tools for case prioritization and management  
+### Task 5: Azure OpenAI Integration
+**ID:** AI-005  
+**Title:** Basic AI Document Analysis  
+**Description:** Integrate Azure OpenAI for document summarization and basic analysis  
 **Complexity:** Medium  
-**Dependencies:** CASE-004, AI-006  
+**Dependencies:** DOC-003  
+**Estimated Time:** 3-4 days  
 **Acceptance Criteria:**
-- Case priority scoring system
-- Work queue management
-- Deadline tracking and alerts
-- Productivity metrics dashboard
+- Azure OpenAI API client setup with proper authentication
+- Document text sent to AI for basic analysis
+- Simple case summary generation
+- Basic recommendation output (proceed/review further)
+- Error handling for API failures
 
-### Task 8: UI/UX Polish & Testing
-**ID:** UI-008  
-**Title:** User Interface Refinement  
-**Description:** Polish user interface and conduct comprehensive testing  
+### Task 6: User Interface & Experience
+**ID:** UI-006  
+**Title:** Responsive User Interface  
+**Description:** Create clean, responsive UI using Bootstrap components  
 **Complexity:** Medium  
-**Dependencies:** All previous tasks  
+**Dependencies:** CASE-004, AI-005  
+**Estimated Time:** 3-4 days  
 **Acceptance Criteria:**
-- Responsive design implementation
-- User testing and feedback incorporation
-- Accessibility compliance
-- Performance optimization
+- Mobile-responsive design using existing Bootstrap
+- Clean document upload interface with drag-and-drop
+- Case dashboard with list and detail views
+- AI analysis results display page
+- Basic navigation between all features
 
-## Critical Path
-1. INFRA-001 → AUTH-002 → DOC-003 → CASE-004 → AI-006 → WORKFLOW-007 → UI-008
-2. INFRA-001 → API-005 (can run parallel to auth/document tasks)
+### Task 7: Testing & Bug Fixes
+**ID:** TEST-007  
+**Title:** MVP Testing and Polish  
+**Description:** Test all functionality and fix critical bugs  
+**Complexity:** Low  
+**Dependencies:** UI-006  
+**Estimated Time:** 2-3 days  
+**Acceptance Criteria:**
+- All core workflows tested and working
+- Critical bugs fixed
+- Basic error handling implemented
+- Simple deployment documentation created
+
+
+## MVP Critical Path
+1. DEV-001 → AUTH-002 → DOC-003 → CASE-004 → AI-005 → UI-006 → TEST-007
 
 ## Parallel Work Opportunities
-- **API-005** (Legal API integration) can run parallel to AUTH-002/DOC-003
-- **UI components** can be developed alongside backend tasks
-- **Testing infrastructure** can be set up early in parallel
+- **UI components** can be developed alongside backend tasks (Tasks 4-5)
+- **User research** can happen parallel to development
+- **Sample document preparation** can happen during Task 1-2
 
-## Implementation Approach
+## MVP Implementation Approach
 
-### Phase 1: MVP Foundation (Tasks 1-4)
-- Core infrastructure and authentication
-- Basic document handling
-- Case management foundation
+### Week 1: Foundation (Tasks 1-2)
+- Local development environment
+- Basic authentication system
 
-### Phase 2: Generative AI & Integration (Tasks 5-6)  
-- Legal database integration
-- Generative AI analysis capabilities
+### Week 2-3: Core Features (Tasks 3-4)
+- Document upload and text extraction
+- Simple case management
 
-### Phase 3: Optimization & Polish (Tasks 7-8)
-- Workflow tools
-- UI refinement and testing
+### Week 4-5: AI Integration & UI (Tasks 5-6)
+- Azure OpenAI integration
+- Responsive user interface
 
-### Technical Considerations
-- Use feature flags for gradual rollout
-- Implement comprehensive logging from start
-- Plan for scalability in data models
-- Consider regulatory compliance throughout
+### Week 6: Testing & Polish (Task 7)
+- End-to-end testing
+- Bug fixes and deployment prep
+
+**Total MVP Timeline: 6 weeks**
+
+### MVP Technical Considerations
+- Keep data models simple but extensible for Phase 2
+- Implement basic logging for debugging
+- Use sample/test documents only (no production data)
+- Focus on working functionality over perfect code
+- Document decisions for Phase 2 planning
 
 ## Next Steps
-1. Break down each task into smaller subtasks
-2. Assign complexity estimates and resource requirements
-3. Develop detailed technical specifications for each component
-4. Establish coding standards and review processes
+1. **Immediate**: Set up development environment (Task 1)
+2. **Week 1**: Begin authentication system implementation
+3. **Week 2**: Start document processing development
+4. **Ongoing**: Conduct user research parallel to development
+5. **Week 4**: Begin planning Phase 2 based on MVP learnings
+
+## Phase 2 Deferred Features
+- Legal database integration
+- Advanced AI analysis with confidence scoring
+- Workflow optimization tools
+- Enterprise security and compliance
+- Cloud deployment and scaling
+- Advanced document processing (OCR, complex formats)

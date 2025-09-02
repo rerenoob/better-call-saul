@@ -26,26 +26,42 @@ Public defenders face overwhelming caseloads, inadequate time for case review, p
 
 ## Requirements
 
-### Core Functional Requirements
-1. **Case File Upload & Processing**
-   - Support for common legal document formats (PDF, DOCX, JPG)
-   - Secure document storage and processing
-   - Automated document analysis and metadata extraction
+### MVP Core Requirements (Must Have)
+1. **Secure Document Upload**
+   - PDF and DOCX file upload with basic validation
+   - Secure file storage using local filesystem or basic cloud storage
+   - Basic document metadata extraction (title, creation date, size)
 
-2. **Generative AI Case Analysis**
-   - Case viability assessment and success prediction using LLMs
-   - Natural language recommendations (plea deal vs. trial) with reasoning
-   - Risk factor identification and narrative explanations
+2. **Basic AI Case Analysis**
+   - Simple document text extraction and analysis
+   - AI-powered case summary generation using Azure OpenAI
+   - Basic recommendation engine (proceed vs. review further)
 
-3. **Legal Research Integration**
-   - Access to centralized public law databases
+3. **Simple Case Management**
+   - Create and track individual cases
+   - Associate documents with cases
+   - Basic case status tracking
+
+4. **User Authentication**
+   - Simple login/logout functionality
+   - Basic role management (Admin, Attorney)
+   - Session management
+
+### Phase 2 Requirements (Nice to Have)
+5. **Advanced AI Analysis**
+   - Success prediction with confidence scores
+   - Detailed risk factor identification
+   - Natural language reasoning explanations
+
+6. **Legal Database Integration**
+   - External legal database API integration
    - Case law and precedent matching
-   - Real-time legal research assistance
+   - Real-time legal research tools
 
-4. **Workflow Management**
-   - Case prioritization tools
+7. **Advanced Workflow Tools**
+   - Case prioritization algorithms
    - Automated document summarization
-   - Integration with existing legal workflows
+   - Workflow optimization features
 
 ### Constraints
 - Must handle sensitive legal data with enterprise-grade security
@@ -77,35 +93,48 @@ Public defenders face overwhelming caseloads, inadequate time for case review, p
 
 ## Acceptance Criteria
 
-### MVP Acceptance Criteria
-- [ ] Users can securely upload and process legal documents
-- [ ] System provides basic case viability assessment using Generative AI
-- [ ] Integration with at least one legal database API
-- [ ] Basic workflow prioritization features
-- [ ] Secure authentication and data protection
+### MVP Acceptance Criteria (Demo-Ready)
+- [ ] Users can register, login, and manage their sessions securely
+- [ ] Users can upload PDF/DOCX documents with basic validation
+- [ ] System extracts text content from uploaded documents
+- [ ] AI generates basic case summaries and simple recommendations
+- [ ] Users can create, view, and manage cases
+- [ ] System associates documents with cases
+- [ ] Basic responsive UI that works on desktop and mobile
+- [ ] System runs reliably on local development environment
 
-### Phase 2 Acceptance Criteria
-- [ ] Advanced AI prediction models with >80% accuracy
-- [ ] Multiple legal database integrations
-- [ ] Comprehensive document analysis and summarization
-- [ ] Advanced workflow optimization tools
+### Phase 2 Acceptance Criteria (Production-Ready)
+- [ ] Advanced AI analysis with confidence scores >75%
+- [ ] Integration with at least one legal database API
+- [ ] Comprehensive workflow prioritization features
+- [ ] Enterprise security and compliance features
+- [ ] Performance optimization for concurrent users
+- [ ] Advanced document analysis and summarization
 
 ## Open Questions ⚠️
 
-### Critical Unknowns
-- ⚠️ **Legal Database API Access**: Specific APIs and integration requirements
-- ⚠️ **Generative AI Integration**: Access to legal-domain LLMs and fine-tuning requirements
-- ⚠️ **Regulatory Compliance**: Specific legal industry data handling requirements
-- ⚠️ **User Authentication**: Integration with existing legal organization auth systems
+### Resolved for MVP
+- ✅ **AI Integration**: Start with Azure OpenAI API for basic analysis
+- ✅ **Authentication**: Simple local authentication for demo/prototype
+- ✅ **Deployment**: Local development environment initially
+- ✅ **Document Processing**: Use built-in .NET libraries for basic text extraction
 
-### Assumptions
-- Public defenders have digital case files available for upload
-- Legal databases provide accessible APIs for integration
-- Sufficient legal context data exists for LLM fine-tuning and prompt engineering
-- Organizations will provide necessary infrastructure support
+### Deferred to Phase 2
+- ⚠️ **Legal Database APIs**: Research Westlaw, LexisNexis, or free alternatives like Justia
+- ⚠️ **Regulatory Compliance**: Full legal industry compliance requirements
+- ⚠️ **Enterprise Auth**: Integration with organizational SSO systems
+- ⚠️ **Production Infrastructure**: Azure/AWS deployment requirements
+
+### Assumptions for MVP
+- Users will test with sample/anonymized legal documents
+- Basic AI analysis is sufficient for initial validation
+- Simple local authentication meets initial security needs
+- Prototype can run in development environment for user testing
 
 ## Next Steps
-1. Resolve critical API access and integration questions
-2. Define specific legal database integration requirements
-3. Establish Generative AI model selection and prompt engineering strategy
-4. Develop detailed security and compliance requirements
+1. Set up Azure OpenAI API access for basic text analysis
+2. Create sample legal documents for testing and demo purposes
+3. Design simple case management data model
+4. Begin MVP development focusing on core document upload and AI analysis
+5. Conduct user research with sample application to validate approach
+6. Plan Phase 2 requirements based on MVP feedback and user needs

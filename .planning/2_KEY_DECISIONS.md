@@ -24,70 +24,82 @@ Need to build a responsive, interactive legal application with real-time AI anal
 - **Security**: Server-side execution protects sensitive legal data
 - **Development speed**: Rapid prototyping and iteration capabilities
 
-## Decision 2: Generative AI Integration Approach
+## Decision 2: AI Integration Approach (MVP Focused)
 
 ### Context
-Need to integrate Generative AI capabilities for natural language case analysis and legal reasoning while maintaining security and compliance.
+Need to integrate AI capabilities for document analysis and basic case insights while keeping implementation simple for MVP.
 
 ### Options Considered
-1. **External LLM APIs**: Quick integration, data privacy concerns, limited control
-2. **Self-hosted LLMs**: Full control, better compliance, higher infrastructure cost
-3. **Hybrid Approach**: Sensitive data with self-hosted models, general analysis with external APIs
+1. **Azure OpenAI**: Quick integration, reliable service, cost-effective for MVP
+2. **Self-hosted LLMs**: Full control, complex setup, high infrastructure cost
+3. **Multiple AI Services**: Flexibility, complexity overhead
 
 ### Chosen Solution
-**Hybrid Approach** with self-hosted legal-domain LLMs for sensitive data and external APIs for general analysis
+**Azure OpenAI API** for MVP, with future expansion to hybrid approach
 
 ### Rationale
-- **Data privacy**: Sensitive legal data processed by self-hosted models
-- **Legal specificity**: Domain-specific fine-tuning for legal reasoning
-- **Cost efficiency**: Balance between control and operational costs
-- **Compliance**: Meet legal industry data protection requirements
+- **MVP Speed**: Fastest path to working AI integration
+- **Cost Effective**: Pay-per-use model suitable for prototype
+- **Reliability**: Enterprise-grade service with good uptime
+- **Proven API**: Well-documented with .NET SDK support
+- **Future Flexibility**: Can migrate to hybrid approach in Phase 2
 
-## Decision 3: Document Processing Strategy
+## Decision 3: Document Processing Strategy (Simplified)
 
 ### Context
-Need to handle various legal document formats with high accuracy and security.
+Need basic document text extraction for MVP without complex infrastructure.
 
 ### Options Considered
-1. **Built-in libraries**: iTextSharp, DocX, etc. - full control, maintenance burden
-2. **Cloud services**: Azure Form Recognizer, AWS Textract - managed service, cost
-3. **Hybrid**: Core extraction built-in, advanced features via services
+1. **Built-in .NET libraries**: iTextSharp, System.IO - simple, local processing
+2. **Azure Form Recognizer**: Advanced features, additional complexity and cost
+3. **Open source libraries**: Free options, varying quality
 
 ### Chosen Solution
-**Hybrid approach** with core document processing built-in and advanced AI features via Azure Form Recognizer
+**Built-in .NET libraries** (iTextSharp for PDF, OpenXML for DOCX) for MVP
 
 ### Rationale
-- **Cost control**: Basic extraction handled locally, pay for advanced features
-- **Accuracy**: Professional services provide better OCR and extraction
-- **Scalability**: Cloud services handle peak loads
-- **Maintenance**: Reduced operational overhead
+- **Simplicity**: No external API dependencies for basic functionality
+- **Cost Control**: No per-document processing costs
+- **Development Speed**: Familiar .NET libraries with good documentation
+- **Local Processing**: All processing happens locally, simpler deployment
+- **MVP Sufficient**: Basic text extraction meets initial requirements
 
-## Technical Stack
+## Technical Stack (MVP)
 
 ### Backend
 - **Framework**: .NET 8 with Blazor Server
-- **Database**: SQL Server with Entity Framework Core
-- **Generative AI**: Self-hosted legal LLMs, Azure OpenAI for general analysis
-- **Document Processing**: iTextSharp (basic), Azure Form Recognizer (advanced)
-- **Storage**: Azure Blob Storage for documents
+- **Database**: SQL Server LocalDB/SQLite for development, SQL Server for production
+- **AI Integration**: Azure OpenAI API
+- **Document Processing**: iTextSharp (PDF), OpenXML SDK (DOCX)
+- **Storage**: Local filesystem for documents (MVP), migrate to cloud later
 
 ### Frontend
-- **UI Framework**: Blazor Components
-- **Styling**: Bootstrap 5 + Custom CSS
-- **Charts**: Chart.js or similar for data visualization
-- **File Upload**: Blazor file upload components
+- **UI Framework**: Blazor Server Components
+- **Styling**: Bootstrap 5 (existing in project)
+- **File Upload**: Built-in Blazor InputFile component
+- **Responsive Design**: Bootstrap responsive utilities
 
-### Infrastructure
-- **Hosting**: Azure App Service
+### Infrastructure (MVP)
+- **Development**: Local development server (`dotnet run`)
+- **Database**: Entity Framework Core with SQL Server LocalDB
+- **Storage**: Local file system with secure directory structure
+- **Authentication**: ASP.NET Core Identity (local accounts)
+
+### Future Infrastructure (Phase 2)
+- **Hosting**: Azure App Service or similar cloud platform
 - **Database**: Azure SQL Database
-- **Storage**: Azure Blob Storage
-- **AI Services**: Azure OpenAI, self-hosted LLM infrastructure
-- **Security**: Azure Active Directory integration
+- **Storage**: Azure Blob Storage for documents
+- **Security**: Azure Active Directory or enterprise SSO integration
 
-### Integration APIs
-- **Legal Databases**: REST APIs (specific TBD)
-- **Authentication**: OAuth2/OIDC for organizational integration
-- **Document Processing**: Azure Form Recognizer API
+### Integration APIs (MVP)
+- **AI Service**: Azure OpenAI REST API
+- **Authentication**: ASP.NET Core Identity (local)
+- **Document Processing**: Local .NET libraries
+
+### Future Integration APIs (Phase 2)
+- **Legal Databases**: Westlaw, LexisNexis, or Justia APIs
+- **Enterprise Auth**: OAuth2/OIDC for organizational integration
+- **Advanced Document Processing**: Azure Form Recognizer or similar
 
 ## Standard Patterns
 
@@ -99,7 +111,8 @@ Using established patterns from existing codebase:
 - Clean separation of concerns
 
 ## Next Steps
-1. Finalize specific Azure service configurations
-2. Define legal database API integration specifications
-3. Establish document processing pipeline architecture
-4. Develop security and compliance implementation plan
+1. Set up Azure OpenAI API account and test basic integration
+2. Configure local development environment with SQL Server LocalDB
+3. Implement basic document text extraction using iTextSharp
+4. Create simple local authentication system using ASP.NET Core Identity
+5. Plan Phase 2 migration to cloud infrastructure based on MVP feedback
