@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Better Call Saul - AI Legal Assistant</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .view {
+            display: none;
+        }
+        .view.active {
+            display: block;
+        }
+        /* Custom scrollbar for a more modern look */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #94a3b8;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #64748b;
+        }
+    </style>
+</head>
+<body class="bg-slate-100">
+
+    <div id="app" class="min-h-screen flex flex-col">
+        <!-- Main container that will switch between views -->
+
+        <!-- LOGIN VIEW -->
+        <div id="login-view" class="view active flex-grow flex items-center justify-center p-4">
+            <div class="w-full max-w-md bg-white rounded-xl shadow-lg p-8">
+                <div class="text-center mb-8">
+                    <div class="bg-slate-800 text-white rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
+                        <i data-lucide="scale" class="w-8 h-8"></i>
+                    </div>
+                    <h1 class="text-3xl font-bold text-slate-800">Better Call Saul</h1>
+                    <p class="text-slate-500 mt-2">AI-Powered Legal Assistant</p>
+                </div>
+                <form id="login-form">
+                    <div class="mb-4">
+                        <label for="email" class="block text-sm font-medium text-slate-600 mb-1">Email</label>
+                        <input type="email" id="email" value="public.defender@example.com" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                    </div>
+                    <div class="mb-6">
+                        <label for="password" class="block text-sm font-medium text-slate-600 mb-1">Password</label>
+                        <input type="password" id="password" value="password" class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" required>
+                    </div>
+                    <button type="submit" class="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 transition duration-300 flex items-center justify-center">
+                        <i data-lucide="log-in" class="mr-2 h-5 w-5"></i>
+                        Sign In
+                    </button>
+                    <p class="text-xs text-slate-400 text-center mt-4">
+                        This is a mock UI. Any email/password will work.
+                    </p>
+                </form>
+            </div>
+        </div>
+
+        <!-- MAIN APP VIEW (Dashboard, Case Details, etc.) -->
+        <div id="main-app-view" class="view">
+            <div class="flex h-screen bg-slate-100">
+                <!-- Sidebar -->
+                <aside class="w-64 bg-slate-800 text-white flex flex-col">
+                    <div class="p-6 text-2xl font-bold border-b border-slate-700 flex items-center">
+                        <i data-lucide="scale" class="mr-3"></i>
+                        <span>BCS AI</span>
+                    </div>
+                    <nav class="flex-1 p-4 space-y-2">
+                        <a href="#" id="nav-dashboard" class="nav-link active bg-slate-700 flex items-center px-4 py-2 rounded-lg text-sm font-medium">
+                            <i data-lucide="layout-dashboard" class="mr-3 h-5 w-5"></i> Dashboard
+                        </a>
+                        <a href="#" id="nav-add-case" class="nav-link flex items-center px-4 py-2 rounded-lg text-sm font-medium hover:bg-slate-700 transition-colors">
+                            <i data-lucide="file-plus" class="mr-3 h-5 w-5"></i> Add New Case
+                        </a>
+                    </nav>
+                    <div class="p-4 border-t border-slate-700">
+                        <div class="flex items-center">
+                            <img src="https://placehold.co/40x40/E2E8F0/475569?text=PD" class="rounded-full mr-3" alt="User Avatar">
+                            <div>
+                                <p class="text-sm font-semibold">Alex Rivera</p>
+                                <p class="text-xs text-slate-400">Public Defender</p>
+                            </div>
+                        </div>
+                        <button id="logout-button" class="w-full mt-4 flex items-center justify-center text-sm text-slate-300 hover:text-white bg-slate-700/50 hover:bg-slate-700 py-2 rounded-lg transition-colors">
+                            <i data-lucide="log-out" class="mr-2 h-4 w-4"></i>
+                            Logout
+                        </button>
+                    </div>
+                </aside>
+                
+                <!-- Main Content Area -->
+                <main class="flex-1 overflow-y-auto">
+                    <div id="dashboard-content" class="app-content p-8">
+                        <h1 class="text-3xl font-bold text-slate-800 mb-6">Case Dashboard</h1>
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            <!-- Case Card 1 -->
+                            <div class="bg-white p-6 rounded-xl shadow-md hover:shadow-lg transition-shadow cursor-pointer case-card" data-case="state_v_johnson">
+                                <div class="flex justify-between items-start mb-4">
+                                    <h2 class="text-xl font-bold text-slate-800">State v. Johnson</h2>
+                                    <span class="text-xs font-semibold bg-green-100 text-green-800 px-2 py-1 rounded-full">High Priority</span>
+                                </div>
+                                <p class="text-sm text-slate-500 mb-4">Client: Michael Johnson</p>
+                                <div class="space-y-3">
+                                    <div class="flex justify-between items-center text-sm">
+                                        <span class="text-slate-600 font-medium">AI Success Prediction</span>
+                                        <span class="font-bold text-green-600">82%</span>
+                                    </div>
+                                    <div class="w-full bg-slate-200 rounded-full h-2.5">
+                                        <div class="bg-green-600 h-2.5 rounded-full" style="width: 82%"></div>
+                                    </div>
+                                </div>
+                                <div class="mt-4 pt-4 border-t border-slate-200 text-right">
+                                     <button class="text-sm text-blue-600 font-semibold hover:underline">View Analysis</button>
+                                </div>
+                            </div>
+                            <!-- Case Card 2 -->
+                            <div class="bg-white p-6 rounded-xl shadow-md hover:shadow-lg transition-shadow cursor-pointer case-card" data-case="state_v_chen">
+                                <div class="flex justify-between items-start mb-4">
+                                    <h2 class="text-xl font-bold text-slate-800">State v. Chen</h2>
+                                    <span class="text-xs font-semibold bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full">Medium Priority</span>
+                                </div>
+                                <p class="text-sm text-slate-500 mb-4">Client: Wei Chen</p>
+                                <div class="space-y-3">
+                                    <div class="flex justify-between items-center text-sm">
+                                        <span class="text-slate-600 font-medium">AI Success Prediction</span>
+                                        <span class="font-bold text-yellow-600">55%</span>
+                                    </div>
+                                    <div class="w-full bg-slate-200 rounded-full h-2.5">
+                                        <div class="bg-yellow-500 h-2.5 rounded-full" style="width: 55%"></div>
+                                    </div>
+                                </div>
+                                <div class="mt-4 pt-4 border-t border-slate-200 text-right">
+                                    <button class="text-sm text-blue-600 font-semibold hover:underline">View Analysis</button>
+                                </div>
+                            </div>
+                            <!-- Case Card 3 -->
+                            <div class="bg-white p-6 rounded-xl shadow-md hover:shadow-lg transition-shadow cursor-pointer case-card" data-case="state_v_rodriguez">
+                                <div class="flex justify-between items-start mb-4">
+                                    <h2 class="text-xl font-bold text-slate-800">State v. Rodriguez</h2>
+                                    <span class="text-xs font-semibold bg-red-100 text-red-800 px-2 py-1 rounded-full">Low Priority</span>
+                                </div>
+                                <p class="text-sm text-slate-500 mb-4">Client: Maria Rodriguez</p>
+                                <div class="space-y-3">
+                                    <div class="flex justify-between items-center text-sm">
+                                        <span class="text-slate-600 font-medium">AI Success Prediction</span>
+                                        <span class="font-bold text-red-600">28%</span>
+                                    </div>
+                                    <div class="w-full bg-slate-200 rounded-full h-2.5">
+                                        <div class="bg-red-600 h-2.5 rounded-full" style="width: 28%"></div>
+                                    </div>
+                                </div>
+                                <div class="mt-4 pt-4 border-t border-slate-200 text-right">
+                                     <button class="text-sm text-blue-600 font-semibold hover:underline">View Analysis</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="add-case-content" class="app-content hidden p-8">
+                        <h1 class="text-3xl font-bold text-slate-800 mb-6">Add New Case</h1>
+                        <div class="bg-white p-8 rounded-xl shadow-md">
+                            <div id="drop-zone" class="border-2 border-dashed border-slate-300 rounded-lg p-12 text-center cursor-pointer hover:border-blue-500 transition-colors">
+                                <div class="flex flex-col items-center text-slate-500">
+                                    <i data-lucide="upload-cloud" class="w-16 h-16 text-slate-400 mb-4"></i>
+                                    <p class="font-semibold">Drag & drop your case file here</p>
+                                    <p class="text-sm mt-1">or</p>
+                                    <button id="browse-files-button" class="mt-2 bg-slate-200 px-4 py-2 rounded-lg text-sm font-semibold text-slate-700 hover:bg-slate-300">Browse Files</button>
+                                    <input type="file" id="file-input" class="hidden" multiple>
+                                    <p class="text-xs text-slate-400 mt-4">Supports PDF, DOCX, TXT. Max file size: 50MB.</p>
+                                </div>
+                            </div>
+                            <div id="upload-progress" class="hidden mt-6">
+                                <div class="flex justify-between mb-1">
+                                    <span id="file-name" class="text-sm font-medium text-slate-700"></span>
+                                    <span id="progress-percent" class="text-sm font-medium text-slate-700">0%</span>
+                                </div>
+                                <div class="w-full bg-slate-200 rounded-full h-2.5">
+                                    <div id="progress-bar" class="bg-blue-600 h-2.5 rounded-full" style="width: 0%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="case-analysis-content" class="app-content hidden p-8">
+                        <button id="back-to-dashboard" class="flex items-center text-sm font-semibold text-slate-600 hover:text-slate-900 mb-6">
+                            <i data-lucide="arrow-left" class="mr-2 h-4 w-4"></i>
+                            Back to Dashboard
+                        </button>
+                        <div class="bg-white p-8 rounded-xl shadow-md">
+                            <!-- Case Header -->
+                            <div class="flex justify-between items-center pb-6 border-b border-slate-200">
+                                <div>
+                                    <h1 id="case-title" class="text-3xl font-bold text-slate-800">State v. Johnson</h1>
+                                    <p id="case-client" class="text-slate-500">Client: Michael Johnson</p>
+                                </div>
+                                <div class="text-right">
+                                    <p class="text-sm text-slate-500">AI Success Prediction</p>
+                                    <p id="case-prediction" class="text-4xl font-bold text-green-600">82%</p>
+                                </div>
+                            </div>
+
+                            <!-- Main Analysis Grid -->
+                            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-6">
+                                <!-- Left Column: Summary & Recommendation -->
+                                <div class="lg:col-span-2 space-y-6">
+                                    <div>
+                                        <h3 class="text-xl font-semibold text-slate-700 mb-3 flex items-center">
+                                            <i data-lucide="file-text" class="mr-2 h-5 w-5 text-blue-600"></i>
+                                            AI Case Summary
+                                        </h3>
+                                        <p id="case-summary" class="text-slate-600 leading-relaxed">
+                                            The case against Michael Johnson relies heavily on circumstantial evidence and a single, uncorroborated witness testimony. The witness has a history of credibility issues. Physical evidence linking Mr. Johnson to the scene is inconclusive. The prosecution's timeline has significant inconsistencies that can be challenged. Motion to suppress the witness testimony is likely to be granted.
+                                        </p>
+                                    </div>
+                                    <div>
+                                        <h3 class="text-xl font-semibold text-slate-700 mb-3 flex items-center">
+                                            <i data-lucide="gavel" class="mr-2 h-5 w-5 text-blue-600"></i>
+                                            AI Recommendation
+                                        </h3>
+                                        <div id="case-recommendation" class="bg-blue-50 p-6 rounded-lg border border-blue-200">
+                                            <p class="font-bold text-lg text-blue-800">Proceed to Trial</p>
+                                            <p class="text-blue-700 mt-2">
+                                                The case presents a strong potential for a successful defense. The weaknesses in the prosecution's evidence provide multiple avenues for reasonable doubt. A plea deal is not recommended at this stage as it undervalues the defensive position.
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Right Column: Key Precedents -->
+                                <div class="space-y-6">
+                                    <div>
+                                        <h3 class="text-xl font-semibold text-slate-700 mb-3 flex items-center">
+                                            <i data-lucide="book-open" class="mr-2 h-5 w-5 text-blue-600"></i>
+                                            Relevant Case Law
+                                        </h3>
+                                        <div class="space-y-4">
+                                            <div class="bg-slate-50 p-4 rounded-lg hover:bg-slate-100 transition-colors">
+                                                <p class="font-semibold text-slate-800">Crawford v. Washington (2004)</p>
+                                                <p class="text-sm text-slate-500">Impacts admissibility of witness testimony.</p>
+                                            </div>
+                                            <div class="bg-slate-50 p-4 rounded-lg hover:bg-slate-100 transition-colors">
+                                                <p class="font-semibold text-slate-800">Brady v. Maryland (1963)</p>
+                                                <p class="text-sm text-slate-500">Relates to disclosure of exculpatory evidence.</p>
+                                            </div>
+                                             <div class="bg-slate-50 p-4 rounded-lg hover:bg-slate-100 transition-colors">
+                                                <p class="font-semibold text-slate-800">Terry v. Ohio (1968)</p>
+                                                <p class="text-sm text-slate-500">Concerns the legality of the initial stop.</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div>
+                                         <h3 class="text-xl font-semibold text-slate-700 mb-3 flex items-center">
+                                            <i data-lucide="message-square-plus" class="mr-2 h-5 w-5 text-blue-600"></i>
+                                            Ask the AI
+                                        </h3>
+                                        <div class="relative">
+                                            <textarea class="w-full p-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Ask a follow-up question..." rows="3"></textarea>
+                                            <button class="absolute bottom-2 right-2 bg-blue-600 text-white rounded-md p-2 hover:bg-blue-700">
+                                                <i data-lucide="send" class="w-4 h-4"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </main>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        lucide.createIcons();
+
+        const views = {
+            login: document.getElementById('login-view'),
+            main: document.getElementById('main-app-view')
+        };
+
+        const appContent = {
+            dashboard: document.getElementById('dashboard-content'),
+            addCase: document.getElementById('add-case-content'),
+            analysis: document.getElementById('case-analysis-content'),
+        };
+
+        const navLinks = {
+            dashboard: document.getElementById('nav-dashboard'),
+            addCase: document.getElementById('nav-add-case'),
+        };
+        
+        const caseData = {
+            state_v_johnson: {
+                title: "State v. Johnson",
+                client: "Michael Johnson",
+                prediction: "82%",
+                predictionColor: "text-green-600",
+                summary: "The case against Michael Johnson relies heavily on circumstantial evidence and a single, uncorroborated witness testimony. The witness has a history of credibility issues. Physical evidence linking Mr. Johnson to the scene is inconclusive. The prosecution's timeline has significant inconsistencies that can be challenged. Motion to suppress the witness testimony is likely to be granted.",
+                recommendationTitle: "Proceed to Trial",
+                recommendationText: "The case presents a strong potential for a successful defense. The weaknesses in the prosecution's evidence provide multiple avenues for reasonable doubt. A plea deal is not recommended at this stage as it undervalues the defensive position.",
+                recommendationClass: "bg-blue-50 border-blue-200 text-blue-800",
+            },
+            state_v_chen: {
+                title: "State v. Chen",
+                client: "Wei Chen",
+                prediction: "55%",
+                predictionColor: "text-yellow-600",
+                summary: "The prosecution presents a moderate case with some forensic evidence. However, the chain of custody for key evidence was poorly documented, opening a significant procedural challenge. Eyewitness identification was made under suboptimal conditions. Success hinges on challenging the evidence admissibility.",
+                recommendationTitle: "Negotiate Plea Deal",
+                recommendationText: "The outcome of a trial is uncertain. Negotiating for a reduced charge from a position of strength, leveraging the procedural errors, is advised. A plea bargain could mitigate risk while securing a favorable outcome compared to a potential conviction at trial.",
+                recommendationClass: "bg-yellow-50 border-yellow-200 text-yellow-800",
+            },
+            state_v_rodriguez: {
+                title: "State v. Rodriguez",
+                client: "Maria Rodriguez",
+                prediction: "28%",
+                predictionColor: "text-red-600",
+                summary: "The evidence against Ms. Rodriguez is substantial, including digital forensics and multiple corroborating witnesses. Key defense arguments lack strong evidentiary support. The prosecution's case is well-constructed and difficult to dismantle on factual grounds.",
+                recommendationTitle: "Recommend Plea Deal",
+                recommendationText: "Given the low probability of success at trial, the most advantageous strategy is to secure the best possible plea agreement. Focus should be on mitigating sentencing and avoiding the risks of a conviction on more severe charges.",
+                recommendationClass: "bg-red-50 border-red-200 text-red-800",
+            }
+        };
+
+        // --- Navigation Logic ---
+        function showView(viewName) {
+            Object.values(views).forEach(v => v.classList.remove('active'));
+            views[viewName].classList.add('active');
+        }
+
+        function showContent(contentName) {
+            Object.values(appContent).forEach(c => c.classList.add('hidden'));
+            if (appContent[contentName]) {
+                appContent[contentName].classList.remove('hidden');
+            }
+
+            Object.values(navLinks).forEach(link => link.classList.remove('bg-slate-700'));
+            if (navLinks[contentName]) {
+                navLinks[contentName].classList.add('bg-slate-700');
+            }
+        }
+
+        // --- Event Listeners ---
+        document.getElementById('login-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            showView('main');
+            showContent('dashboard');
+        });
+
+        document.getElementById('logout-button').addEventListener('click', () => {
+            showView('login');
+        });
+        
+        navLinks.dashboard.addEventListener('click', (e) => {
+            e.preventDefault();
+            showContent('dashboard');
+        });
+        
+        navLinks.addCase.addEventListener('click', (e) => {
+            e.preventDefault();
+            showContent('addCase');
+        });
+        
+        document.getElementById('back-to-dashboard').addEventListener('click', (e) => {
+            e.preventDefault();
+            showContent('dashboard');
+        });
+        
+        document.querySelectorAll('.case-card').forEach(card => {
+            card.addEventListener('click', () => {
+                const caseId = card.dataset.case;
+                const data = caseData[caseId];
+                
+                // Populate analysis view with data
+                document.getElementById('case-title').textContent = data.title;
+                document.getElementById('case-client').textContent = `Client: ${data.client}`;
+                const predictionEl = document.getElementById('case-prediction');
+                predictionEl.textContent = data.prediction;
+                predictionEl.className = `text-4xl font-bold ${data.predictionColor}`;
+                
+                document.getElementById('case-summary').textContent = data.summary;
+                
+                const recDiv = document.getElementById('case-recommendation');
+                recDiv.className = `p-6 rounded-lg border ${data.recommendationClass.split(' ')[1]}`;
+                recDiv.innerHTML = `<p class="font-bold text-lg ${data.recommendationClass.split(' ')[2]}">${data.recommendationTitle}</p>
+                                    <p class="${data.recommendationClass.split(' ')[2].replace('-800','-700')} mt-2">${data.recommendationText}</p>`;
+                
+                
+                showContent('analysis');
+            });
+        });
+
+        // --- File Upload Mock Logic ---
+        const dropZone = document.getElementById('drop-zone');
+        const fileInput = document.getElementById('file-input');
+        const browseButton = document.getElementById('browse-files-button');
+        const uploadProgress = document.getElementById('upload-progress');
+        const fileNameEl = document.getElementById('file-name');
+        const progressBar = document.getElementById('progress-bar');
+        const progressPercent = document.getElementById('progress-percent');
+
+        browseButton.addEventListener('click', () => fileInput.click());
+        fileInput.addEventListener('change', (e) => handleFiles(e.target.files));
+        
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, preventDefaults, false);
+        });
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropZone.addEventListener(eventName, () => dropZone.classList.add('border-blue-500', 'bg-blue-50'), false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, () => dropZone.classList.remove('border-blue-500', 'bg-blue-50'), false);
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            handleFiles(e.dataTransfer.files);
+        });
+
+        function handleFiles(files) {
+            if (files.length === 0) return;
+            const file = files[0];
+            uploadProgress.classList.remove('hidden');
+            fileNameEl.textContent = file.name;
+            
+            let progress = 0;
+            progressBar.style.width = '0%';
+            progressPercent.textContent = '0%';
+
+            const interval = setInterval(() => {
+                progress += 5;
+                progressBar.style.width = `${progress}%`;
+                progressPercent.textContent = `${progress}%`;
+                if (progress >= 100) {
+                    clearInterval(interval);
+                    setTimeout(() => {
+                        // Use a default case for analysis after upload
+                        const data = caseData['state_v_johnson'];
+                        document.getElementById('case-title').textContent = file.name.split('.')[0];
+                        document.getElementById('case-client').textContent = `Client: New Client`;
+                        const predictionEl = document.getElementById('case-prediction');
+                        predictionEl.textContent = data.prediction;
+                        predictionEl.className = `text-4xl font-bold ${data.predictionColor}`;
+                        document.getElementById('case-summary').textContent = data.summary;
+                        const recDiv = document.getElementById('case-recommendation');
+                         recDiv.className = `p-6 rounded-lg border ${data.recommendationClass.split(' ')[1]}`;
+                        recDiv.innerHTML = `<p class="font-bold text-lg ${data.recommendationClass.split(' ')[2]}">${data.recommendationTitle}</p>
+                                    <p class="${data.recommendationClass.split(' ')[2].replace('-800','-700')} mt-2">${data.recommendationText}</p>`;
+                        showContent('analysis');
+                        
+                        // Reset upload UI
+                        uploadProgress.classList.add('hidden');
+                        progressBar.style.width = '0%';
+                        progressPercent.textContent = '0%';
+                        fileInput.value = '';
+                    }, 500);
+                }
+            }, 50);
+        }
+
+    </script>
+</body>
+</html>
