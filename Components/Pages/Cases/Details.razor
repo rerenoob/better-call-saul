@@ -1,0 +1,204 @@
+@page "/cases/{caseId:int}"
+@using better_call_saul.Models.ViewModels
+@using better_call_saul.Services
+@using Microsoft.AspNetCore.Components
+@using Microsoft.AspNetCore.Identity
+@inject ICaseService CaseService
+@inject NavigationManager Navigation
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject ILoggerService LoggerService
+
+<div class="container-fluid">
+    @if (isLoading)
+    {
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-2 text-muted">Loading case details...</p>
+        </div>
+    }
+    else if (caseDetail == null)
+    {
+        <div class="text-center py-5">
+            <div class="text-muted mb-3">
+                <i class="bi bi-exclamation-triangle" style="font-size: 3rem;"></i>
+            </div>
+            <h4 class="text-muted">Case not found</h4>
+            <p class="text-muted">The requested case could not be found or you don't have permission to view it.</p>
+            <a href="/cases" class="btn btn-primary">
+                <i class="bi bi-arrow-left me-1"></i>Back to Cases
+            </a>
+        </div>
+    }
+    else
+    {
+        <div class="row">
+            <div class="col-12">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <div>
+                        <nav aria-label="breadcrumb">
+                            <ol class="breadcrumb">
+                                <li class="breadcrumb-item"><a href="/cases">Cases</a></li>
+                                <li class="breadcrumb-item active" aria-current="page">@caseDetail.Case.Title</li>
+                            </ol>
+                        </nav>
+                        <h1 class="h2 mb-0">@caseDetail.Case.Title</h1>
+                    </div>
+                    
+                    <div class="btn-group">
+                        @if (caseDetail.CanEdit)
+                        {
+                            <a href="/cases/@caseDetail.Case.Id/edit" class="btn btn-outline-primary">
+                                <i class="bi bi-pencil me-1"></i>Edit Case
+                            </a>
+                        }
+                        <a href="/cases/@caseDetail.Case.Id/analysis" class="btn btn-primary">
+                            <i class="bi bi-robot me-1"></i>Analyze Case
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-lg-8">
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Case Details</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row mb-3">
+                            <div class="col-sm-3">
+                                <strong>Status:</strong>
+                            </div>
+                            <div class="col-sm-9">
+                                <CaseStatusBadge Status="@caseDetail.Case.Status" />
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-sm-3">
+                                <strong>Created:</strong>
+                            </div>
+                            <div class="col-sm-9">
+                                @caseDetail.Case.CreatedAt.ToString("MMMM dd, yyyy")
+                            </div>
+                        </div>
+                        @if (caseDetail.Case.ClosedAt.HasValue)
+                        {
+                            <div class="row mb-3">
+                                <div class="col-sm-3">
+                                    <strong>Closed:</strong>
+                                </div>
+                                <div class="col-sm-9">
+                                    @caseDetail.Case.ClosedAt.Value.ToString("MMMM dd, yyyy")
+                                </div>
+                            </div>
+                        }
+                        <div class="row">
+                            <div class="col-12">
+                                <strong>Description:</strong>
+                                <p class="mt-2 text-muted">
+                                    @if (string.IsNullOrEmpty(caseDetail.Case.Description))
+                                    {
+                                        <em>No description provided</em>
+                                    }
+                                    else
+                                    {
+                                        @caseDetail.Case.Description
+                                    }
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-4">
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">Documents (@caseDetail.Documents.Count())</h5>
+                    </div>
+                    <div class="card-body">
+                        @if (caseDetail.Documents.Any())
+                        {
+                            <div class="list-group list-group-flush">
+                                @foreach (var document in caseDetail.Documents)
+                                {
+                                    <div class="list-group-item px-0 border-0">
+                                        <div class="d-flex align-items-center">
+                                            <i class="bi bi-file-text text-muted me-3" style="font-size: 1.5rem;"></i>
+                                            <div class="flex-grow-1">
+                                                <h6 class="mb-0 text-truncate" title="@document.FileName">@document.FileName</h6>
+                                                <small class="text-muted">
+                                                    @document.FileType • @FormatFileSize(document.FileSize)
+                                                </small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        }
+                        else
+                        {
+                            <p class="text-muted mb-0">No documents uploaded yet.</p>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public int CaseId { get; set; }
+
+    private CaseDetailViewModel? caseDetail;
+    private bool isLoading = true;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (CaseId <= 0)
+        {
+            isLoading = false;
+            return;
+        }
+
+        try
+        {
+            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+            var user = authState.User;
+            
+            if (user.Identity?.IsAuthenticated == true)
+            {
+                var userId = user.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+                if (!string.IsNullOrEmpty(userId))
+                {
+                    caseDetail = await CaseService.GetCaseDetailAsync(CaseId, userId);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            LoggerService.LogError($"Error loading case details: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private string FormatFileSize(long bytes)
+    {
+        string[] sizes = { "B", "KB", "MB", "GB", "TB" };
+        int order = 0;
+        double len = bytes;
+        while (len >= 1024 && order < sizes.Length - 1)
+        {
+            order++;
+            len /= 1024;
+        }
+        return $"{len:0.##} {sizes[order]}";
+    }
+}

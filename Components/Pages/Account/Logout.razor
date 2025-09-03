@@ -1,0 +1,14 @@
+@page "/account/logout"
+@using better_call_saul.Models
+@using Microsoft.AspNetCore.Identity
+@using Microsoft.AspNetCore.Components
+@inject NavigationManager Navigation
+@inject SignInManager<ApplicationUser> SignInManager
+
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        await SignInManager.SignOutAsync();
+        Navigation.NavigateTo("/", true);
+    }
+}

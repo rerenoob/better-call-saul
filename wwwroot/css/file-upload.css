@@ -1,0 +1,228 @@
+/* File Upload Component Styling */
+
+.file-upload-component {
+    position: relative;
+}
+
+.file-input {
+    position: absolute;
+    width: 0;
+    height: 0;
+    opacity: 0;
+    overflow: hidden;
+}
+
+.drop-zone {
+    border: 2px dashed #dee2e6;
+    border-radius: 0.5rem;
+    padding: 2rem;
+    text-align: center;
+    transition: all 0.2s ease-in-out;
+    background-color: #f8f9fa;
+    cursor: pointer;
+}
+
+.drop-zone:hover {
+    border-color: #1b6ec2;
+    background-color: #e7f3ff;
+    transform: translateY(-1px);
+}
+
+.drop-zone.drag-over {
+    border-color: #1b6ec2;
+    background-color: #d4edff;
+    transform: scale(1.02);
+}
+
+.drop-zone-content {
+    color: #6c757d;
+}
+
+.drop-zone-content i {
+    font-size: 3rem;
+    color: #1b6ec2;
+    margin-bottom: 1rem;
+    display: block;
+}
+
+.drop-zone-content h5 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: #495057;
+}
+
+.drop-zone-content p.text-muted {
+    margin: 0.5rem 0;
+}
+
+.drop-zone-content .btn {
+    margin: 0.5rem 0;
+}
+
+.drop-zone-content .small {
+    font-size: 0.875rem;
+}
+
+.file-preview .card {
+    border: 1px solid #dee2e6;
+    border-radius: 0.5rem;
+    transition: all 0.2s ease-in-out;
+}
+
+.file-preview .card:hover {
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+.file-preview .card-title {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+    color: #495057;
+}
+
+.file-preview .card-text {
+    font-size: 0.875rem;
+    color: #6c757d;
+}
+
+.upload-progress {
+    margin-top: 1rem;
+}
+
+.upload-progress .progress {
+    height: 0.5rem;
+    border-radius: 0.25rem;
+    overflow: hidden;
+}
+
+.upload-progress .progress-bar {
+    background-color: #1b6ec2;
+    transition: width 0.3s ease-in-out;
+    font-size: 0.75rem;
+    line-height: 0.5rem;
+}
+
+.upload-progress p {
+    font-size: 0.875rem;
+    color: #6c757d;
+    margin-top: 0.5rem;
+}
+
+.upload-result .alert {
+    border-radius: 0.5rem;
+    padding: 1rem 1.5rem;
+    border: none;
+    font-weight: 500;
+}
+
+.upload-result .alert i {
+    margin-right: 0.5rem;
+    font-size: 1.1rem;
+}
+
+.upload-result .alert-success {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.upload-result .alert-danger {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+.upload-actions {
+    margin-top: 1rem;
+}
+
+.upload-actions .btn {
+    padding: 0.75rem 1.5rem;
+    font-weight: 600;
+    border-radius: 0.5rem;
+}
+
+.upload-actions .btn i {
+    margin-right: 0.5rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .drop-zone {
+        padding: 1.5rem;
+    }
+    
+    .drop-zone-content i {
+        font-size: 2.5rem;
+    }
+    
+    .drop-zone-content h5 {
+        font-size: 1.1rem;
+    }
+    
+    .file-preview .card-body {
+        padding: 1rem;
+    }
+    
+    .upload-actions .btn {
+        width: 100%;
+    }
+}
+
+/* Animation for drag and drop */
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.02); }
+    100% { transform: scale(1); }
+}
+
+.drop-zone.drag-over {
+    animation: pulse 0.5s ease-in-out;
+}
+
+/* Focus states for accessibility */
+.drop-zone:focus {
+    outline: 2px solid #1b6ec2;
+    outline-offset: 2px;
+}
+
+.file-input:focus + .drop-zone {
+    outline: 2px solid #1b6ec2;
+    outline-offset: 2px;
+}
+
+/* Loading states */
+.upload-progress .progress-bar {
+    background: linear-gradient(45deg, #1b6ec2, #0d6efd, #1b6ec2);
+    background-size: 200% 200%;
+    animation: gradient-shift 2s ease infinite;
+}
+
+@keyframes gradient-shift {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+}
+
+/* Error state styling */
+.file-input:invalid + .drop-zone {
+    border-color: #dc3545;
+    background-color: #f8d7da;
+}
+
+/* Success state styling */
+.file-input:valid + .drop-zone {
+    border-color: #198754;
+    background-color: #d4edda;
+}
+
+/* Disabled state */
+.file-input:disabled + .drop-zone {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.file-input:disabled + .drop-zone:hover {
+    transform: none;
+    border-color: #dee2e6;
+    background-color: #f8f9fa;
+}

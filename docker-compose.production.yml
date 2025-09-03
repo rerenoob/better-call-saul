@@ -1,0 +1,46 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ConnectionStrings__DefaultConnection=${DB_CONNECTION_STRING}
+      - AzureOpenAI__Endpoint=${AZURE_OPENAI_ENDPOINT}
+      - AzureOpenAI__ApiKey=${AZURE_OPENAI_API_KEY}
+      - AzureOpenAI__DeploymentName=${AZURE_OPENAI_DEPLOYMENT_NAME:-gpt-4}
+      - AzureOpenAI__MaxTokens=${AZURE_OPENAI_MAX_TOKENS:-1000}
+      - AzureOpenAI__Temperature=${AZURE_OPENAI_TEMPERATURE:-0.3}
+      - FileStorage__BasePath=/app/uploads
+      - FileStorage__MaxFileSize=10000000
+      - ApplicationInsights__ConnectionString=${APPINSIGHTS_CONNECTION_STRING:-}
+    volumes:
+      - uploads-volume:/app/uploads
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:80/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.better-call-saul.rule=Host(`${DOMAIN:-localhost}`)"
+      - "traefik.http.routers.better-call-saul.entrypoints=websecure"
+      - "traefik.http.routers.better-call-saul.tls.certresolver=myresolver"
+      - "traefik.http.services.better-call-saul.loadbalancer.server.port=80"
+
+  # For production, use external database service
+  # db service is omitted - use Azure SQL Database or managed SQL Server
+
+volumes:
+  uploads-volume:
+
+# Note: For production, use:
+# 1. External database (Azure SQL, RDS, or managed SQL Server)
+# 2. Environment variables for secrets (not in compose file)
+# 3. Reverse proxy with SSL termination
+# 4. Monitoring and logging services

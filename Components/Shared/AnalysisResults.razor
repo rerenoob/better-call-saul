@@ -1,0 +1,260 @@
+@using better_call_saul.Models
+@using better_call_saul.Models.ViewModels
+@using better_call_saul.Services
+@using Microsoft.AspNetCore.Identity
+@inject IDocumentAnalysisService AnalysisService
+@inject AuthenticationStateProvider AuthenticationStateProvider
+
+<div class="analysis-container">
+    @if (isLoading)
+    {
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading analysis...</span>
+            </div>
+            <p class="mt-2 text-muted">Loading analysis results...</p>
+        </div>
+    }
+    else if (isAnalyzing)
+    {
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Analyzing...</span>
+            </div>
+            <p class="mt-2 text-muted">AI analysis in progress...</p>
+            <p class="text-sm text-muted">This may take 30+ seconds depending on document complexity.</p>
+        </div>
+    }
+    else if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <div class="alert alert-danger" role="alert">
+            <h5 class="alert-heading">
+                <i class="bi bi-exclamation-triangle me-2"></i>Analysis Failed
+            </h5>
+            <p class="mb-0">@errorMessage</p>
+            <hr>
+            <button class="btn btn-outline-danger btn-sm" @onclick="RetryAnalysis">
+                <i class="bi bi-arrow-clockwise me-1"></i>Retry Analysis
+            </button>
+        </div>
+    }
+    else if (analysis == null)
+    {
+        <div class="text-center py-5">
+            <div class="text-muted mb-4">
+                <i class="bi bi-robot" style="font-size: 4rem;"></i>
+            </div>
+            <h4 class="text-muted mb-3">No Analysis Available</h4>
+            <p class="text-muted mb-4">This case hasn't been analyzed yet. Click the button below to start AI analysis.</p>
+            <button class="btn btn-primary btn-lg" @onclick="StartAnalysis" disabled="@(!canAnalyze)">
+                <i class="bi bi-play-circle me-2"></i>Start AI Analysis
+            </button>
+            @if (!canAnalyze)
+            {
+                <p class="text-warning mt-2 small">Cannot analyze - case may not have documents or is closed.</p>
+            }
+        </div>
+    }
+    else
+    {
+        <div class="analysis-results">
+            <!-- Header with confidence score -->
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">AI Analysis Results</h5>
+                    <div class="text-end">
+                        <small class="text-muted">Analyzed @analysis.AnalyzedAt.ToString("MMMM dd, yyyy h:mm tt")</small>
+                        <div class="mt-1">
+                            <ConfidenceIndicator Score="@analysis.ConfidenceScore" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Analysis Grid -->
+            <div class="row">
+                <!-- Left Column: Summary & Recommendation -->
+                <div class="col-lg-8">
+                    <!-- Case Summary -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h6 class="card-title mb-0">
+                                <i class="bi bi-file-text text-primary me-2"></i>
+                                Case Summary
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <p class="card-text">@analysis.Summary</p>
+                        </div>
+                    </div>
+
+                    <!-- Recommendation -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h6 class="card-title mb-0">
+                                <i class="bi bi-lightbulb text-warning me-2"></i>
+                                Recommendation
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <div class="alert @GetRecommendationAlertClass(analysis.ConfidenceScore)" role="alert">
+                                <h6 class="alert-heading">@GetRecommendationTitle(analysis.ConfidenceScore)</h6>
+                                <p class="mb-0">@analysis.Recommendation</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column: Key Points -->
+                <div class="col-lg-4">
+                    <!-- Key Points -->
+                    <div class="card mb-4">
+                        <div class="card-header">
+                            <h6 class="card-title mb-0">
+                                <i class="bi bi-list-check text-success me-2"></i>
+                                Key Points
+                            </h6>
+                        </div>
+                        <div class="card-body">
+                            <ul class="list-group list-group-flush">
+                                @foreach (var point in AnalysisResultViewModel.FromCaseAnalysis(analysis).KeyPoints)
+                                {
+                                    <li class="list-group-item border-0 px-0 py-2">
+                                        <i class="bi bi-check-circle text-success me-2"></i>
+                                        @point
+                                    </li>
+                                }
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="card">
+                        <div class="card-body text-center">
+                            <button class="btn btn-outline-primary w-100 mb-2" @onclick="StartAnalysis">
+                                <i class="bi bi-arrow-clockwise me-2"></i>Re-analyze
+                            </button>
+                            <small class="text-muted">Last analysis: @analysis.AnalyzedAt.ToString("MMM dd, yyyy")</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public int CaseId { get; set; }
+
+    [Parameter]
+    public string CaseTitle { get; set; } = string.Empty;
+
+    [Parameter]
+    public EventCallback OnAnalysisStarted { get; set; }
+
+    [Parameter]
+    public EventCallback OnAnalysisCompleted { get; set; }
+
+    [Parameter]
+    public EventCallback<string> OnAnalysisFailed { get; set; }
+
+    private CaseAnalysis? analysis;
+    private bool isLoading = true;
+    private bool isAnalyzing = false;
+    private string? errorMessage;
+    private bool canAnalyze = true;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadAnalysis();
+    }
+
+    private async Task LoadAnalysis()
+    {
+        isLoading = true;
+        errorMessage = null;
+        
+        try
+        {
+            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+            var user = authState.User;
+            
+            if (user.Identity?.IsAuthenticated == true)
+            {
+                var userId = user.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+                if (!string.IsNullOrEmpty(userId))
+                {
+                    analysis = await AnalysisService.GetLatestAnalysisAsync(CaseId, userId);
+                    canAnalyze = await AnalysisService.HasAnalysisAsync(CaseId, userId);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Error loading analysis: {ex.Message}";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private async Task StartAnalysis()
+    {
+        isAnalyzing = true;
+        errorMessage = null;
+        
+        try
+        {
+            await OnAnalysisStarted.InvokeAsync();
+            
+            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+            var user = authState.User;
+            
+            if (user.Identity?.IsAuthenticated == true)
+            {
+                var userId = user.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+                if (!string.IsNullOrEmpty(userId))
+                {
+                    analysis = await AnalysisService.AnalyzeCaseDocumentsAsync(CaseId, userId);
+                    await OnAnalysisCompleted.InvokeAsync();
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = $"Analysis failed: {ex.Message}";
+            await OnAnalysisFailed.InvokeAsync(errorMessage);
+        }
+        finally
+        {
+            isAnalyzing = false;
+        }
+    }
+
+    private async Task RetryAnalysis()
+    {
+        await LoadAnalysis();
+    }
+
+    private string GetRecommendationAlertClass(double confidenceScore)
+    {
+        return confidenceScore switch
+        {
+            >= 0.7 => "alert-success",
+            >= 0.4 => "alert-warning",
+            _ => "alert-danger"
+        };
+    }
+
+    private string GetRecommendationTitle(double confidenceScore)
+    {
+        return confidenceScore switch
+        {
+            >= 0.7 => "Proceed to Trial",
+            >= 0.4 => "Review and Consider Options",
+            _ => "Consider Plea Deal"
+        };
+    }
+}

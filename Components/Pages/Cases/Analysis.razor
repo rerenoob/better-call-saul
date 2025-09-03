@@ -1,0 +1,126 @@
+@page "/cases/{caseId:int}/analysis"
+@using better_call_saul.Models.ViewModels
+@using better_call_saul.Services
+@using Microsoft.AspNetCore.Components
+@using Microsoft.AspNetCore.Identity
+@inject IDocumentAnalysisService AnalysisService
+@inject ICaseService CaseService
+@inject NavigationManager Navigation
+@inject AuthenticationStateProvider AuthenticationStateProvider
+@inject ILoggerService LoggerService
+
+<div class="container-fluid">
+    @if (isLoading)
+    {
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-2 text-muted">Loading case analysis...</p>
+        </div>
+    }
+    else if (caseDetail == null)
+    {
+        <div class="text-center py-5">
+            <div class="text-muted mb-3">
+                <i class="bi bi-exclamation-triangle" style="font-size: 3rem;"></i>
+            </div>
+            <h4 class="text-muted">Case not found</h4>
+            <p class="text-muted">The requested case could not be found or you don't have permission to view it.</p>
+            <a href="/cases" class="btn btn-primary">
+                <i class="bi bi-arrow-left me-1"></i>Back to Cases
+            </a>
+        </div>
+    }
+    else
+    {
+        <div class="row">
+            <div class="col-12">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <div>
+                        <nav aria-label="breadcrumb">
+                            <ol class="breadcrumb">
+                                <li class="breadcrumb-item"><a href="/cases">Cases</a></li>
+                                <li class="breadcrumb-item"><a href="/cases/@caseDetail.Case.Id">@caseDetail.Case.Title</a></li>
+                                <li class="breadcrumb-item active" aria-current="page">AI Analysis</li>
+                            </ol>
+                        </nav>
+                        <h1 class="h2 mb-0">AI Analysis: @caseDetail.Case.Title</h1>
+                    </div>
+                    
+                    <div class="btn-group">
+                        <a href="/cases/@caseDetail.Case.Id" class="btn btn-outline-secondary">
+                            <i class="bi bi-arrow-left me-1"></i>Back to Case
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-12">
+                <AnalysisResults 
+                    CaseId="@caseDetail.Case.Id" 
+                    CaseTitle="@caseDetail.Case.Title"
+                    OnAnalysisStarted="HandleAnalysisStarted"
+                    OnAnalysisCompleted="HandleAnalysisCompleted"
+                    OnAnalysisFailed="HandleAnalysisFailed" />
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public int CaseId { get; set; }
+
+    private CaseDetailViewModel? caseDetail;
+    private bool isLoading = true;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (CaseId <= 0)
+        {
+            isLoading = false;
+            return;
+        }
+
+        try
+        {
+            var authState = await AuthenticationStateProvider.GetAuthenticationStateAsync();
+            var user = authState.User;
+            
+            if (user.Identity?.IsAuthenticated == true)
+            {
+                var userId = user.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+                if (!string.IsNullOrEmpty(userId))
+                {
+                    caseDetail = await CaseService.GetCaseDetailAsync(CaseId, userId);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            LoggerService.LogError($"Error loading case details: {ex.Message}");
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private void HandleAnalysisStarted()
+    {
+        // Handle analysis started event
+    }
+
+    private void HandleAnalysisCompleted()
+    {
+        // Handle analysis completed event
+    }
+
+    private void HandleAnalysisFailed(string errorMessage)
+    {
+        // Handle analysis failed event
+    }
+}

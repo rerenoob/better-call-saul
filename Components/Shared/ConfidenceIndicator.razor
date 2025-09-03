@@ -1,0 +1,62 @@
+@using System.Globalization
+
+<div class="confidence-indicator">
+    <div class="d-flex align-items-center">
+        <div class="flex-grow-1 me-3">
+            <div class="progress" style="height: 8px;">
+                <div class="progress-bar @GetProgressBarClass(Score)" 
+                     role="progressbar" 
+                     style="width: @((Score * 100).ToString(CultureInfo.InvariantCulture))%"
+                     aria-valuenow="@((Score * 100).ToString(CultureInfo.InvariantCulture))"
+                     aria-valuemin="0" 
+                     aria-valuemax="100">
+                </div>
+            </div>
+        </div>
+        <div class="confidence-score">
+            <span class="badge @GetBadgeClass(Score)">
+                @((Score * 100).ToString("F0", CultureInfo.InvariantCulture))%
+            </span>
+        </div>
+    </div>
+    <div class="confidence-label mt-1">
+        <small class="text-muted">@GetConfidenceLabel(Score)</small>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public double Score { get; set; }
+
+    private string GetProgressBarClass(double score)
+    {
+        return score switch
+        {
+            >= 0.7 => "bg-success",
+            >= 0.4 => "bg-warning",
+            _ => "bg-danger"
+        };
+    }
+
+    private string GetBadgeClass(double score)
+    {
+        return score switch
+        {
+            >= 0.7 => "bg-success",
+            >= 0.4 => "bg-warning",
+            _ => "bg-danger"
+        };
+    }
+
+    private string GetConfidenceLabel(double score)
+    {
+        return score switch
+        {
+            >= 0.8 => "Very High Confidence",
+            >= 0.6 => "High Confidence",
+            >= 0.4 => "Moderate Confidence",
+            >= 0.2 => "Low Confidence",
+            _ => "Very Low Confidence"
+        };
+    }
+}

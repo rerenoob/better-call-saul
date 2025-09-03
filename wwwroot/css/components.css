@@ -1,0 +1,235 @@
+/* Component-specific styling for Better Call Saul */
+
+/* Case Card Component */
+.case-card {
+    transition: all 0.2s ease-in-out;
+    border: 1px solid #dee2e6;
+    border-radius: 0.5rem;
+}
+
+.case-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+.case-card .card-header {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+}
+
+/* Case Status Badge */
+.status-badge {
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+}
+
+.status-badge-new {
+    background-color: #007bff;
+    color: white;
+}
+
+.status-badge-in-progress {
+    background-color: #ffc107;
+    color: #212529;
+}
+
+.status-badge-completed {
+    background-color: #28a745;
+    color: white;
+}
+
+.status-badge-closed {
+    background-color: #6c757d;
+    color: white;
+}
+
+/* Confidence Indicator */
+.confidence-indicator {
+    display: inline-block;
+    height: 0.5rem;
+    background-color: #e9ecef;
+    border-radius: 0.25rem;
+    overflow: hidden;
+}
+
+.confidence-fill {
+    height: 100%;
+    transition: width 0.3s ease-in-out;
+    background: linear-gradient(90deg, #dc3545, #ffc107, #28a745);
+}
+
+.confidence-text {
+    font-size: 0.875rem;
+    font-weight: 500;
+    margin-left: 0.5rem;
+}
+
+/* Analysis Results Component */
+.analysis-results {
+    background-color: #f8f9fa;
+    border-radius: 0.5rem;
+    padding: 1.5rem;
+}
+
+.analysis-section {
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.analysis-section:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+}
+
+.analysis-highlight {
+    background-color: #fff3cd;
+    border-left: 4px solid #ffc107;
+    padding: 0.75rem 1rem;
+    border-radius: 0.25rem;
+}
+
+/* Navigation improvements */
+.navbar-brand {
+    font-weight: 700;
+    font-size: 1.5rem;
+}
+
+.navbar-nav .nav-link {
+    font-weight: 500;
+    transition: color 0.2s ease-in-out;
+}
+
+.navbar-nav .nav-link:hover {
+    color: #fff !important;
+}
+
+.navbar-nav .nav-link.active {
+    color: #fff !important;
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 0.25rem;
+}
+
+/* Dashboard improvements */
+.dashboard-stat {
+    text-align: center;
+    padding: 1.5rem;
+    background-color: #fff;
+    border-radius: 0.5rem;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    transition: all 0.2s ease-in-out;
+}
+
+.dashboard-stat:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+}
+
+.dashboard-stat-number {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #1b6ec2;
+}
+
+.dashboard-stat-label {
+    font-size: 0.875rem;
+    color: #6c757d;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* File upload improvements */
+.file-upload-area {
+    border: 2px dashed #dee2e6;
+    border-radius: 0.5rem;
+    padding: 2rem;
+    text-align: center;
+    transition: all 0.2s ease-in-out;
+    background-color: #f8f9fa;
+}
+
+.file-upload-area:hover {
+    border-color: #1b6ec2;
+    background-color: #e7f3ff;
+}
+
+.file-upload-area.dragover {
+    border-color: #1b6ec2;
+    background-color: #d4edff;
+}
+
+/* Responsive table improvements */
+.table-responsive {
+    border-radius: 0.5rem;
+    overflow: hidden;
+}
+
+.table th {
+    background-color: #f8f9fa;
+    font-weight: 600;
+    border-top: none;
+}
+
+.table-hover tbody tr:hover {
+    background-color: rgba(27, 110, 194, 0.05);
+}
+
+/* Empty state styling */
+.empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: #6c757d;
+}
+
+.empty-state-icon {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+}
+
+.empty-state-title {
+    font-size: 1.5rem;
+    margin-bottom: 0.5rem;
+    color: #495057;
+}
+
+.empty-state-description {
+    font-size: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+/* Tooltip improvements */
+.tooltip-inner {
+    background-color: #212529;
+    border-radius: 0.25rem;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+}
+
+.bs-tooltip-auto[data-popper-placement^=top] .tooltip-arrow::before,
+.bs-tooltip-top .tooltip-arrow::before {
+    border-top-color: #212529;
+}
+
+/* Focus states for accessibility */
+.btn:focus,
+.form-control:focus,
+.form-check-input:focus,
+.nav-link:focus {
+    outline: 2px solid #1b6ec2;
+    outline-offset: 2px;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+    .btn-primary {
+        background-color: #004080;
+        border-color: #00264d;
+    }
+    
+    .text-muted {
+        color: #6c757d !important;
+    }
+}

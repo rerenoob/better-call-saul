@@ -1,0 +1,108 @@
+@page
+@model better_call_saul.Areas.Identity.Pages.Account.LoginModel
+
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-lg-5 col-md-7">
+            <div class="card shadow-lg border-0">
+                <div class="card-header bg-primary text-white text-center py-4">
+                    <h2 class="h3 mb-0">
+                        <i class="bi bi-shield-lock me-2"></i>Login
+                    </h2>
+                    <p class="mb-0 opacity-75">Access your Better Call Saul account</p>
+                </div>
+                
+                <div class="card-body p-5">
+                    <form id="account" method="post">
+                        <div asp-validation-summary="All" class="alert alert-danger"></div>
+                        
+                        <div class="mb-4">
+                            <label asp-for="Input.Email" class="form-label fw-semibold">
+                                <i class="bi bi-envelope me-1"></i>Email Address
+                            </label>
+                            <input asp-for="Input.Email" class="form-control form-control-lg" 
+                                   placeholder="Enter your email" />
+                            <span asp-validation-for="Input.Email" class="text-danger small"></span>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label asp-for="Input.Password" class="form-label fw-semibold">
+                                <i class="bi bi-key me-1"></i>Password
+                            </label>
+                            <input asp-for="Input.Password" class="form-control form-control-lg" 
+                                   placeholder="Enter your password" />
+                            <span asp-validation-for="Input.Password" class="text-danger small"></span>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <div class="form-check">
+                                <input asp-for="Input.RememberMe" class="form-check-input" />
+                                <label asp-for="Input.RememberMe" class="form-check-label">
+                                    Remember me
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="d-grid mb-4">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="bi bi-box-arrow-in-right me-2"></i>Log In
+                            </button>
+                        </div>
+                        
+                        <div class="text-center">
+                            <p class="mb-2">
+                                <a id="forgot-password" asp-page="./ForgotPassword" class="text-decoration-none">
+                                    <i class="bi bi-question-circle me-1"></i>Forgot your password?
+                                </a>
+                            </p>
+                            <p class="mb-0">
+                                <a asp-page="./Register" asp-route-returnUrl="@Model.ReturnUrl" class="text-decoration-none">
+                                    <i class="bi bi-person-plus me-1"></i>Register as a new user
+                                </a>
+                            </p>
+                        </div>
+                    </form>
+                </div>
+                
+                <div class="card-footer bg-light text-center py-3">
+                    <small class="text-muted">
+                        <i class="bi bi-shield-check me-1"></i>Your data is securely protected
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .card {
+        border-radius: 1rem;
+        overflow: hidden;
+    }
+    
+    .card-header {
+        border-radius: 1rem 1rem 0 0 !important;
+    }
+    
+    .form-control-lg {
+        border-radius: 0.5rem;
+        border: 1px solid #dee2e6;
+        transition: all 0.2s ease-in-out;
+    }
+    
+    .form-control-lg:focus {
+        border-color: #1b6ec2;
+        box-shadow: 0 0 0 0.2rem rgba(27, 110, 194, 0.25);
+    }
+    
+    .btn-lg {
+        border-radius: 0.5rem;
+        font-weight: 600;
+        padding: 0.75rem 1.5rem;
+    }
+    
+    .alert {
+        border-radius: 0.5rem;
+        border: none;
+    }
+</style>

@@ -1,13 +1,24 @@
 ﻿@inherits LayoutComponentBase
 
-<div class="page">
-    <div class="sidebar">
-        <NavMenu />
-    </div>
+<head>
+    <link href="css/app.css" rel="stylesheet" />
+    <link href="css/components.css" rel="stylesheet" />
+    <link href="css/analysis.css" rel="stylesheet" />
+    <link href="css/file-upload.css" rel="stylesheet" />
+    <link href="css/responsive.css" rel="stylesheet" />
+</head>
 
-    <main>
+<div class="page">
+    <NavMenu />
+    
+    <main class="main-content">
         <div class="top-row px-4">
-            <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
+            <div class="d-flex justify-content-between align-items-center w-100">
+                <span class="text-muted small">Better Call Saul - AI Legal Assistant</span>
+                <a href="https://learn.microsoft.com/aspnet/core/" target="_blank" class="text-muted small">
+                    <i class="bi bi-info-circle me-1"></i>About
+                </a>
+            </div>
         </div>
 
         <article class="content px-4">

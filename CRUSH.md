@@ -45,5 +45,12 @@ dotnet test               # Run tests (when available)
 - Layout: `/Components/Layout/*.razor`
 - Global imports: `_Imports.razor`
 
+## Azure OpenAI Configuration
+- Configure in `appsettings.json` or environment variables
+- Required: Endpoint, ApiKey, DeploymentName
+- Optional: MaxTokens (1000), Temperature (0.3)
+- Service: `AzureOpenAIService` uses `IOptions<AzureOpenAIOptions>`
+- Validation: Service checks for empty config and logs warnings
+
 💘 Generated with Crush
 Co-Authored-By: Crush <crush@charm.land>

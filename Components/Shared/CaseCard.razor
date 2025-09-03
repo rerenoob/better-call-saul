@@ -1,0 +1,47 @@
+@using better_call_saul.Models.ViewModels
+@using Microsoft.AspNetCore.Components
+
+<div class="card h-100 shadow-sm hover-shadow transition-all" style="cursor: pointer;" @onclick="NavigateToCase">
+    <div class="card-body">
+        <div class="d-flex justify-content-between align-items-start mb-3">
+            <h5 class="card-title text-truncate fw-bold" title="@Case.Title" style="color: #1e293b;">@Case.Title</h5>
+            <CaseStatusBadge Status="@Case.Status" />
+        </div>
+        
+        <p class="card-text text-muted small mb-3" title="@Case.Description" style="min-height: 3em;">
+            @GetTruncatedDescription()
+        </p>
+        
+        <div class="d-flex justify-content-between align-items-center text-muted small border-top pt-2">
+            <span title="Created on @Case.CreatedAt.ToString("MMM dd, yyyy") ">
+                <i class="bi bi-calendar me-1"></i>@Case.CreatedAt.ToString("MMM dd, yyyy")
+            </span>
+            <span title="@Case.DocumentCount documents">
+                <i class="bi bi-file-text me-1"></i>@Case.DocumentCount
+            </span>
+        </div>
+    </div>
+</div>
+
+@code {
+    [Parameter]
+    public CaseSummary Case { get; set; } = null!;
+    
+    [Parameter]
+    public EventCallback<int> OnCaseSelected { get; set; }
+
+    private string GetTruncatedDescription()
+    {
+        if (string.IsNullOrEmpty(Case.Description))
+            return "No description";
+        
+        return Case.Description.Length > 100 
+            ? Case.Description.Substring(0, 100) + "..." 
+            : Case.Description;
+    }
+
+    private void NavigateToCase()
+    {
+        OnCaseSelected.InvokeAsync(Case.Id);
+    }
+}
