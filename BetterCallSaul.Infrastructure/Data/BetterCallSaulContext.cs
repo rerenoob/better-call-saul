@@ -1,5 +1,5 @@
 using BetterCallSaul.Core.Interfaces;
-using BetterCallSaul.Core.Models;
+using BetterCallSaul.Core.Models.Entities;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 

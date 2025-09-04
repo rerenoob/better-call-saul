@@ -1,5 +1,5 @@
-using BetterCallSaul.Core.Models;
-using BetterCallSaul.Infrastructure.Services;
+using BetterCallSaul.Core.Models.Entities;
+using BetterCallSaul.Infrastructure.Services.FileProcessing;
 using Microsoft.Extensions.Logging;
 using Moq;
 using Xunit;

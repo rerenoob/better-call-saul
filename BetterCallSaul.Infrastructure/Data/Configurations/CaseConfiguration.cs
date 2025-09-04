@@ -1,4 +1,4 @@
-using BetterCallSaul.Core.Models;
+using BetterCallSaul.Core.Models.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
