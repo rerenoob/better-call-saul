@@ -1,10 +1,8 @@
 export interface User {
   id: string;
   email: string;
-  firstName: string;
-  lastName: string;
-  role: string;
-  createdAt: string;
+  fullName: string;
+  roles: string[];
 }
 
 export interface LoginRequest {
@@ -13,10 +11,13 @@ export interface LoginRequest {
 }
 
 export interface AuthResponse {
-  user: User;
   token: string;
   refreshToken: string;
-  expiresIn: number;
+  expiration: string;
+  userId: string;
+  email: string;
+  fullName: string;
+  roles: string[];
 }
 
 export interface AuthState {

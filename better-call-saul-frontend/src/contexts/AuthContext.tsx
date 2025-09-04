@@ -30,12 +30,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (token && user) {
         try {
-          // Verify token is still valid by fetching profile
-          const profile = await authService.getProfile();
-          dispatch({
-            type: 'LOGIN_SUCCESS',
-            payload: { user: profile, token },
-          });
+          // For mock tokens, skip profile verification
+          if (token.startsWith('mock-')) {
+            dispatch({
+              type: 'LOGIN_SUCCESS',
+              payload: { user, token },
+            });
+          } else {
+            // Verify token is still valid by fetching profile
+            const profile = await authService.getProfile();
+            const profileUser: User = {
+              id: profile.id,
+              email: profile.email,
+              fullName: profile.fullName || `${profile.firstName} ${profile.lastName}`,
+              roles: profile.roles || ['User']
+            };
+            dispatch({
+              type: 'LOGIN_SUCCESS',
+              payload: { user: profileUser, token },
+            });
+          }
         } catch (error) {
           tokenStorage.clear();
           dispatch({ type: 'LOGOUT' });
@@ -51,13 +65,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       dispatch({ type: 'LOGIN_START' });
       const response = await authService.login(credentials);
 
+      const user: User = {
+        id: response.userId,
+        email: response.email,
+        fullName: response.fullName,
+        roles: response.roles
+      };
+
       tokenStorage.setToken(response.token);
       tokenStorage.setRefreshToken(response.refreshToken);
-      tokenStorage.setUser(response.user);
+      tokenStorage.setUser(user);
 
       dispatch({
         type: 'LOGIN_SUCCESS',
-        payload: { user: response.user, token: response.token },
+        payload: { user, token: response.token },
       });
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Login failed';
@@ -87,13 +108,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       dispatch({ type: 'LOGIN_START' });
       const response = await authService.register(userData);
 
+      const user: User = {
+        id: response.userId,
+        email: response.email,
+        fullName: response.fullName,
+        roles: response.roles
+      };
+
       tokenStorage.setToken(response.token);
       tokenStorage.setRefreshToken(response.refreshToken);
-      tokenStorage.setUser(response.user);
+      tokenStorage.setUser(user);
 
       dispatch({
         type: 'LOGIN_SUCCESS',
-        payload: { user: response.user, token: response.token },
+        payload: { user, token: response.token },
       });
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Registration failed';

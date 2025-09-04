@@ -29,6 +29,44 @@ public class BetterCallSaulContext : IdentityDbContext<User, Role, Guid>
         // Configure entity relationships and constraints
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(BetterCallSaulContext).Assembly);
 
+        // Configure CaseAnalysis Metadata property
+        modelBuilder.Entity<CaseAnalysis>()
+            .Property(e => e.Metadata)
+            .HasConversion(
+                v => System.Text.Json.JsonSerializer.Serialize(v, (System.Text.Json.JsonSerializerOptions?)null),
+                v => System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, object>>(v, (System.Text.Json.JsonSerializerOptions?)null));
+
+        // Configure complex types as JSON
+        modelBuilder.Entity<CaseAnalysis>()
+            .Property(e => e.KeyLegalIssues)
+            .HasConversion(
+                v => System.Text.Json.JsonSerializer.Serialize(v, (System.Text.Json.JsonSerializerOptions?)null),
+                v => System.Text.Json.JsonSerializer.Deserialize<List<string>>(v, (System.Text.Json.JsonSerializerOptions?)null) ?? new List<string>());
+
+        modelBuilder.Entity<CaseAnalysis>()
+            .Property(e => e.PotentialDefenses)
+            .HasConversion(
+                v => System.Text.Json.JsonSerializer.Serialize(v, (System.Text.Json.JsonSerializerOptions?)null),
+                v => System.Text.Json.JsonSerializer.Deserialize<List<string>>(v, (System.Text.Json.JsonSerializerOptions?)null) ?? new List<string>());
+
+        modelBuilder.Entity<CaseAnalysis>()
+            .Property(e => e.Recommendations)
+            .HasConversion(
+                v => System.Text.Json.JsonSerializer.Serialize(v, (System.Text.Json.JsonSerializerOptions?)null),
+                v => System.Text.Json.JsonSerializer.Deserialize<List<Recommendation>>(v, (System.Text.Json.JsonSerializerOptions?)null) ?? new List<Recommendation>());
+
+        modelBuilder.Entity<CaseAnalysis>()
+            .Property(e => e.EvidenceEvaluation)
+            .HasConversion(
+                v => System.Text.Json.JsonSerializer.Serialize(v, (System.Text.Json.JsonSerializerOptions?)null),
+                v => System.Text.Json.JsonSerializer.Deserialize<EvidenceEvaluation>(v, (System.Text.Json.JsonSerializerOptions?)null) ?? new EvidenceEvaluation());
+
+        modelBuilder.Entity<CaseAnalysis>()
+            .Property(e => e.TimelineAnalysis)
+            .HasConversion(
+                v => System.Text.Json.JsonSerializer.Serialize(v, (System.Text.Json.JsonSerializerOptions?)null),
+                v => System.Text.Json.JsonSerializer.Deserialize<TimelineAnalysis>(v, (System.Text.Json.JsonSerializerOptions?)null) ?? new TimelineAnalysis());
+
         // Soft delete query filter
         modelBuilder.Entity<Case>().HasQueryFilter(c => !c.IsDeleted);
         modelBuilder.Entity<Document>().HasQueryFilter(d => !d.IsDeleted);
