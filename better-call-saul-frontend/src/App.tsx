@@ -334,8 +334,10 @@ function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <LoginForm onSuccess={handleLoginSuccess} />
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-gray-100 p-4 sm:p-6 lg:p-8">
+      <div className="w-full max-w-sm sm:max-w-md transform transition-all duration-300 hover:scale-[1.01]">
+        <LoginForm onSuccess={handleLoginSuccess} />
+      </div>
     </div>
   );
 }
