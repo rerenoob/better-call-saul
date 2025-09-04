@@ -7,10 +7,9 @@ You are an high-level software engineer with access to an AI tool that can perfo
 ## Objective
 Read through the file RULES.md for additional guidance. Use the AI to complete the following tasks in order:
 
-1. Planning
-2. Task breakdown
-3. Task Implementation
-4. Task Verification
+1. Task breakdown
+2. Task Implementation
+3. Task Verification
 
 ## Important notes
 
