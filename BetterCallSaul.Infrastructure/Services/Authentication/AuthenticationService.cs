@@ -71,7 +71,7 @@ public class AuthenticationService : IAuthenticationService
         return result.Succeeded ? user : null;
     }
 
-    public async Task<bool> ValidateToken(string token)
+    public Task<bool> ValidateToken(string token)
     {
         try
         {
@@ -90,11 +90,11 @@ public class AuthenticationService : IAuthenticationService
                 ClockSkew = TimeSpan.Zero
             }, out _);
 
-            return true;
+            return Task.FromResult(true);
         }
         catch
         {
-            return false;
+            return Task.FromResult(false);
         }
     }
 
@@ -106,7 +106,7 @@ public class AuthenticationService : IAuthenticationService
         return Task.FromResult(Convert.ToBase64String(randomNumber));
     }
 
-    public async Task<(string Token, string RefreshToken)> RefreshToken(string refreshToken)
+    public Task<(string Token, string RefreshToken)> RefreshToken(string refreshToken)
     {
         // Implementation for refresh token logic
         // This would typically involve validating the refresh token

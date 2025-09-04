@@ -23,7 +23,7 @@ public class JustiaService : IJustiaService
         _logger = logger;
     }
 
-    public async Task<IEnumerable<JustiaSearchResult>> SearchStatutesAsync(
+    public Task<IEnumerable<JustiaSearchResult>> SearchStatutesAsync(
         string query,
         string? jurisdiction = null,
         string? code = null,
@@ -45,7 +45,7 @@ public class JustiaService : IJustiaService
             var results = GenerateMockStatuteSearchResults(query, jurisdiction, code, category, limit);
 
             _cache.Set(cacheKey, results, TimeSpan.FromMinutes(CacheDurationMinutes));
-            return results;
+            return Task.FromResult(results);
         }
         catch (Exception ex)
         {
@@ -54,7 +54,7 @@ public class JustiaService : IJustiaService
         }
     }
 
-    public async Task<LegalStatute?> GetStatuteAsync(string code, string? section = null)
+    public Task<LegalStatute?> GetStatuteAsync(string code, string? section = null)
     {
         var cacheKey = $"justia_statute_{code}_{section}";
 
@@ -83,7 +83,7 @@ public class JustiaService : IJustiaService
         }
     }
 
-    public async Task<IEnumerable<LegalStatute>> GetRelatedStatutesAsync(string code, string section, int limit = 10)
+    public Task<IEnumerable<LegalStatute>> GetRelatedStatutesAsync(string code, string section, int limit = 10)
     {
         var cacheKey = $"justia_related_{code}_{section}_{limit}";
 
@@ -99,7 +99,7 @@ public class JustiaService : IJustiaService
             var results = GenerateMockRelatedStatutes(code, section, limit);
 
             _cache.Set(cacheKey, results, TimeSpan.FromMinutes(CacheDurationMinutes));
-            return results;
+            return Task.FromResult(results);
         }
         catch (Exception ex)
         {
@@ -108,7 +108,7 @@ public class JustiaService : IJustiaService
         }
     }
 
-    public async Task<IEnumerable<JustiaSearchResult>> SearchRegulationsAsync(
+    public Task<IEnumerable<JustiaSearchResult>> SearchRegulationsAsync(
         string query,
         string? agency = null,
         string? jurisdiction = null,
@@ -129,7 +129,7 @@ public class JustiaService : IJustiaService
             var results = GenerateMockRegulationSearchResults(query, agency, jurisdiction, limit);
 
             _cache.Set(cacheKey, results, TimeSpan.FromMinutes(CacheDurationMinutes));
-            return results;
+            return Task.FromResult(results);
         }
         catch (Exception ex)
         {
@@ -138,7 +138,7 @@ public class JustiaService : IJustiaService
         }
     }
 
-    public async Task<IEnumerable<JustiaSearchResult>> UnifiedSearchAsync(
+    public Task<IEnumerable<JustiaSearchResult>> UnifiedSearchAsync(
         string query,
         string? jurisdiction = null,
         string? sourceType = null,
@@ -197,7 +197,7 @@ public class JustiaService : IJustiaService
             });
         }
 
-        return results;
+        return Task.FromResult(results);
     }
 
     private LegalStatute? GenerateMockStatute(string code, string? section)
@@ -237,7 +237,7 @@ public class JustiaService : IJustiaService
             });
         }
 
-        return results;
+        return Task.FromResult(results);
     }
 
     private IEnumerable<JustiaSearchResult> GenerateMockRegulationSearchResults(
@@ -262,6 +262,6 @@ public class JustiaService : IJustiaService
             });
         }
 
-        return results;
+        return Task.FromResult(results);
     }
 }

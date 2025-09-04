@@ -23,7 +23,7 @@ public class CourtListenerService : ICourtListenerService
         _logger = logger;
     }
 
-    public async Task<IEnumerable<LegalCase>> SearchCasesAsync(
+    public Task<IEnumerable<LegalCase>> SearchCasesAsync(
         string query,
         string? jurisdiction = null,
         string? court = null,
@@ -71,7 +71,7 @@ public class CourtListenerService : ICourtListenerService
             var results = GenerateMockSearchResults(query, limit);
 
             _cache.Set(cacheKey, results, TimeSpan.FromMinutes(CacheDurationMinutes));
-            return results;
+            return Task.FromResult(results);
         }
         catch (Exception ex)
         {
@@ -80,13 +80,13 @@ public class CourtListenerService : ICourtListenerService
         }
     }
 
-    public async Task<LegalCase?> GetCaseByCitationAsync(string citation)
+    public Task<LegalCase?> GetCaseByCitationAsync(string citation)
     {
         var cacheKey = $"courtlistener_case_{citation}";
 
         if (_cache.TryGetValue(cacheKey, out LegalCase? cachedCase) && cachedCase != null)
         {
-            return cachedCase;
+            return Task.FromResult(cachedCase);
         }
 
         try
@@ -100,7 +100,7 @@ public class CourtListenerService : ICourtListenerService
                 _cache.Set(cacheKey, legalCase, TimeSpan.FromMinutes(CacheDurationMinutes));
             }
 
-            return legalCase;
+            return Task.FromResult(legalCase);
         }
         catch (Exception ex)
         {
@@ -109,7 +109,7 @@ public class CourtListenerService : ICourtListenerService
         }
     }
 
-    public async Task<CourtOpinion?> GetOpinionAsync(string opinionId)
+    public Task<CourtOpinion?> GetOpinionAsync(string opinionId)
     {
         var cacheKey = $"courtlistener_opinion_{opinionId}";
 
@@ -129,7 +129,7 @@ public class CourtListenerService : ICourtListenerService
                 _cache.Set(cacheKey, opinion, TimeSpan.FromMinutes(CacheDurationMinutes));
             }
 
-            return opinion;
+            return Task.FromResult(opinion);
         }
         catch (Exception ex)
         {
@@ -138,7 +138,7 @@ public class CourtListenerService : ICourtListenerService
         }
     }
 
-    public async Task<IEnumerable<LegalCase>> GetRelatedCasesAsync(string citation, int limit = 10)
+    public Task<IEnumerable<LegalCase>> GetRelatedCasesAsync(string citation, int limit = 10)
     {
         var cacheKey = $"courtlistener_related_{citation}_{limit}";
 
@@ -154,7 +154,7 @@ public class CourtListenerService : ICourtListenerService
             var results = GenerateMockRelatedCases(citation, limit);
 
             _cache.Set(cacheKey, results, TimeSpan.FromMinutes(CacheDurationMinutes));
-            return results;
+            return Task.FromResult(results);
         }
         catch (Exception ex)
         {
@@ -163,7 +163,7 @@ public class CourtListenerService : ICourtListenerService
         }
     }
 
-    public async Task<IEnumerable<LegalCase>> SearchByLegalTopicsAsync(IEnumerable<string> topics, int limit = 20)
+    public Task<IEnumerable<LegalCase>> SearchByLegalTopicsAsync(IEnumerable<string> topics, int limit = 20)
     {
         var topicsKey = string.Join("_", topics.OrderBy(t => t));
         var cacheKey = $"courtlistener_topics_{topicsKey}_{limit}";
@@ -180,7 +180,7 @@ public class CourtListenerService : ICourtListenerService
             var results = GenerateMockTopicSearchResults(topics, limit);
 
             _cache.Set(cacheKey, results, TimeSpan.FromMinutes(CacheDurationMinutes));
-            return results;
+            return Task.FromResult(results);
         }
         catch (Exception ex)
         {
@@ -210,7 +210,7 @@ public class CourtListenerService : ICourtListenerService
             });
         }
 
-        return results;
+        return Task.FromResult(results);
     }
 
     private LegalCase? GenerateMockCaseFromCitation(string citation)
@@ -273,7 +273,7 @@ public class CourtListenerService : ICourtListenerService
             });
         }
 
-        return results;
+        return Task.FromResult(results);
     }
 
     private IEnumerable<LegalCase> GenerateMockTopicSearchResults(IEnumerable<string> topics, int limit)
@@ -298,6 +298,6 @@ public class CourtListenerService : ICourtListenerService
             });
         }
 
-        return results;
+        return Task.FromResult(results);
     }
 }

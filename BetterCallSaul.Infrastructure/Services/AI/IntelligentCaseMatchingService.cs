@@ -192,16 +192,16 @@ public class IntelligentCaseMatchingService : ICaseMatchingService
         }
     }
 
-    public async Task<decimal> CalculateTextSimilarityAsync(string text1, string text2)
+    public Task<decimal> CalculateTextSimilarityAsync(string text1, string text2)
     {
         try
         {
-            return _textSimilarity.CalculateOverallSimilarity(text1, text2);
+            return Task.FromResult(_textSimilarity.CalculateOverallSimilarity(text1, text2));
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error calculating text similarity");
-            return 0m;
+            return Task.FromResult(0m);
         }
     }
 

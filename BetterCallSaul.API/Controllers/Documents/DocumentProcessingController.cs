@@ -88,6 +88,7 @@ public class DocumentProcessingController : ControllerBase
     {
         try
         {
+            await Task.CompletedTask; // Avoid async warning
             var supportedExtensions = new[] { ".pdf", ".doc", ".docx", ".txt" };
             return Ok(supportedExtensions);
         }

@@ -68,7 +68,7 @@ public class AuthController : ControllerBase
 
             return Ok(response);
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             // Return mock user if database is not working
             if (request.Email == "admin@bettercallsaul.com" && request.Password == "admin123")
