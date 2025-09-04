@@ -1,0 +1,40 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BetterCallSaul.API", "BetterCallSaul.API\BetterCallSaul.API.csproj", "{1869B43C-EBE9-453E-8E38-FED12E39E533}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BetterCallSaul.Core", "BetterCallSaul.Core\BetterCallSaul.Core.csproj", "{D54C9239-5A29-4029-BA1F-233B38781E76}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BetterCallSaul.Infrastructure", "BetterCallSaul.Infrastructure\BetterCallSaul.Infrastructure.csproj", "{D22D1108-84C2-4D95-A505-EF28A59F4051}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BetterCallSaul.Tests", "BetterCallSaul.Tests\BetterCallSaul.Tests.csproj", "{EC83BAAD-548B-4542-88FD-D408CB68FACE}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{1869B43C-EBE9-453E-8E38-FED12E39E533}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1869B43C-EBE9-453E-8E38-FED12E39E533}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1869B43C-EBE9-453E-8E38-FED12E39E533}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1869B43C-EBE9-453E-8E38-FED12E39E533}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D54C9239-5A29-4029-BA1F-233B38781E76}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D54C9239-5A29-4029-BA1F-233B38781E76}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D54C9239-5A29-4029-BA1F-233B38781E76}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D54C9239-5A29-4029-BA1F-233B38781E76}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D22D1108-84C2-4D95-A505-EF28A59F4051}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D22D1108-84C2-4D95-A505-EF28A59F4051}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D22D1108-84C2-4D95-A505-EF28A59F4051}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D22D1108-84C2-4D95-A505-EF28A59F4051}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EC83BAAD-548B-4542-88FD-D408CB68FACE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EC83BAAD-548B-4542-88FD-D408CB68FACE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EC83BAAD-548B-4542-88FD-D408CB68FACE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EC83BAAD-548B-4542-88FD-D408CB68FACE}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
