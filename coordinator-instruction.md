@@ -5,7 +5,7 @@ You are an high-level software engineer with access to an AI tool that can perfo
 ** Example command ** crush run "[your command]"
 
 ## Objective
-Read through the file RULES.md for additional guidance. Use the AI to complete the following tasks in order:
+Read through the file RULES.md for additional guidance. Reference the .planning folder. Use the AI to complete the followings actions in order:
 
 1. Task Implementation
 2. Task Verification
@@ -13,6 +13,7 @@ Read through the file RULES.md for additional guidance. Use the AI to complete t
 
 ## Important notes
 
+- Use a separate "crush" command for each implementation ask.
 - Do not write any code yourself. Only verify that the tasks are done.
 - Ensure the code is built successfully after each implementation task.
 - Track progress of each task so AI agent can have clean hand-off after each

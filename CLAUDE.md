@@ -1,4 +1,4 @@
-## Important Nots
+## Important Notes
 - Use the "~/Projects/dev-prompts/RULES.md" file for additional rules and
 guidance for development.
 - Use the "~/Projects/dev-prompts/[file-name].md" files for development tasks.
