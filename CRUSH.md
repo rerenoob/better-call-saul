@@ -11,7 +11,7 @@
 - **Backend**: .NET 8 Web API with Entity Framework Core
 - **Frontend**: React 18 + TypeScript with Vite
 - **Authentication**: JWT with refresh tokens
-- **Database**: SQL Server with Entity Framework Core
+- **Database**: SQL Server (production) / SQLite (development) with Entity Framework Core
 - **Styling**: Tailwind CSS
 - **Real-time**: SignalR for progress updates
 - **Testing**: xUnit (backend), Jest/Vitest (frontend), Playwright (E2E)

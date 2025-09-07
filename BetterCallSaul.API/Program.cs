@@ -37,8 +37,18 @@ builder.Services.AddSwaggerGen(c =>
 });
 
 // Add Entity Framework
-builder.Services.AddDbContext<BetterCallSaulContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+if (builder.Environment.IsDevelopment())
+{
+    // Use SQLite for local development on Linux
+    builder.Services.AddDbContext<BetterCallSaulContext>(options =>
+        options.UseSqlite("Data Source=BetterCallSaul.db"));
+}
+else
+{
+    // Use SQL Server for production
+    builder.Services.AddDbContext<BetterCallSaulContext>(options =>
+        options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+}
 
 // Add ASP.NET Core Identity
 builder.Services.AddIdentity<User, Role>(options =>
@@ -118,6 +128,13 @@ builder.Services.AddCors(options =>
 });
 
 var app = builder.Build();
+
+// Initialize database on startup
+using (var scope = app.Services.CreateScope())
+{
+    var context = scope.ServiceProvider.GetRequiredService<BetterCallSaulContext>();
+    context.Database.EnsureCreated();
+}
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
