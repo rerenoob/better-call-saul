@@ -147,6 +147,8 @@ public class AuthenticationServiceTests
     {
         // Arrange
         var user = new User { Id = Guid.NewGuid(), Email = "test@example.com", FirstName = "Test", LastName = "User", IsActive = true };
+        _userManagerMock.Setup(um => um.GetRolesAsync(user))
+            .ReturnsAsync(new List<string> { "Attorney" });
         var token = await _authService.GenerateJwtToken(user);
 
         // Act
@@ -173,6 +175,8 @@ public class AuthenticationServiceTests
         _configurationMock.Setup(c => c["JwtSettings:ExpiryMinutes"]).Returns("0.001"); // 60ms
         
         var user = new User { Id = Guid.NewGuid(), Email = "test@example.com", FirstName = "Test", LastName = "User", IsActive = true };
+        _userManagerMock.Setup(um => um.GetRolesAsync(user))
+            .ReturnsAsync(new List<string> { "Attorney" });
         var token = await _authService.GenerateJwtToken(user);
         
         await Task.Delay(100); // Wait for token to expire
