@@ -11,17 +11,22 @@ public class BetterCallSaulContext : IdentityDbContext<User, Role, Guid>
     {
     }
 
-    public DbSet<Case> Cases { get; set; } = null!;
-    public DbSet<Document> Documents { get; set; } = null!;
-    public DbSet<AuditLog> AuditLogs { get; set; } = null!;
-    public DbSet<CaseAnalysis> CaseAnalyses { get; set; } = null!;
-    public DbSet<LegalCase> LegalCases { get; set; } = null!;
-    public DbSet<CourtOpinion> CourtOpinions { get; set; } = null!;
-    public DbSet<JustiaSearchResult> JustiaSearchResults { get; set; } = null!;
-    public DbSet<LegalStatute> LegalStatutes { get; set; } = null!;
-    public DbSet<CaseMatch> CaseMatches { get; set; } = null!;
-    public DbSet<MatchingCriteria> MatchingCriteria { get; set; } = null!;
-    public DbSet<RegistrationCode> RegistrationCodes { get; set; } = null!;
+    // Parameterless constructor for testing
+    protected BetterCallSaulContext() : base()
+    {
+    }
+
+    public virtual DbSet<Case> Cases { get; set; } = null!;
+    public virtual DbSet<Document> Documents { get; set; } = null!;
+    public virtual DbSet<AuditLog> AuditLogs { get; set; } = null!;
+    public virtual DbSet<CaseAnalysis> CaseAnalyses { get; set; } = null!;
+    public virtual DbSet<LegalCase> LegalCases { get; set; } = null!;
+    public virtual DbSet<CourtOpinion> CourtOpinions { get; set; } = null!;
+    public virtual DbSet<JustiaSearchResult> JustiaSearchResults { get; set; } = null!;
+    public virtual DbSet<LegalStatute> LegalStatutes { get; set; } = null!;
+    public virtual DbSet<CaseMatch> CaseMatches { get; set; } = null!;
+    public virtual DbSet<MatchingCriteria> MatchingCriteria { get; set; } = null!;
+    public virtual DbSet<RegistrationCode> RegistrationCodes { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
