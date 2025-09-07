@@ -5,7 +5,6 @@ export const caseService = {
   getCases: async (filters?: CaseFilters): Promise<Case[]> => {
     const params = new URLSearchParams();
     if (filters?.status) params.append('status', filters.status);
-    if (filters?.priority) params.append('priority', filters.priority);
     if (filters?.assignedTo) params.append('assignedTo', filters.assignedTo);
     if (filters?.search) params.append('search', filters.search);
 
@@ -39,6 +38,11 @@ export const caseService = {
 
   getRecentCases: async (limit: number = 10): Promise<Case[]> => {
     const response = await apiClient.get<Case[]>(`/cases/recent?limit=${limit}`);
+    return response.data;
+  },
+
+  chatWithAI: async (caseId: string, message: string): Promise<{ success: boolean; generatedText?: string; errorMessage?: string }> => {
+    const response = await apiClient.post(`/cases/${caseId}/chat`, { message });
     return response.data;
   },
 };

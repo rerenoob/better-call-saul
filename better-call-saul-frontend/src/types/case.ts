@@ -1,29 +1,40 @@
 export interface Case {
   id: string;
+  caseNumber: string;
   title: string;
-  description: string;
+  description?: string;
   status: CaseStatus;
-  priority: CasePriority;
-  assignedTo: string;
+  type: CaseType;
+  court?: string;
+  judge?: string;
+  filedDate?: string;
+  hearingDate?: string;
+  trialDate?: string;
+  successProbability?: number;
+  estimatedValue?: number;
+  userId: string;
   createdAt: string;
-  updatedAt: string;
-  dueDate?: string;
-  tags: string[];
+  updatedAt?: string;
+  isDeleted?: boolean;
 }
 
 export enum CaseStatus {
-  DRAFT = 'DRAFT',
-  ACTIVE = 'ACTIVE',
-  REVIEW = 'REVIEW',
-  COMPLETED = 'COMPLETED',
-  ARCHIVED = 'ARCHIVED',
+  NEW = 'New',
+  INVESTIGATION = 'Investigation',
+  DISCOVERY = 'Discovery',
+  PRETRIAL = 'PreTrial',
+  TRIAL = 'Trial',
+  SETTLEMENT = 'Settlement',
+  CLOSED = 'Closed',
+  APPEALED = 'Appealed',
+  DISMISSED = 'Dismissed',
 }
 
-export enum CasePriority {
-  LOW = 'LOW',
-  MEDIUM = 'MEDIUM',
-  HIGH = 'HIGH',
-  URGENT = 'URGENT',
+export enum CaseType {
+  CRIMINAL = 'Criminal',
+  CIVIL = 'Civil',
+  FAMILY = 'Family',
+  IMMIGRATION = 'Immigration',
 }
 
 export interface CaseStatistics {
@@ -31,9 +42,6 @@ export interface CaseStatistics {
   active: number;
   completed: number;
   overdue: number;
-  byPriority: {
-    [key in CasePriority]: number;
-  };
   byStatus: {
     [key in CaseStatus]: number;
   };
@@ -41,7 +49,6 @@ export interface CaseStatistics {
 
 export interface CaseFilters {
   status?: CaseStatus;
-  priority?: CasePriority;
   assignedTo?: string;
   search?: string;
 }
