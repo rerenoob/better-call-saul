@@ -7,6 +7,7 @@ on:
       - 'BetterCallSaul.API/**'
       - 'BetterCallSaul.Core/**'
       - 'BetterCallSaul.Infrastructure/**'
+      - 'BetterCallSaul.Tests/**'
       - 'BetterCallSaul.sln'
       - '.github/workflows/deploy-backend.yml'
   workflow_dispatch:
