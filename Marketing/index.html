@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Better Call Saul - AI-Powered Legal Assistant for Public Defenders</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .section-fade-in {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+        }
+        .section-fade-in.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-700">
+
+    <!-- Header -->
+    <header class="bg-slate-50/80 backdrop-blur-lg sticky top-0 z-50 border-b border-slate-200">
+        <div class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <a href="#" class="flex items-center space-x-2">
+                <div class="bg-slate-800 text-white rounded-lg p-2">
+                    <i data-lucide="scale" class="w-6 h-6"></i>
+                </div>
+                <span class="text-xl font-bold text-slate-800">Better Call Saul</span>
+            </a>
+            <nav class="hidden md:flex items-center space-x-8">
+                <a href="#features" class="text-sm font-medium hover:text-blue-600 transition-colors">Features</a>
+                <a href="#how-it-works" class="text-sm font-medium hover:text-blue-600 transition-colors">How It Works</a>
+                <a href="#pricing" class="text-sm font-medium hover:text-blue-600 transition-colors">Pricing</a>
+            </nav>
+            <a href="#contact" class="bg-blue-600 text-white font-semibold py-2 px-5 rounded-lg hover:bg-blue-700 transition-colors hidden md:flex">
+                Request a Demo
+            </a>
+            <button id="mobile-menu-button" class="md:hidden">
+                <i data-lucide="menu" class="w-6 h-6"></i>
+            </button>
+        </div>
+        <!-- Mobile Menu -->
+        <div id="mobile-menu" class="hidden md:hidden px-6 pb-4 space-y-2">
+             <a href="#features" class="block text-sm font-medium hover:text-blue-600 transition-colors py-2">Features</a>
+             <a href="#how-it-works" class="block text-sm font-medium hover:text-blue-600 transition-colors py-2">How It Works</a>
+             <a href="#pricing" class="block text-sm font-medium hover:text-blue-600 transition-colors py-2">Pricing</a>
+             <a href="#contact" class="block bg-blue-600 text-white font-semibold py-2 px-5 rounded-lg hover:bg-blue-700 transition-colors text-center mt-2">
+                Request a Demo
+            </a>
+        </div>
+    </header>
+
+    <main>
+        <!-- Hero Section -->
+        <section class="py-20 md:py-32 bg-white">
+            <div class="container mx-auto px-6 text-center">
+                <h1 class="text-4xl md:text-6xl font-extrabold text-slate-900 leading-tight">
+                    Level the Playing Field in the <span class="text-blue-600">Justice System</span>
+                </h1>
+                <p class="mt-6 max-w-3xl mx-auto text-lg text-slate-600">
+                    Better Call Saul is the AI-powered legal assistant designed exclusively for public defenders. Turn overwhelming caseloads into winnable defense strategies with data-driven insights.
+                </p>
+                <div class="mt-10 flex justify-center items-center space-x-4">
+                    <a href="#contact" class="bg-blue-600 text-white font-semibold py-3 px-8 rounded-lg hover:bg-blue-700 transition-transform hover:scale-105">
+                        Get a Free Demo
+                    </a>
+                    <a href="#features" class="font-semibold py-3 px-8 rounded-lg transition-transform hover:scale-105 flex items-center">
+                        Learn More <i data-lucide="arrow-right" class="ml-2 w-5 h-5"></i>
+                    </a>
+                </div>
+                 <div class="mt-16 max-w-5xl mx-auto">
+                    <!-- Live product dashboard preview -->
+                    <div class="bg-slate-100 rounded-xl shadow-2xl p-8 border border-slate-200">
+                        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                            <!-- Case Card 1 -->
+                            <div class="bg-white p-6 rounded-xl shadow-md transform hover:-translate-y-1 transition-transform duration-300">
+                                <div class="flex justify-between items-start mb-4">
+                                    <h2 class="text-lg font-bold text-slate-800 text-left">State v. Johnson</h2>
+                                    <span class="text-xs font-semibold bg-green-100 text-green-800 px-2 py-1 rounded-full">High Priority</span>
+                                </div>
+                                <p class="text-sm text-slate-500 mb-4 text-left">Client: Michael Johnson</p>
+                                <div class="space-y-3">
+                                    <div class="flex justify-between items-center text-sm">
+                                        <span class="text-slate-600 font-medium">AI Success Prediction</span>
+                                        <span class="font-bold text-green-600">82%</span>
+                                    </div>
+                                    <div class="w-full bg-slate-200 rounded-full h-2">
+                                        <div class="bg-green-500 h-2 rounded-full" style="width: 82%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Case Card 2 -->
+                            <div class="bg-white p-6 rounded-xl shadow-md transform hover:-translate-y-1 transition-transform duration-300">
+                                <div class="flex justify-between items-start mb-4">
+                                    <h2 class="text-lg font-bold text-slate-800 text-left">State v. Chen</h2>
+                                    <span class="text-xs font-semibold bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full">Medium Priority</span>
+                                </div>
+                                <p class="text-sm text-slate-500 mb-4 text-left">Client: Wei Chen</p>
+                                <div class="space-y-3">
+                                    <div class="flex justify-between items-center text-sm">
+                                        <span class="text-slate-600 font-medium">AI Success Prediction</span>
+                                        <span class="font-bold text-yellow-600">55%</span>
+                                    </div>
+                                    <div class="w-full bg-slate-200 rounded-full h-2">
+                                        <div class="bg-yellow-500 h-2 rounded-full" style="width: 55%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- Case Card 3 -->
+                            <div class="bg-white p-6 rounded-xl shadow-md transform hover:-translate-y-1 transition-transform duration-300">
+                                <div class="flex justify-between items-start mb-4">
+                                    <h2 class="text-lg font-bold text-slate-800 text-left">State v. Rodriguez</h2>
+                                    <span class="text-xs font-semibold bg-red-100 text-red-800 px-2 py-1 rounded-full">Low Priority</span>
+                                </div>
+                                <p class="text-sm text-slate-500 mb-4 text-left">Client: Maria Rodriguez</p>
+                                <div class="space-y-3">
+                                    <div class="flex justify-between items-center text-sm">
+                                        <span class="text-slate-600 font-medium">AI Success Prediction</span>
+                                        <span class="font-bold text-red-600">28%</span>
+                                    </div>
+                                    <div class="w-full bg-slate-200 rounded-full h-2">
+                                        <div class="bg-red-500 h-2 rounded-full" style="width: 28%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Problem Section -->
+        <section class="py-20">
+            <div class="container mx-auto px-6 text-center section-fade-in">
+                <h2 class="text-3xl md:text-4xl font-bold text-slate-900">Overwhelmed by Caseloads? You're Not Alone.</h2>
+                <p class="mt-4 max-w-2xl mx-auto text-slate-600">Public defenders are the backbone of a fair justice system, but you're facing unprecedented challenges.</p>
+                <div class="mt-12 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                    <div class="bg-white p-6 rounded-lg shadow-md">
+                        <i data-lucide="clock" class="w-10 h-10 text-red-500 mx-auto"></i>
+                        <h3 class="mt-4 text-lg font-semibold">Inadequate Case Time</h3>
+                        <p class="mt-2 text-sm text-slate-500">Not enough hours in the day for thorough case review and analysis.</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg shadow-md">
+                        <i data-lucide="gavel" class="w-10 h-10 text-red-500 mx-auto"></i>
+                        <h3 class="mt-4 text-lg font-semibold">Plea Deal Pressure</h3>
+                        <p class="mt-2 text-sm text-slate-500">Forced to recommend plea deals due to a lack of resources, not a lack of defense.</p>
+                    </div>
+                    <div class="bg-white p-6 rounded-lg shadow-md">
+                        <i data-lucide="search" class="w-10 h-10 text-red-500 mx-auto"></i>
+                        <h3 class="mt-4 text-lg font-semibold">Limited Research Tools</h3>
+                        <p class="mt-2 text-sm text-slate-500">Struggling with fragmented access to comprehensive legal databases.</p>
+                    </div>
+                     <div class="bg-white p-6 rounded-lg shadow-md">
+                        <i data-lucide="files" class="w-10 h-10 text-red-500 mx-auto"></i>
+                        <h3 class="mt-4 text-lg font-semibold">Inefficient Workflows</h3>
+                        <p class="mt-2 text-sm text-slate-500">Burdensome administrative tasks that steal time from client representation.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Features Section -->
+        <section id="features" class="py-20 bg-white section-fade-in">
+            <div class="container mx-auto px-6">
+                <div class="text-center">
+                    <h2 class="text-3xl md:text-4xl font-bold text-slate-900">Your AI-Powered Advantage</h2>
+                    <p class="mt-4 max-w-2xl mx-auto text-slate-600">Our platform provides the critical tools you need to build a stronger defense, faster.</p>
+                </div>
+                <div class="mt-16 grid md:grid-cols-3 gap-10">
+                    <div class="text-center p-6">
+                        <div class="bg-blue-100 text-blue-600 rounded-full w-16 h-16 flex items-center justify-center mx-auto">
+                            <i data-lucide="brain-circuit" class="w-8 h-8"></i>
+                        </div>
+                        <h3 class="mt-5 text-xl font-semibold">Case Analysis & Success Prediction</h3>
+                        <p class="mt-2 text-slate-500">Upload case files for an automated review. Our AI assesses viability, predicts outcomes, and recommends whether to pursue a trial or negotiate a plea.</p>
+                    </div>
+                     <div class="text-center p-6">
+                        <div class="bg-blue-100 text-blue-600 rounded-full w-16 h-16 flex items-center justify-center mx-auto">
+                           <i data-lucide="library" class="w-8 h-8"></i>
+                        </div>
+                        <h3 class="mt-5 text-xl font-semibold">Integrated Legal Research</h3>
+                        <p class="mt-2 text-slate-500">Get seamless access to public law databases. Our AI intelligently matches your case with relevant case law and precedents in real-time.</p>
+                    </div>
+                     <div class="text-center p-6">
+                        <div class="bg-blue-100 text-blue-600 rounded-full w-16 h-16 flex items-center justify-center mx-auto">
+                           <i data-lucide="sliders-horizontal" class="w-8 h-8"></i>
+                        </div>
+                        <h3 class="mt-5 text-xl font-semibold">Workflow Optimization</h3>
+                        <p class="mt-2 text-slate-500">Automate document summaries, prioritize your cases effectively, and integrate with your existing workflows to save hundreds of hours per year.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- How it Works Section -->
+        <section id="how-it-works" class="py-20 section-fade-in">
+             <div class="container mx-auto px-6">
+                <div class="text-center">
+                    <h2 class="text-3xl md:text-4xl font-bold text-slate-900">Get Started in 3 Simple Steps</h2>
+                    <p class="mt-4 max-w-2xl mx-auto text-slate-600">Focus on your clients, not on paperwork. Our process is secure, simple, and intuitive.</p>
+                </div>
+                <div class="mt-16 relative">
+                    <!-- Dotted line for desktop -->
+                    <div class="hidden lg:block absolute top-1/2 left-0 w-full h-0.5 border-t-2 border-dashed border-slate-300 -translate-y-1/2"></div>
+                    <div class="grid lg:grid-cols-3 gap-16 relative">
+                        <div class="text-center">
+                            <div class="relative z-10 bg-white w-20 h-20 flex items-center justify-center rounded-full mx-auto border-4 border-slate-200 shadow-lg">
+                                 <span class="text-3xl font-bold text-blue-600">1</span>
+                            </div>
+                            <h3 class="mt-5 text-xl font-semibold">Upload Case Files</h3>
+                            <p class="mt-2 text-slate-500">Securely drag and drop your case documents—police reports, discovery, motions—into our encrypted platform.</p>
+                        </div>
+                        <div class="text-center">
+                             <div class="relative z-10 bg-white w-20 h-20 flex items-center justify-center rounded-full mx-auto border-4 border-slate-200 shadow-lg">
+                                <span class="text-3xl font-bold text-blue-600">2</span>
+                            </div>
+                            <h3 class="mt-5 text-xl font-semibold">Receive AI Analysis</h3>
+                            <p class="mt-2 text-slate-500">In minutes, our AI analyzes the documents, identifies strengths and weaknesses, and generates a comprehensive report.</p>
+                        </div>
+                        <div class="text-center">
+                             <div class="relative z-10 bg-white w-20 h-20 flex items-center justify-center rounded-full mx-auto border-4 border-slate-200 shadow-lg">
+                                <span class="text-3xl font-bold text-blue-600">3</span>
+                            </div>
+                            <h3 class="mt-5 text-xl font-semibold">Build Your Strategy</h3>
+                            <p class="mt-2 text-slate-500">Use the data-driven insights, success predictions, and legal research to build a powerful, winning defense strategy.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Testimonials Section -->
+        <section class="py-20 bg-white section-fade-in">
+            <div class="container mx-auto px-6">
+                <div class="text-center">
+                    <h2 class="text-3xl md:text-4xl font-bold text-slate-900">Trusted by Public Defenders</h2>
+                </div>
+                <div class="mt-12 grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <div class="bg-slate-50 p-8 rounded-lg">
+                        <p class="text-slate-600">"Better Call Saul has been a game-changer. I'm saving at least 10 hours a week on case review. The AI's ability to spot case law I might have missed is incredible."</p>
+                        <div class="mt-6 flex items-center">
+                             <img src="https://placehold.co/48x48/E2E8F0/475569?text=JS" class="rounded-full" alt="User Avatar">
+                            <div class="ml-4">
+                                <p class="font-semibold text-slate-800">Jessica Singh</p>
+                                <p class="text-sm text-slate-500">Public Defender, Harris County</p>
+                            </div>
+                        </div>
+                    </div>
+                     <div class="bg-slate-50 p-8 rounded-lg">
+                        <p class="text-slate-600">"The success prediction feature is unbelievably accurate. It gives me the confidence to push for trial on cases that others might have settled. It's leveling the playing field against better-funded prosecutors."</p>
+                        <div class="mt-6 flex items-center">
+                             <img src="https://placehold.co/48x48/E2E8F0/475569?text=MR" class="rounded-full" alt="User Avatar">
+                            <div class="ml-4">
+                                <p class="font-semibold text-slate-800">Marcus Reynolds</p>
+                                <p class="text-sm text-slate-500">Legal Aid Attorney</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-slate-50 p-8 rounded-lg">
+                        <p class="text-slate-600">"Finally, a tool that understands the realities of our work. The workflow optimization has helped our entire office become more efficient. We're handling more cases, more effectively."</p>
+                        <div class="mt-6 flex items-center">
+                            <img src="https://placehold.co/48x48/E2E8F0/475569?text=EC" class="rounded-full" alt="User Avatar">
+                            <div class="ml-4">
+                                <p class="font-semibold text-slate-800">Elena Chavez</p>
+                                <p class="text-sm text-slate-500">Chief Public Defender</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
+        <!-- Pricing Section -->
+        <section id="pricing" class="py-20 bg-white section-fade-in">
+            <div class="container mx-auto px-6">
+                <div class="text-center">
+                    <h2 class="text-3xl md:text-4xl font-bold text-slate-900">Simple, Transparent Pricing</h2>
+                    <p class="mt-4 max-w-2xl mx-auto text-slate-600">Designed for public defender offices of all sizes.</p>
+                </div>
+                <div class="mt-12 grid md:grid-cols-3 gap-8">
+                    <div class="bg-slate-50 p-8 rounded-xl text-center">
+                        <h3 class="text-2xl font-bold text-slate-800">Individual</h3>
+                        <p class="mt-2 text-slate-600">For solo practitioners</p>
+                        <div class="mt-6">
+                            <span class="text-4xl font-bold text-slate-900">$99</span>
+                            <span class="text-slate-600">/month</span>
+                        </div>
+                        <ul class="mt-8 space-y-3 text-sm text-slate-600">
+                            <li>✓ 50 case analyses per month</li>
+                            <li>✓ Basic legal research</li>
+                            <li>✓ Document processing</li>
+                            <li>✓ Email support</li>
+                        </ul>
+                        <a href="#contact" class="mt-8 bg-slate-800 text-white font-semibold py-3 px-8 rounded-lg hover:bg-slate-900 transition-colors inline-block w-full">
+                            Get Started
+                        </a>
+                    </div>
+                    <div class="bg-blue-600 text-white p-8 rounded-xl text-center transform scale-105 shadow-xl">
+                        <div class="bg-yellow-400 text-blue-900 text-xs font-bold px-3 py-1 rounded-full inline-block mb-4">
+                            MOST POPULAR
+                        </div>
+                        <h3 class="text-2xl font-bold">Office</h3>
+                        <p class="mt-2">For public defender offices</p>
+                        <div class="mt-6">
+                            <span class="text-4xl font-bold">$499</span>
+                            <span class="text-blue-200">/month</span>
+                        </div>
+                        <ul class="mt-8 space-y-3 text-sm text-blue-200">
+                            <li>✓ Unlimited case analyses</li>
+                            <li>✓ Advanced legal research</li>
+                            <li>✓ Priority document processing</li>
+                            <li>✓ Team collaboration tools</li>
+                            <li>✓ Phone & email support</li>
+                        </ul>
+                        <a href="#contact" class="mt-8 bg-white text-blue-600 font-semibold py-3 px-8 rounded-lg hover:bg-slate-100 transition-colors inline-block w-full">
+                            Get Started
+                        </a>
+                    </div>
+                    <div class="bg-slate-50 p-8 rounded-xl text-center">
+                        <h3 class="text-2xl font-bold text-slate-800">Enterprise</h3>
+                        <p class="mt-2 text-slate-600">For large organizations</p>
+                        <div class="mt-6">
+                            <span class="text-4xl font-bold text-slate-900">Custom</span>
+                        </div>
+                        <ul class="mt-8 space-y-3 text-sm text-slate-600">
+                            <li>✓ Unlimited everything</li>
+                            <li>✓ Custom AI model training</li>
+                            <li>✓ Dedicated support team</li>
+                            <li>✓ API access</li>
+                            <li>✓ On-premise deployment</li>
+                        </ul>
+                        <a href="#contact" class="mt-8 bg-slate-800 text-white font-semibold py-3 px-8 rounded-lg hover:bg-slate-900 transition-colors inline-block w-full">
+                            Contact Sales
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- CTA Section -->
+        <section id="contact" class="py-20 section-fade-in">
+             <div class="container mx-auto px-6">
+                <div class="bg-blue-600 rounded-2xl text-white p-12 text-center shadow-xl">
+                    <h2 class="text-3xl md:text-4xl font-bold">Empower Your Defense Today</h2>
+                    <p class="mt-4 max-w-2xl mx-auto">Stop drowning in paperwork and start winning more cases. Schedule a free, personalized demo to see how Better Call Saul can transform your practice.</p>
+                    <div class="mt-8">
+                         <a href="#" class="bg-white text-blue-600 font-semibold py-3 px-8 rounded-lg hover:bg-slate-100 transition-transform hover:scale-105 inline-block">
+                            Request Your Free Demo
+                        </a>
+                    </div>
+                </div>
+             </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-slate-800 text-slate-300 py-12">
+        <div class="container mx-auto px-6">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+                <div>
+                    <h3 class="text-white font-semibold mb-4">Better Call Saul</h3>
+                    <p class="text-sm">AI-powered legal assistant for public defenders, helping level the playing field in the justice system.</p>
+                </div>
+                <div>
+                    <h3 class="text-white font-semibold mb-4">Product</h3>
+                    <ul class="space-y-2 text-sm">
+                        <li><a href="#features" class="hover:text-white">Features</a></li>
+                        <li><a href="#how-it-works" class="hover:text-white">How It Works</a></li>
+                        <li><a href="#pricing" class="hover:text-white">Pricing</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="text-white font-semibold mb-4">Company</h3>
+                    <ul class="space-y-2 text-sm">
+                        <li><a href="#" class="hover:text-white">About Us</a></li>
+                        <li><a href="#" class="hover:text-white">Careers</a></li>
+                        <li><a href="#" class="hover:text-white">Contact</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h3 class="text-white font-semibold mb-4">Connect</h3>
+                    <div class="flex space-x-4">
+                        <a href="#" class="hover:text-white"><i data-lucide="twitter"></i></a>
+                        <a href="#" class="hover:text-white"><i data-lucide="linkedin"></i></a>
+                        <a href="#" class="hover:text-white"><i data-lucide="facebook"></i></a>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-8 pt-8 border-t border-slate-700 text-center">
+                <p class="text-sm">&copy; 2025 Better Call Saul AI. All Rights Reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+
+    <script>
+        lucide.createIcons();
+
+        // Mobile Menu Toggle
+        const mobileMenuButton = document.getElementById('mobile-menu-button');
+        const mobileMenu = document.getElementById('mobile-menu');
+        mobileMenuButton.addEventListener('click', () => {
+            mobileMenu.classList.toggle('hidden');
+        });
+        
+        // Close mobile menu when clicking links
+        document.querySelectorAll('#mobile-menu a').forEach(link => {
+            link.addEventListener('click', () => {
+                mobileMenu.classList.add('hidden');
+            });
+        });
+
+        // Smooth scrolling for navigation links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+        
+        // Section fade-in on scroll
+        const sections = document.querySelectorAll('.section-fade-in');
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                    observer.unobserve(entry.target);
+                }
+            });
+        }, { threshold: 0.1 });
+
+        sections.forEach(section => {
+            observer.observe(section);
+        });
+
+    </script>
+</body>
+</html>
+
