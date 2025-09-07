@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
-using BetterCallSaul.Core.Models;
-using BetterCallSaul.Core.Services;
+using BetterCallSaul.Core.Models.Entities;
+using BetterCallSaul.Core.Interfaces.Services;
 using BetterCallSaul.Core.Enums;
 using Microsoft.AspNetCore.Authorization;
 
