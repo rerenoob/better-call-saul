@@ -20,9 +20,14 @@ public class CaseAnalysisServiceTests : IDisposable
         // Setup InMemory database
         var options = new DbContextOptionsBuilder<BetterCallSaulContext>()
             .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
+            .EnableSensitiveDataLogging()
             .Options;
         
         _context = new BetterCallSaulContext(options);
+        
+        // Ensure database is created and ready
+        _context.Database.EnsureCreated();
+        
         _openAIServiceMock = new Mock<Core.Interfaces.Services.IAzureOpenAIService>();
         _loggerMock = new Mock<ILogger<CaseAnalysisService>>();
         

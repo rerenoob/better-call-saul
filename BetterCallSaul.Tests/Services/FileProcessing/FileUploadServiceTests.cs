@@ -21,9 +21,14 @@ public class FileUploadServiceTests : IDisposable
         // Setup InMemory database
         var options = new DbContextOptionsBuilder<BetterCallSaulContext>()
             .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
+            .EnableSensitiveDataLogging()
             .Options;
 
         _context = new BetterCallSaulContext(options);
+        
+        // Ensure database is created and ready
+        _context.Database.EnsureCreated();
+        
         _fileValidationServiceMock = new Mock<BetterCallSaul.Infrastructure.Services.FileProcessing.IFileValidationService>();
         _loggerMock = new Mock<ILogger<FileUploadService>>();
         
