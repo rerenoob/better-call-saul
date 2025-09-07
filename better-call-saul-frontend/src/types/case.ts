@@ -4,6 +4,7 @@ export interface Case {
   title: string;
   description?: string;
   status: CaseStatus;
+  priority: CasePriority;
   type: CaseType;
   court?: string;
   judge?: string;
@@ -37,6 +38,13 @@ export enum CaseType {
   IMMIGRATION = 'Immigration',
 }
 
+export enum CasePriority {
+  LOW = 'Low',
+  MEDIUM = 'Medium',
+  HIGH = 'High',
+  URGENT = 'Urgent',
+}
+
 export interface CaseStatistics {
   total: number;
   active: number;
@@ -44,6 +52,9 @@ export interface CaseStatistics {
   overdue: number;
   byStatus: {
     [key in CaseStatus]: number;
+  };
+  byPriority: {
+    [key in CasePriority]: number;
   };
 }
 

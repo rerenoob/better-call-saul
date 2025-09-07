@@ -7,11 +7,15 @@ interface RecentCasesProps {
 }
 
 const statusColors: Record<CaseStatus, string> = {
-  [CaseStatus.DRAFT]: 'bg-gray-100 text-gray-800',
-  [CaseStatus.ACTIVE]: 'bg-blue-100 text-blue-800',
-  [CaseStatus.REVIEW]: 'bg-yellow-100 text-yellow-800',
-  [CaseStatus.COMPLETED]: 'bg-green-100 text-green-800',
-  [CaseStatus.ARCHIVED]: 'bg-purple-100 text-purple-800',
+  [CaseStatus.NEW]: 'bg-gray-100 text-gray-800',
+  [CaseStatus.INVESTIGATION]: 'bg-blue-100 text-blue-800',
+  [CaseStatus.DISCOVERY]: 'bg-yellow-100 text-yellow-800',
+  [CaseStatus.PRETRIAL]: 'bg-orange-100 text-orange-800',
+  [CaseStatus.TRIAL]: 'bg-red-100 text-red-800',
+  [CaseStatus.SETTLEMENT]: 'bg-green-100 text-green-800',
+  [CaseStatus.CLOSED]: 'bg-purple-100 text-purple-800',
+  [CaseStatus.APPEALED]: 'bg-indigo-100 text-indigo-800',
+  [CaseStatus.DISMISSED]: 'bg-pink-100 text-pink-800',
 };
 
 const priorityColors: Record<CasePriority, string> = {
@@ -59,7 +63,7 @@ export const RecentCases: React.FC<RecentCasesProps> = ({ cases, isLoading }) =>
               </div>
               <div>
                 <h4 className="text-sm font-medium text-gray-900">{caseItem.title}</h4>
-                <p className="text-xs text-gray-500">{caseItem.description.substring(0, 50)}...</p>
+                <p className="text-xs text-gray-500">{caseItem.description ? `${caseItem.description.substring(0, 50)}...` : 'No description'}</p>
               </div>
             </div>
             <div className={`px-2 py-1 text-xs font-medium rounded-full ${statusColors[caseItem.status]}`}>
