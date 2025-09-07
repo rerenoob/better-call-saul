@@ -84,3 +84,16 @@ test-results/
 
 # macOS
 .DS_Store
+
+# Azure resources export (contains sensitive configuration)
+azure-resources/
+
+# Deployment artifacts
+publish/
+publish.zip
+publish.tar.gz
+*.zip
+*.tar.gz
+
+# Frontend deployment artifacts
+better-call-saul-frontend/frontend-dist.zip

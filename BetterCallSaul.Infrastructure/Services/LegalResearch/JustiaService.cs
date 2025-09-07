@@ -35,7 +35,7 @@ public class JustiaService : IJustiaService
 
         if (_cache.TryGetValue(cacheKey, out IEnumerable<JustiaSearchResult>? cachedResults) && cachedResults != null)
         {
-            return cachedResults;
+            return Task.FromResult(cachedResults);
         }
 
         try
@@ -60,7 +60,7 @@ public class JustiaService : IJustiaService
 
         if (_cache.TryGetValue(cacheKey, out LegalStatute? cachedStatute) && cachedStatute != null)
         {
-            return cachedStatute;
+            return Task.FromResult(cachedStatute);
         }
 
         try
@@ -74,7 +74,7 @@ public class JustiaService : IJustiaService
                 _cache.Set(cacheKey, statute, TimeSpan.FromMinutes(CacheDurationMinutes));
             }
 
-            return statute;
+            return Task.FromResult(statute);
         }
         catch (Exception ex)
         {
@@ -89,7 +89,7 @@ public class JustiaService : IJustiaService
 
         if (_cache.TryGetValue(cacheKey, out IEnumerable<LegalStatute>? cachedResults) && cachedResults != null)
         {
-            return cachedResults;
+            return Task.FromResult(cachedResults);
         }
 
         try
@@ -119,7 +119,7 @@ public class JustiaService : IJustiaService
 
         if (_cache.TryGetValue(cacheKey, out IEnumerable<JustiaSearchResult>? cachedResults) && cachedResults != null)
         {
-            return cachedResults;
+            return Task.FromResult(cachedResults);
         }
 
         try
@@ -138,7 +138,7 @@ public class JustiaService : IJustiaService
         }
     }
 
-    public Task<IEnumerable<JustiaSearchResult>> UnifiedSearchAsync(
+    public async Task<IEnumerable<JustiaSearchResult>> UnifiedSearchAsync(
         string query,
         string? jurisdiction = null,
         string? sourceType = null,
@@ -197,7 +197,7 @@ public class JustiaService : IJustiaService
             });
         }
 
-        return Task.FromResult(results);
+        return results;
     }
 
     private LegalStatute? GenerateMockStatute(string code, string? section)
@@ -237,7 +237,7 @@ public class JustiaService : IJustiaService
             });
         }
 
-        return Task.FromResult(results);
+        return results;
     }
 
     private IEnumerable<JustiaSearchResult> GenerateMockRegulationSearchResults(
@@ -262,6 +262,6 @@ public class JustiaService : IJustiaService
             });
         }
 
-        return Task.FromResult(results);
+        return results;
     }
 }

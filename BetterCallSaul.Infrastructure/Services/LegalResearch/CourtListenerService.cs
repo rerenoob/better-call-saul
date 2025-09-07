@@ -36,7 +36,7 @@ public class CourtListenerService : ICourtListenerService
 
         if (_cache.TryGetValue(cacheKey, out IEnumerable<LegalCase>? cachedResults) && cachedResults != null)
         {
-            return cachedResults;
+            return Task.FromResult(cachedResults);
         }
 
         try
@@ -115,7 +115,7 @@ public class CourtListenerService : ICourtListenerService
 
         if (_cache.TryGetValue(cacheKey, out CourtOpinion? cachedOpinion) && cachedOpinion != null)
         {
-            return cachedOpinion;
+            return Task.FromResult(cachedOpinion);
         }
 
         try
@@ -144,7 +144,7 @@ public class CourtListenerService : ICourtListenerService
 
         if (_cache.TryGetValue(cacheKey, out IEnumerable<LegalCase>? cachedResults) && cachedResults != null)
         {
-            return cachedResults;
+            return Task.FromResult(cachedResults);
         }
 
         try
@@ -170,7 +170,7 @@ public class CourtListenerService : ICourtListenerService
 
         if (_cache.TryGetValue(cacheKey, out IEnumerable<LegalCase>? cachedResults) && cachedResults != null)
         {
-            return cachedResults;
+            return Task.FromResult(cachedResults);
         }
 
         try
@@ -210,7 +210,7 @@ public class CourtListenerService : ICourtListenerService
             });
         }
 
-        return Task.FromResult(results);
+        return results;
     }
 
     private LegalCase? GenerateMockCaseFromCitation(string citation)
@@ -273,7 +273,7 @@ public class CourtListenerService : ICourtListenerService
             });
         }
 
-        return Task.FromResult(results);
+        return results;
     }
 
     private IEnumerable<LegalCase> GenerateMockTopicSearchResults(IEnumerable<string> topics, int limit)
@@ -298,6 +298,6 @@ public class CourtListenerService : ICourtListenerService
             });
         }
 
-        return Task.FromResult(results);
+        return results;
     }
 }

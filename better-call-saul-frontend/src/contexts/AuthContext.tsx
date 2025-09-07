@@ -1,7 +1,7 @@
 import React, { createContext, useReducer, useEffect } from 'react';
 import { authService } from '../services/authService';
 import { tokenStorage } from '../utils/tokenStorage';
-import { AuthState, LoginRequest } from '../types/auth';
+import { AuthState, LoginRequest, User } from '../types/auth';
 import { authReducer, initialState } from './authReducer';
 
 interface AuthContextType extends AuthState {
@@ -42,7 +42,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             const profileUser: User = {
               id: profile.id,
               email: profile.email,
-              fullName: profile.fullName || `${profile.firstName} ${profile.lastName}`,
+              fullName: profile.fullName,
               roles: profile.roles || ['User']
             };
             dispatch({

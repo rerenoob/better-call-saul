@@ -186,7 +186,7 @@ function CaseDetail() {
     }
   };
 
-  const caseData = mockCaseData[id as keyof typeof mockCaseData];
+  const caseData = mockCaseData[parseInt(id || '0') as keyof typeof mockCaseData];
 
   if (!caseData) {
     return <div>Case not found</div>;
