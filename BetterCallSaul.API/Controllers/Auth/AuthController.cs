@@ -1,8 +1,10 @@
 using BetterCallSaul.API.DTOs.Auth;
 using BetterCallSaul.Core.Models.Entities;
 using BetterCallSaul.Core.Interfaces.Services;
+using BetterCallSaul.Infrastructure.Data;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace BetterCallSaul.API.Controllers;
 
@@ -12,13 +14,16 @@ public class AuthController : ControllerBase
 {
     private readonly IAuthenticationService _authenticationService;
     private readonly UserManager<User> _userManager;
+    private readonly BetterCallSaulContext _context;
 
     public AuthController(
         IAuthenticationService authenticationService,
-        UserManager<User> userManager)
+        UserManager<User> userManager,
+        BetterCallSaulContext context)
     {
         _authenticationService = authenticationService;
         _userManager = userManager;
+        _context = context;
     }
 
     [HttpPost("login")]
@@ -97,6 +102,19 @@ public class AuthController : ControllerBase
     [HttpPost("register")]
     public async Task<IActionResult> Register([FromBody] RegisterRequest request)
     {
+        // Validate registration code
+        var registrationCode = await _context.RegistrationCodes
+            .FirstOrDefaultAsync(rc => rc.Code == request.RegistrationCode);
+
+        if (registrationCode == null)
+            return BadRequest(new { message = "Invalid registration code" });
+
+        if (registrationCode.IsUsed)
+            return BadRequest(new { message = "Registration code has already been used" });
+
+        if (registrationCode.ExpiresAt < DateTime.UtcNow)
+            return BadRequest(new { message = "Registration code has expired" });
+
         var user = new User
         {
             UserName = request.Email,
@@ -113,10 +131,34 @@ public class AuthController : ControllerBase
         if (!result.Succeeded)
             return BadRequest(new { errors = result.Errors.Select(e => e.Description) });
 
+        // Mark registration code as used
+        registrationCode.IsUsed = true;
+        registrationCode.UsedByUserId = user.Id;
+        registrationCode.UsedAt = DateTime.UtcNow;
+        registrationCode.UpdatedAt = DateTime.UtcNow;
+
+        await _context.SaveChangesAsync();
+
         // Assign default role
         await _userManager.AddToRoleAsync(user, "PublicDefender");
 
-        return Ok(new { message = "User registered successfully" });
+        // Automatically log in the user after successful registration
+        var token = await _authenticationService.GenerateJwtToken(user);
+        var refreshToken = await _authenticationService.GenerateRefreshToken();
+        var roles = await _userManager.GetRolesAsync(user);
+
+        var response = new AuthResponse
+        {
+            Token = token,
+            RefreshToken = refreshToken,
+            Expiration = DateTime.Now.AddMinutes(60),
+            UserId = user.Id.ToString(),
+            Email = user.Email ?? string.Empty,
+            FullName = user.FullName,
+            Roles = roles.ToList()
+        };
+
+        return Ok(response);
     }
 
     [HttpPost("refresh")]
@@ -196,6 +238,7 @@ public class RegisterRequest
     public string LastName { get; set; } = string.Empty;
     public string? BarNumber { get; set; }
     public string? LawFirm { get; set; }
+    public string RegistrationCode { get; set; } = string.Empty;
 }
 
 public class RefreshRequest

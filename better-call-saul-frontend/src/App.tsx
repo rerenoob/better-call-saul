@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from './contexts/AuthContext';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { LoginForm } from './components/auth/LoginForm';
+import { RegisterForm } from './components/auth/RegisterForm';
 import { useAuth } from './hooks/useAuth';
 
 // Create a client
@@ -329,14 +330,46 @@ function CaseDetail() {
 }
 
 function LoginPage() {
+  const navigate = useNavigate();
+
   const handleLoginSuccess = () => {
-    window.location.href = '/dashboard';
+    navigate('/dashboard');
+  };
+
+  const handleSwitchToRegister = () => {
+    navigate('/register');
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-gray-100 p-4 sm:p-6 lg:p-8">
       <div className="w-full max-w-sm sm:max-w-md transform transition-all duration-300 hover:scale-[1.01]">
-        <LoginForm onSuccess={handleLoginSuccess} />
+        <LoginForm 
+          onSuccess={handleLoginSuccess} 
+          onSwitchToRegister={handleSwitchToRegister}
+        />
+      </div>
+    </div>
+  );
+}
+
+function RegisterPage() {
+  const navigate = useNavigate();
+
+  const handleRegisterSuccess = () => {
+    navigate('/dashboard');
+  };
+
+  const handleSwitchToLogin = () => {
+    navigate('/login');
+  };
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-blue-100 p-4 sm:p-6 lg:p-8">
+      <div className="w-full max-w-2xl transform transition-all duration-300 hover:scale-[1.01]">
+        <RegisterForm 
+          onSuccess={handleRegisterSuccess} 
+          onSwitchToLogin={handleSwitchToLogin}
+        />
       </div>
     </div>
   );
@@ -351,6 +384,11 @@ function App() {
             <Route path="/login" element={
               <ProtectedRoute requireAuth={false}>
                 <LoginPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/register" element={
+              <ProtectedRoute requireAuth={false}>
+                <RegisterPage />
               </ProtectedRoute>
             } />
             <Route path="/dashboard" element={

@@ -1,18 +1,13 @@
 import React, { createContext, useReducer, useEffect } from 'react';
 import { authService } from '../services/authService';
 import { tokenStorage } from '../utils/tokenStorage';
-import { AuthState, LoginRequest, User } from '../types/auth';
+import { AuthState, LoginRequest, RegisterRequest, User } from '../types/auth';
 import { authReducer, initialState } from './authReducer';
 
 interface AuthContextType extends AuthState {
   login: (credentials: LoginRequest) => Promise<void>;
   logout: () => Promise<void>;
-  register: (userData: {
-    email: string;
-    password: string;
-    firstName: string;
-    lastName: string;
-  }) => Promise<void>;
+  register: (userData: RegisterRequest) => Promise<void>;
   clearError: () => void;
 }
 
@@ -98,12 +93,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const register = async (userData: {
-    email: string;
-    password: string;
-    firstName: string;
-    lastName: string;
-  }) => {
+  const register = async (userData: RegisterRequest) => {
     try {
       dispatch({ type: 'LOGIN_START' });
       const response = await authService.register(userData);

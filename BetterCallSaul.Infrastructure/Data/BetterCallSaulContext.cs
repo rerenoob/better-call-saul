@@ -21,6 +21,7 @@ public class BetterCallSaulContext : IdentityDbContext<User, Role, Guid>
     public DbSet<LegalStatute> LegalStatutes { get; set; } = null!;
     public DbSet<CaseMatch> CaseMatches { get; set; } = null!;
     public DbSet<MatchingCriteria> MatchingCriteria { get; set; } = null!;
+    public DbSet<RegistrationCode> RegistrationCodes { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -66,6 +67,31 @@ public class BetterCallSaulContext : IdentityDbContext<User, Role, Guid>
             .HasConversion(
                 v => System.Text.Json.JsonSerializer.Serialize(v, (System.Text.Json.JsonSerializerOptions?)null),
                 v => System.Text.Json.JsonSerializer.Deserialize<TimelineAnalysis>(v, (System.Text.Json.JsonSerializerOptions?)null) ?? new TimelineAnalysis());
+
+        // Configure DocumentText ExtractionMetadata property
+        modelBuilder.Entity<DocumentText>()
+            .Property(e => e.ExtractionMetadata)
+            .HasConversion(
+                v => System.Text.Json.JsonSerializer.Serialize(v, (System.Text.Json.JsonSerializerOptions?)null),
+                v => System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, object>>(v, (System.Text.Json.JsonSerializerOptions?)null));
+
+        // Configure DocumentText Pages property
+        modelBuilder.Entity<DocumentText>()
+            .Property(e => e.Pages)
+            .HasConversion(
+                v => System.Text.Json.JsonSerializer.Serialize(v, (System.Text.Json.JsonSerializerOptions?)null),
+                v => System.Text.Json.JsonSerializer.Deserialize<List<TextPage>>(v, (System.Text.Json.JsonSerializerOptions?)null) ?? new List<TextPage>());
+
+        // Configure RegistrationCode
+        modelBuilder.Entity<RegistrationCode>()
+            .HasIndex(rc => rc.Code)
+            .IsUnique();
+
+        modelBuilder.Entity<RegistrationCode>()
+            .HasOne(rc => rc.UsedByUser)
+            .WithMany()
+            .HasForeignKey(rc => rc.UsedByUserId)
+            .OnDelete(DeleteBehavior.SetNull);
 
         // Soft delete query filter
         modelBuilder.Entity<Case>().HasQueryFilter(c => !c.IsDeleted);

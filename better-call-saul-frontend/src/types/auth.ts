@@ -10,6 +10,16 @@ export interface LoginRequest {
   password: string;
 }
 
+export interface RegisterRequest {
+  email: string;
+  password: string;
+  firstName: string;
+  lastName: string;
+  barNumber?: string;
+  lawFirm?: string;
+  registrationCode: string;
+}
+
 export interface AuthResponse {
   token: string;
   refreshToken: string;
