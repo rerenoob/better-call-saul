@@ -32,6 +32,7 @@ public class CaseController : ControllerBase
             Description = "Client: Michael Johnson. The case against Michael Johnson relies heavily on circumstantial evidence and a single, uncorroborated witness testimony.",
             Status = CaseStatus.PreTrial,
             Type = CaseType.Criminal,
+            Priority = "High",
             Court = "Superior Court",
             Judge = "Hon. Smith",
             FiledDate = DateTime.UtcNow.AddDays(-30),

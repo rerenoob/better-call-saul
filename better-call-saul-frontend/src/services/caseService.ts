@@ -8,27 +8,27 @@ export const caseService = {
     if (filters?.assignedTo) params.append('assignedTo', filters.assignedTo);
     if (filters?.search) params.append('search', filters.search);
 
-    const response = await apiClient.get<Case[]>(`/cases?${params.toString()}`);
+    const response = await apiClient.get<Case[]>(`/case?${params.toString()}`);
     return response.data;
   },
 
   getCase: async (id: string): Promise<Case> => {
-    const response = await apiClient.get<Case>(`/cases/${id}`);
+    const response = await apiClient.get<Case>(`/case/${id}`);
     return response.data;
   },
 
   createCase: async (caseData: Omit<Case, 'id' | 'createdAt' | 'updatedAt'>): Promise<Case> => {
-    const response = await apiClient.post<Case>('/cases', caseData);
+    const response = await apiClient.post<Case>('/case', caseData);
     return response.data;
   },
 
   updateCase: async (id: string, caseData: Partial<Case>): Promise<Case> => {
-    const response = await apiClient.put<Case>(`/cases/${id}`, caseData);
+    const response = await apiClient.put<Case>(`/case/${id}`, caseData);
     return response.data;
   },
 
   deleteCase: async (id: string): Promise<void> => {
-    await apiClient.delete(`/cases/${id}`);
+    await apiClient.delete(`/case/${id}`);
   },
 
   getStatistics: async (): Promise<CaseStatistics> => {

@@ -21,6 +21,9 @@ public class Case : IAuditableEntity
 
     public CaseStatus Status { get; set; } = CaseStatus.New;
     public CaseType Type { get; set; } = CaseType.Criminal;
+    
+    [MaxLength(20)]
+    public string Priority { get; set; } = "Medium";
 
     [MaxLength(100)]
     public string? Court { get; set; }
