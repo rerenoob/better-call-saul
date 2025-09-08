@@ -1,5 +1,6 @@
 using BetterCallSaul.Core.Models.Entities;
 using BetterCallSaul.Infrastructure.Data;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using System.Security.Cryptography;
@@ -11,11 +12,13 @@ public class DatabaseSeedingService
 {
     private readonly BetterCallSaulContext _context;
     private readonly ILogger<DatabaseSeedingService> _logger;
+    private readonly RoleManager<Role> _roleManager;
 
-    public DatabaseSeedingService(BetterCallSaulContext context, ILogger<DatabaseSeedingService> logger)
+    public DatabaseSeedingService(BetterCallSaulContext context, ILogger<DatabaseSeedingService> logger, RoleManager<Role> roleManager)
     {
         _context = context;
         _logger = logger;
+        _roleManager = roleManager;
     }
 
     public async Task SeedRegistrationCodesAsync(int count = 100, int expireDays = 365, string createdBy = "System", string? notes = null)
@@ -118,5 +121,41 @@ public class DatabaseSeedingService
         }
         
         return result.ToString();
+    }
+
+    public async Task SeedRolesAsync()
+    {
+        _logger.LogInformation("Starting role seeding...");
+
+        var requiredRoles = new[] { "Administrator", "PublicDefender", "SuperUser" };
+
+        foreach (var roleName in requiredRoles)
+        {
+            if (!await _roleManager.RoleExistsAsync(roleName))
+            {
+                var role = new Role 
+                { 
+                    Name = roleName,
+                    NormalizedName = roleName.ToUpperInvariant()
+                };
+                
+                var result = await _roleManager.CreateAsync(role);
+                
+                if (result.Succeeded)
+                {
+                    _logger.LogInformation("Created role: {RoleName}", roleName);
+                }
+                else
+                {
+                    _logger.LogError("Failed to create role {RoleName}: {Errors}", roleName, string.Join(", ", result.Errors.Select(e => e.Description)));
+                }
+            }
+            else
+            {
+                _logger.LogInformation("Role {RoleName} already exists", roleName);
+            }
+        }
+
+        _logger.LogInformation("Role seeding completed");
     }
 }

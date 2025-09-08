@@ -8,7 +8,7 @@ const testUser = {
   lastName: 'Doe',
   barNumber: '12345',
   lawFirm: 'Test Public Defender Office',
-  registrationCode: '28T8BTFXMQRV' // One of our seeded codes
+  registrationCode: 'L5HW8UVXSTMN' // Using an unused registration code
 };
 
 test.describe('Registration and Login Integration Tests', () => {

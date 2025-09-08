@@ -229,19 +229,3 @@ public class AuthController : ControllerBase
         }
     }
 }
-
-public class RegisterRequest
-{
-    public string Email { get; set; } = string.Empty;
-    public string Password { get; set; } = string.Empty;
-    public string FirstName { get; set; } = string.Empty;
-    public string LastName { get; set; } = string.Empty;
-    public string? BarNumber { get; set; }
-    public string? LawFirm { get; set; }
-    public string RegistrationCode { get; set; } = string.Empty;
-}
-
-public class RefreshRequest
-{
-    public string RefreshToken { get; set; } = string.Empty;
-}

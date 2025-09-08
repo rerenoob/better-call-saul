@@ -141,8 +141,11 @@ using (var scope = app.Services.CreateScope())
     var context = scope.ServiceProvider.GetRequiredService<BetterCallSaulContext>();
     context.Database.EnsureCreated();
     
-    // Seed registration codes if needed
+    // Seed roles first
     var seedingService = scope.ServiceProvider.GetRequiredService<DatabaseSeedingService>();
+    await seedingService.SeedRolesAsync();
+    
+    // Seed registration codes if needed
     await seedingService.SeedRegistrationCodesAsync(100, 365, "System", "Initial seeding - 100 registration codes");
     
     var stats = await seedingService.GetRegistrationCodeStatsAsync();
