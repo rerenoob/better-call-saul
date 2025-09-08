@@ -6,6 +6,7 @@ import { LoginForm } from './components/auth/LoginForm';
 import { RegisterForm } from './components/auth/RegisterForm';
 import { CaseDetail } from './components/CaseDetail';
 import { Dashboard } from './components/Dashboard';
+import { CaseUpload } from './components/CaseUpload';
 
 // Create a client
 const queryClient = new QueryClient({
@@ -88,6 +89,11 @@ function App() {
             <Route path="/cases/:id" element={
               <ProtectedRoute>
                 <CaseDetail />
+              </ProtectedRoute>
+            } />
+            <Route path="/cases/new" element={
+              <ProtectedRoute>
+                <CaseUpload />
               </ProtectedRoute>
             } />
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
