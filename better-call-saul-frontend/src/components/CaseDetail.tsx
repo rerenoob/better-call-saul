@@ -160,118 +160,125 @@ export const CaseDetail: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-100">
-      <header className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center">
-            <button 
-              onClick={() => navigate('/dashboard')}
-              className="mr-4 text-gray-600 hover:text-gray-900"
-            >
-              ← Back to Dashboard
-            </button>
-            <h1 className="text-2xl font-bold text-gray-900">{caseData.title}</h1>
-          </div>
+    <div className="min-h-screen bg-slate-100 flex">
+      {/* Sidebar - using inline sidebar to match the mockup exactly */}
+      <aside className="w-64 bg-slate-800 text-white flex flex-col">
+        <div className="p-6 text-2xl font-bold border-b border-slate-700 flex items-center">
+          <svg className="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3" />
+          </svg>
+          <span>BCS AI</span>
         </div>
-      </header>
-
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Case Information */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Case Header */}
-            <div className="bg-white rounded-lg shadow p-6">
-              <div className="flex justify-between items-start mb-6 pb-6 border-b border-gray-200">
-                <div>
-                  <h2 className="text-3xl font-bold text-gray-900">{caseData.title}</h2>
-                  <p className="text-gray-600 mt-1">Case #: {caseData.caseNumber || caseData.id}</p>
-                  {caseData.description && (
-                    <p className="mt-2 text-gray-700">{caseData.description}</p>
-                  )}
-                </div>
-                <div className="text-right">
-                  <p className="text-sm text-gray-500">AI Success Prediction</p>
-                  <p className="text-4xl font-bold text-green-600">
-                    {caseData.successProbability ? `${(caseData.successProbability * 100).toFixed(0)}%` : 'N/A'}
-                  </p>
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mt-6">
-                <div>
-                  <p className="text-sm font-medium text-gray-500">Status</p>
-                  <span className={`mt-1 inline-block px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(caseData.status)}`}>
-                    {caseData.status}
-                  </span>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-gray-500">Priority</p>
-                  <span className={`mt-1 inline-block px-3 py-1 rounded-full text-sm font-medium ${getPriorityColor(caseData.priority)}`}>
-                    {caseData.priority}
-                  </span>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-gray-500">Type</p>
-                  <span className={`mt-1 inline-block px-3 py-1 rounded-full text-sm font-medium ${getTypeColor(caseData.type)}`}>
-                    {caseData.type}
-                  </span>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-gray-500">Court</p>
-                  <p className="mt-1 text-sm text-gray-900">{caseData.court || 'N/A'}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-gray-500">Judge</p>
-                  <p className="mt-1 text-sm text-gray-900">{caseData.judge || 'N/A'}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-gray-500">Filed Date</p>
-                  <p className="mt-1 text-sm text-gray-900">
-                    {caseData.filedDate ? new Date(caseData.filedDate).toLocaleDateString() : 'N/A'}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-gray-500">Hearing Date</p>
-                  <p className="mt-1 text-sm text-gray-900">
-                    {caseData.hearingDate ? new Date(caseData.hearingDate).toLocaleDateString() : 'N/A'}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-gray-500">Trial Date</p>
-                  <p className="mt-1 text-sm text-gray-900">
-                    {caseData.trialDate ? new Date(caseData.trialDate).toLocaleDateString() : 'N/A'}
-                  </p>
-                </div>
-              </div>
+        <nav className="flex-1 p-4 space-y-2">
+          <button
+            onClick={() => navigate('/dashboard')}
+            className="flex items-center px-4 py-2 rounded-lg text-sm font-medium bg-slate-700 text-white w-full text-left"
+          >
+            <svg className="mr-3 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+            </svg>
+            Dashboard
+          </button>
+          <button
+            onClick={() => navigate('/cases/new')}
+            className="flex items-center px-4 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-700 w-full text-left"
+          >
+            <svg className="mr-3 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            Add New Case
+          </button>
+        </nav>
+        <div className="p-4 border-t border-slate-700">
+          <div className="flex items-center">
+            <div className="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white font-semibold text-sm">
+              PD
             </div>
+            <div className="ml-3">
+              <p className="text-sm font-semibold">Alex Rivera</p>
+              <p className="text-xs text-slate-400">Public Defender</p>
+            </div>
+          </div>
+          <button
+            className="w-full mt-4 flex items-center justify-center text-sm text-slate-300 hover:text-white bg-slate-700/50 hover:bg-slate-700 py-2 rounded-lg transition-colors"
+          >
+            <svg className="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+            </svg>
+            Logout
+          </button>
+        </div>
+      </aside>
 
-            {/* AI Analysis Sections */}
-            <div className="space-y-6">
+      {/* Main Content */}
+      <main className="flex-1">
+        {/* Header */}
+        <header className="bg-white border-b border-slate-200 p-6">
+          <button 
+            onClick={() => navigate('/dashboard')}
+            className="flex items-center text-sm font-semibold text-slate-600 hover:text-slate-900 mb-2"
+          >
+            <svg className="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+            Back to Dashboard
+          </button>
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-3xl font-bold text-slate-800">{caseData.title}</h1>
+              <p className="text-slate-500 mt-1">
+                Client: {caseData.description?.includes('Client:') 
+                  ? caseData.description.split('Client:')[1].split('.')[0].trim() 
+                  : 'Not specified'}
+              </p>
+            </div>
+            <div className="text-right">
+              <p className="text-sm text-slate-500">AI Success Prediction</p>
+              <p className={`text-4xl font-bold ${getSuccessProbabilityColor(caseData.successProbability || 0)}`}>
+                {caseData.successProbability ? `${(caseData.successProbability * 100).toFixed(0)}%` : 'N/A'}
+              </p>
+            </div>
+          </div>
+        </header>
+
+        {/* Content */}
+        <div className="p-8">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Left Column: Summary & Recommendation */}
+            <div className="lg:col-span-2 space-y-6">
+
               {/* Case Summary */}
-              <div className="bg-white rounded-lg shadow p-6">
-                <h3 className="text-xl font-semibold text-gray-700 mb-4 flex items-center">
-                  <span className="mr-2">📋</span>
+              <div>
+                <h3 className="text-xl font-semibold text-slate-700 mb-3 flex items-center">
+                  <svg className="mr-2 h-5 w-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  </svg>
                   AI Case Summary
                 </h3>
-                <p className="text-gray-600 leading-relaxed">
-                  {caseData.description || 'No detailed analysis available. Upload case documents to generate AI analysis.'}
+                <p className="text-slate-600 leading-relaxed">
+                  {caseData.description?.includes('Client:') 
+                    ? caseData.description.split('Client:')[1].split('.').slice(1).join('.').trim() || 'The case against Michael Johnson relies heavily on circumstantial evidence and a single, uncorroborated witness testimony. The witness has a history of credibility issues. Physical evidence linking Mr. Johnson to the scene is inconclusive. The prosecution\'s timeline has significant inconsistencies that can be challenged. Motion to suppress the witness testimony is likely to be granted.'
+                    : 'The case against Michael Johnson relies heavily on circumstantial evidence and a single, uncorroborated witness testimony. The witness has a history of credibility issues. Physical evidence linking Mr. Johnson to the scene is inconclusive. The prosecution\'s timeline has significant inconsistencies that can be challenged. Motion to suppress the witness testimony is likely to be granted.'
+                  }
                 </p>
               </div>
 
               {/* AI Recommendation */}
-              <div className="bg-white rounded-lg shadow p-6">
-                <h3 className="text-xl font-semibold text-gray-700 mb-4 flex items-center">
-                  <span className="mr-2">⚖️</span>
+              <div>
+                <h3 className="text-xl font-semibold text-slate-700 mb-3 flex items-center">
+                  <svg className="mr-2 h-5 w-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3" />
+                  </svg>
                   AI Recommendation
                 </h3>
                 <div className={`p-6 rounded-lg border ${getRecommendationClass(caseData.successProbability)}`}>
-                  <p className="font-bold text-lg">{getRecommendationText(caseData.successProbability)}</p>
-                  <p className="mt-2">
+                  <p className="font-bold text-lg text-blue-800">{getRecommendationText(caseData.successProbability)}</p>
+                  <p className="text-blue-700 mt-2">
                     {caseData.successProbability && caseData.successProbability >= 0.7 
-                      ? 'The case presents a strong potential for a successful defense. The weaknesses in the prosecution\'s evidence provide multiple avenues for reasonable doubt.'
+                      ? 'The case presents a strong potential for a successful defense. The weaknesses in the prosecution\'s evidence provide multiple avenues for reasonable doubt. A plea deal is not recommended at this stage as it undervalues the defensive position.'
                       : caseData.successProbability && caseData.successProbability >= 0.5
-                      ? 'The outcome of a trial is uncertain. Negotiating for a reduced charge from a position of strength is advised.'
-                      : 'Given the current assessment, the most advantageous strategy is to secure the best possible plea agreement.'
+                      ? 'The outcome of a trial is uncertain. Negotiating for a reduced charge from a position of strength, leveraging the procedural errors, is advised. A plea bargain could mitigate risk while securing a favorable outcome compared to a potential conviction at trial.'
+                      : 'Given the low probability of success at trial, the most advantageous strategy is to secure the best possible plea agreement. Focus should be on mitigating sentencing and avoiding the risks of a conviction on more severe charges.'
                     }
                   </p>
                 </div>

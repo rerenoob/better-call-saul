@@ -38,6 +38,16 @@ export const Dashboard: React.FC = () => {
     }
   };
 
+  const getPriorityColorText = (priority: string) => {
+    switch (priority.toLowerCase()) {
+      case 'high': return 'text-green-600';
+      case 'medium': return 'text-yellow-600';
+      case 'low': return 'text-red-600';
+      case 'urgent': return 'text-red-600';
+      default: return 'text-gray-600';
+    }
+  };
+
   const getSuccessProbabilityColor = (probability: number) => {
     if (probability >= 0.7) return 'text-green-600';
     if (probability >= 0.4) return 'text-yellow-600';
@@ -56,24 +66,10 @@ export const Dashboard: React.FC = () => {
 
   return (
     <AppLayout>
-      <div className="bg-gray-50 min-h-screen">
-        <header className="bg-white">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-            <h1 className="text-3xl font-bold text-gray-900">Case Dashboard</h1>
-          </div>
-        </header>
-        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="bg-slate-100 min-h-screen">
+        <main className="p-8">
+          <h1 className="text-3xl font-bold text-slate-800 mb-6">Case Dashboard</h1>
           <div className="mb-6">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-semibold text-gray-900">Active Cases</h2>
-              <button 
-                onClick={loadCases}
-                disabled={loading}
-                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 text-sm font-medium"
-              >
-                {loading ? 'Loading...' : 'Refresh'}
-              </button>
-            </div>
             
             {error && (
               <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
@@ -138,41 +134,40 @@ export const Dashboard: React.FC = () => {
                   <div
                     key={caseItem.id}
                     onClick={() => handleCaseClick(caseItem.id)}
-                    className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-all cursor-pointer"
+                    className="bg-white p-6 rounded-xl shadow-md hover:shadow-lg transition-shadow cursor-pointer"
                   >
                     <div className="flex justify-between items-start mb-4">
-                      <h3 className="text-lg font-bold text-gray-900">{caseItem.title}</h3>
-                      <span className={`px-3 py-1 rounded-full text-xs font-medium ${getPriorityColor(caseItem.priority || 'Medium')}`}>
-                        {caseItem.priority || 'Medium'} Priority
+                      <h2 className="text-xl font-bold text-slate-800">{caseItem.title}</h2>
+                      <span className={`text-xs font-semibold px-2 py-1 rounded-full ${getPriorityColor(caseItem.priority || 'Medium')}`}>
+                        {(caseItem.priority || 'Medium')} Priority
                       </span>
                     </div>
                     
-                    <div className="mb-4">
-                      <p className="text-sm text-gray-600 mb-1">
-                        <span className="font-medium">Client:</span> {caseItem.description?.split(' - ')[0] || 'Not specified'}
-                      </p>
-                      <p className="text-xs text-gray-500">Case #{caseItem.caseNumber}</p>
-                    </div>
+                    <p className="text-sm text-slate-500 mb-4">
+                      Client: {caseItem.description?.includes('Client:') 
+                        ? caseItem.description.split('Client:')[1].split('.')[0].trim() 
+                        : caseItem.description?.split(' - ')[0] || 'Not specified'}
+                    </p>
                     
                     {caseItem.successProbability && (
-                      <div className="mb-6">
-                        <div className="flex justify-between items-center mb-2">
-                          <span className="text-sm text-gray-700 font-medium">AI Success Prediction</span>
-                          <span className={`text-sm font-bold ${getSuccessProbabilityColor(caseItem.successProbability)}`}>
+                      <div className="space-y-3">
+                        <div className="flex justify-between items-center text-sm">
+                          <span className="text-slate-600 font-medium">AI Success Prediction</span>
+                          <span className={`font-bold ${getSuccessProbabilityColor(caseItem.successProbability)}`}>
                             {(caseItem.successProbability * 100).toFixed(0)}%
                           </span>
                         </div>
-                        <div className="w-full bg-gray-200 rounded-full h-2">
+                        <div className="w-full bg-slate-200 rounded-full h-2.5">
                           <div 
-                            className={`h-2 rounded-full ${getSuccessBarColor(caseItem.successProbability)}`}
+                            className={`h-2.5 rounded-full ${getSuccessBarColor(caseItem.successProbability)}`}
                             style={{ width: `${caseItem.successProbability * 100}%` }}
                           ></div>
                         </div>
                       </div>
                     )}
                     
-                    <div className="text-center">
-                      <button className="text-sm text-blue-600 font-semibold hover:text-blue-700 transition-colors">
+                    <div className="mt-4 pt-4 border-t border-slate-200 text-right">
+                      <button className="text-sm text-blue-600 font-semibold hover:underline">
                         View Analysis
                       </button>
                     </div>
