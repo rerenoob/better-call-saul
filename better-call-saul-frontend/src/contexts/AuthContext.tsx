@@ -4,6 +4,8 @@ import { tokenStorage } from '../utils/tokenStorage';
 import { AuthState, LoginRequest, RegisterRequest, User } from '../types/auth';
 import { authReducer, initialState } from './authReducer';
 
+// Context files legitimately export multiple values for context usage
+
 interface AuthContextType extends AuthState {
   login: (credentials: LoginRequest) => Promise<void>;
   logout: () => Promise<void>;

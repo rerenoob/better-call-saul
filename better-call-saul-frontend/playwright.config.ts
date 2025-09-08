@@ -1,5 +1,8 @@
 import { defineConfig, devices } from '@playwright/test';
 
+// eslint-disable-next-line no-undef
+const process = global.process;
+
 export default defineConfig({
   testDir: './tests/e2e',
   fullyParallel: true,

@@ -39,4 +39,10 @@ export default [
       ],
     },
   },
+  {
+    files: ['src/contexts/**/*.tsx'],
+    rules: {
+      'react-refresh/only-export-components': 'off',
+    },
+  },
 ]
