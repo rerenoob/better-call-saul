@@ -6,6 +6,7 @@ using BetterCallSaul.Core.Interfaces.Services;
 using BetterCallSaul.Infrastructure.Data;
 using BetterCallSaul.Infrastructure.Http;
 using BetterCallSaul.Infrastructure.ML;
+using BetterCallSaul.Infrastructure.Services;
 using BetterCallSaul.Infrastructure.Services.Authentication;
 using BetterCallSaul.Infrastructure.Services.AI;
 using BetterCallSaul.Infrastructure.Services.FileProcessing;
@@ -96,6 +97,9 @@ builder.Services.AddScoped<IFileUploadService, FileUploadService>();
 builder.Services.AddScoped<IVirusScanningService, ClamAvService>();
 builder.Services.AddScoped<IFileValidationService, FileValidationService>();
 builder.Services.AddScoped<ITextExtractionService, MockTextExtractionService>();
+builder.Services.AddScoped<DatabaseSeedingService>();
+
+builder.Services.AddHttpContextAccessor();
 
 // Add legal research services
 builder.Services.AddHttpClient<CourtListenerClient>();
@@ -120,6 +124,8 @@ builder.Services.AddCors(options =>
         policy.WithOrigins(
                 "http://localhost:5173", 
                 "https://localhost:5173",
+                "http://localhost:5174", 
+                "https://localhost:5174",
                 "https://orange-island-0a659d210.1.azurestaticapps.net")
               .AllowAnyHeader()
               .AllowAnyMethod()
@@ -134,6 +140,14 @@ using (var scope = app.Services.CreateScope())
 {
     var context = scope.ServiceProvider.GetRequiredService<BetterCallSaulContext>();
     context.Database.EnsureCreated();
+    
+    // Seed registration codes if needed
+    var seedingService = scope.ServiceProvider.GetRequiredService<DatabaseSeedingService>();
+    await seedingService.SeedRegistrationCodesAsync(100, 365, "System", "Initial seeding - 100 registration codes");
+    
+    var stats = await seedingService.GetRegistrationCodeStatsAsync();
+    Log.Information("Registration Code Stats - Total: {Total}, Active: {Active}, Used: {Used}, Expired: {Expired}", 
+        stats.Total, stats.Active, stats.Used, stats.Expired);
 }
 
 // Configure the HTTP request pipeline.
