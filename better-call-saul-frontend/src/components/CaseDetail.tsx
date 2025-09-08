@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Case, CaseStatus, CaseType, CasePriority } from '../types/case';
+import { Case } from '../types/case';
 import { caseService } from '../services/caseService';
 
 interface ChatMessage {
@@ -83,46 +83,19 @@ export const CaseDetail: React.FC = () => {
     }
   };
 
-  const getStatusColor = (status: CaseStatus) => {
-    switch (status) {
-      case CaseStatus.NEW: return 'bg-blue-100 text-blue-800';
-      case CaseStatus.INVESTIGATION: return 'bg-purple-100 text-purple-800';
-      case CaseStatus.DISCOVERY: return 'bg-yellow-100 text-yellow-800';
-      case CaseStatus.PRETRIAL: return 'bg-orange-100 text-orange-800';
-      case CaseStatus.TRIAL: return 'bg-red-100 text-red-800';
-      case CaseStatus.SETTLEMENT: return 'bg-green-100 text-green-800';
-      case CaseStatus.CLOSED: return 'bg-gray-100 text-gray-800';
-      case CaseStatus.APPEALED: return 'bg-indigo-100 text-indigo-800';
-      case CaseStatus.DISMISSED: return 'bg-pink-100 text-pink-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
 
-  const getPriorityColor = (priority: CasePriority) => {
-    switch (priority) {
-      case CasePriority.LOW: return 'bg-green-100 text-green-800';
-      case CasePriority.MEDIUM: return 'bg-yellow-100 text-yellow-800';
-      case CasePriority.HIGH: return 'bg-orange-100 text-orange-800';
-      case CasePriority.URGENT: return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  const getTypeColor = (type: CaseType) => {
-    switch (type) {
-      case CaseType.CRIMINAL: return 'bg-red-100 text-red-800';
-      case CaseType.CIVIL: return 'bg-blue-100 text-blue-800';
-      case CaseType.FAMILY: return 'bg-purple-100 text-purple-800';
-      case CaseType.IMMIGRATION: return 'bg-green-100 text-green-800';
-      default: return 'bg-gray-100 text-gray-800';
-    }
-  };
 
   const getRecommendationClass = (probability?: number) => {
     if (!probability) return 'bg-gray-50 border-gray-200 text-gray-800';
     if (probability >= 0.7) return 'bg-green-50 border-green-200 text-green-800';
     if (probability >= 0.5) return 'bg-yellow-50 border-yellow-200 text-yellow-800';
     return 'bg-red-50 border-red-200 text-red-800';
+  };
+
+  const getSuccessProbabilityColor = (probability: number) => {
+    if (probability >= 0.7) return 'text-green-600';
+    if (probability >= 0.5) return 'text-yellow-600';
+    return 'text-red-600';
   };
 
   const getRecommendationText = (probability?: number) => {

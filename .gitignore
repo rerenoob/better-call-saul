@@ -109,6 +109,9 @@ publish.tar.gz
 # Frontend deployment artifacts
 better-call-saul-frontend/frontend-dist.zip
 
+# Local database files
+*.db
+
 # Logs
 *.log
 logs/

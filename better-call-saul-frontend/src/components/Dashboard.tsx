@@ -38,15 +38,7 @@ export const Dashboard: React.FC = () => {
     }
   };
 
-  const getPriorityColorText = (priority: string) => {
-    switch (priority.toLowerCase()) {
-      case 'high': return 'text-green-600';
-      case 'medium': return 'text-yellow-600';
-      case 'low': return 'text-red-600';
-      case 'urgent': return 'text-red-600';
-      default: return 'text-gray-600';
-    }
-  };
+
 
   const getSuccessProbabilityColor = (probability: number) => {
     if (probability >= 0.7) return 'text-green-600';

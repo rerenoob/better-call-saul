@@ -45,6 +45,17 @@ npm run lint              # ESLint code quality checks
 npm run format            # Prettier code formatting
 ```
 
+## Git Hooks
+```bash
+# Pre-commit hook automatically runs:
+# - Backend tests (dotnet test)
+# - Frontend linting (npm run lint)
+# - Frontend type checking (npm run type-check)
+
+# To skip pre-commit hook (use with caution):
+git commit --no-verify
+```
+
 ## Full Stack Development Workflow
 ```bash
 # Terminal 1 - Start Backend API
