@@ -3,6 +3,8 @@ using BetterCallSaul.Core.Models.Entities;
 using BetterCallSaul.Core.Interfaces.Services;
 using BetterCallSaul.Core.Enums;
 using Microsoft.AspNetCore.Authorization;
+using BetterCallSaul.Infrastructure.Data;
+using Microsoft.EntityFrameworkCore;
 
 namespace BetterCallSaul.API.Controllers;
 
@@ -13,38 +15,27 @@ public class CaseController : ControllerBase
 {
     private readonly IAzureOpenAIService _aiService;
     private readonly ILogger<CaseController> _logger;
+    private readonly BetterCallSaulContext _context;
 
-    public CaseController(IAzureOpenAIService aiService, ILogger<CaseController> logger)
+    public CaseController(IAzureOpenAIService aiService, ILogger<CaseController> logger, BetterCallSaulContext context)
     {
         _aiService = aiService;
         _logger = logger;
+        _context = context;
     }
 
     [HttpGet("{id}")]
     public async Task<ActionResult<Case>> GetCase(Guid id)
     {
-        // Mock data for now - in real implementation, this would fetch from database
-        var mockCase = new Case
-        {
-            Id = id,
-            CaseNumber = "2024-CR-001",
-            Title = "State v. Johnson",
-            Description = "Client: Michael Johnson. The case against Michael Johnson relies heavily on circumstantial evidence and a single, uncorroborated witness testimony.",
-            Status = CaseStatus.PreTrial,
-            Type = CaseType.Criminal,
-            Priority = "High",
-            Court = "Superior Court",
-            Judge = "Hon. Smith",
-            FiledDate = DateTime.UtcNow.AddDays(-30),
-            HearingDate = DateTime.UtcNow.AddDays(15),
-            TrialDate = DateTime.UtcNow.AddDays(60),
-            SuccessProbability = 0.82m,
-            UserId = Guid.NewGuid(),
-            CreatedAt = DateTime.UtcNow.AddDays(-15),
-            UpdatedAt = DateTime.UtcNow.AddDays(-2)
-        };
+        var caseItem = await _context.Cases
+            .FirstOrDefaultAsync(c => c.Id == id);
 
-        return Ok(mockCase);
+        if (caseItem == null)
+        {
+            return NotFound();
+        }
+
+        return Ok(caseItem);
     }
 
     [HttpPost("{id}/chat")]
@@ -81,58 +72,49 @@ public class CaseController : ControllerBase
     [HttpGet]
     public async Task<ActionResult<IEnumerable<Case>>> GetCases()
     {
-        // Mock data for now
-        var mockCases = new[]
-        {
-            new Case
-            {
-                Id = Guid.NewGuid(),
-                CaseNumber = "2024-CR-001",
-                Title = "State v. Johnson",
-                Description = "Client: Michael Johnson",
-                Status = CaseStatus.PreTrial,
-                Type = CaseType.Criminal,
-                UserId = Guid.NewGuid(),
-                CreatedAt = DateTime.UtcNow.AddDays(-15),
-                UpdatedAt = DateTime.UtcNow.AddDays(-2)
-            },
-            new Case
-            {
-                Id = Guid.NewGuid(),
-                CaseNumber = "2024-CR-002", 
-                Title = "State v. Chen",
-                Description = "Client: Wei Chen",
-                Status = CaseStatus.Investigation,
-                Type = CaseType.Criminal,
-                UserId = Guid.NewGuid(),
-                CreatedAt = DateTime.UtcNow.AddDays(-10),
-                UpdatedAt = DateTime.UtcNow.AddDays(-1)
-            }
-        };
+        var cases = await _context.Cases
+            .OrderByDescending(c => c.CreatedAt)
+            .ToListAsync();
 
-        return Ok(mockCases);
+        return Ok(cases);
     }
 
     [HttpGet("statistics")]
-    public ActionResult GetStatistics()
+    public async Task<ActionResult> GetStatistics()
     {
+        var total = await _context.Cases.CountAsync();
+        var active = await _context.Cases.CountAsync(c => c.Status != CaseStatus.Closed && c.Status != CaseStatus.Dismissed && c.Status != CaseStatus.Settlement);
+        var completed = await _context.Cases.CountAsync(c => c.Status == CaseStatus.Closed || c.Status == CaseStatus.Settlement);
+        
+        // For overdue cases, you might want to check hearing dates or other deadlines
+        var overdue = await _context.Cases.CountAsync(c => c.HearingDate.HasValue && c.HearingDate < DateTime.UtcNow && c.Status != CaseStatus.Closed);
+
+        var byStatus = await _context.Cases
+            .GroupBy(c => c.Status)
+            .Select(g => new { Status = g.Key, Count = g.Count() })
+            .ToDictionaryAsync(x => x.Status.ToString(), x => x.Count);
+
         var statistics = new
         {
-            Total = 15,
-            Active = 8,
-            Completed = 5,
-            Overdue = 2,
-            ByStatus = new Dictionary<string, int>
-            {
-                { "New", 2 },
-                { "Investigation", 3 },
-                { "PreTrial", 5 },
-                { "Trial", 2 },
-                { "Closed", 3 }
-            }
+            Total = total,
+            Active = active,
+            Completed = completed,
+            Overdue = overdue,
+            ByStatus = byStatus
         };
 
         return Ok(statistics);
+    }
+
+    [HttpGet("recent")]
+    public async Task<ActionResult<IEnumerable<Case>>> GetRecentCases([FromQuery] int limit = 10)
+    {
+        var recentCases = await _context.Cases
+            .OrderByDescending(c => c.CreatedAt)
+            .Take(limit)
+            .ToListAsync();
+
+        return Ok(recentCases);
     }
 }
 
