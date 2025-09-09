@@ -29,6 +29,10 @@ public class CaseConfiguration : IEntityTypeConfiguration<Case>
         builder.Property(c => c.Judge)
             .HasMaxLength(100);
 
+        builder.Property(c => c.Priority)
+            .HasMaxLength(20)
+            .HasDefaultValue("Medium");
+
         builder.Property(c => c.SuccessProbability)
             .HasPrecision(5, 2);
 
