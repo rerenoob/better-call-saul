@@ -19,23 +19,95 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onSwitchT
   });
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const { register, error, clearError } = useAuth();
+
+  const validateForm = () => {
+    const errors: Record<string, string> = {};
+    
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!formData.email) {
+      errors.email = 'Email is required';
+    } else if (!emailRegex.test(formData.email)) {
+      errors.email = 'Please enter a valid email address';
+    }
+    
+    // Password validation
+    if (!formData.password) {
+      errors.password = 'Password is required';
+    } else if (formData.password.length < 8) {
+      errors.password = 'Password must be at least 8 characters long';
+    } else if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z\d])/.test(formData.password)) {
+      errors.password = 'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character';
+    }
+    
+    // Confirm password validation
+    if (!confirmPassword) {
+      errors.confirmPassword = 'Please confirm your password';
+    } else if (formData.password !== confirmPassword) {
+      errors.confirmPassword = 'Passwords do not match';
+    }
+    
+    // Required fields validation
+    if (!formData.firstName.trim()) {
+      errors.firstName = 'First name is required';
+    }
+    if (!formData.lastName.trim()) {
+      errors.lastName = 'Last name is required';
+    }
+    if (!formData.registrationCode.trim()) {
+      errors.registrationCode = 'Registration code is required';
+    }
+    
+    return errors;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (formData.password !== confirmPassword) {
+    const validationErrors = validateForm();
+    if (Object.keys(validationErrors).length > 0) {
+      setFieldErrors(validationErrors);
       return;
     }
 
     setIsLoading(true);
+    setFieldErrors({});
     clearError();
 
     try {
       await register(formData);
       onSuccess?.();
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('Registration error:', error);
+      
+      // Handle specific error cases
+      if (error && typeof error === 'object' && 'response' in error) {
+        const axiosError = error as { response?: { status?: number; data?: any } };
+        if (axiosError.response?.status === 400) {
+          const errorData = axiosError.response.data;
+          if (errorData.message?.includes('registration code')) {
+            setFieldErrors({ registrationCode: 'Invalid registration code. Please check the code and try again.' });
+          } else if (errorData.message?.includes('email')) {
+            setFieldErrors({ email: 'This email is already registered. Please use a different email or try logging in.' });
+          } else {
+            // Handle validation errors from server
+            if (errorData.errors) {
+              const serverErrors: Record<string, string> = {};
+              Object.keys(errorData.errors).forEach(key => {
+                const fieldName = key.charAt(0).toLowerCase() + key.slice(1);
+                serverErrors[fieldName] = errorData.errors[key][0] || errorData.errors[key];
+              });
+              setFieldErrors(serverErrors);
+            }
+          }
+        } else if (axiosError.response?.status === 409) {
+          setFieldErrors({ email: 'An account with this email already exists. Please use a different email or try logging in.' });
+        } else if (axiosError.response?.status === 422) {
+          setFieldErrors({ registrationCode: 'This registration code has already been used or is no longer valid.' });
+        }
+      }
     } finally {
       setIsLoading(false);
     }
@@ -43,8 +115,26 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onSwitchT
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
+    
+    // Clear field-specific error when user starts typing
+    if (fieldErrors[name]) {
+      setFieldErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors[name];
+        return newErrors;
+      });
+    }
+    
     if (name === 'confirmPassword') {
       setConfirmPassword(value);
+      // Clear confirm password error when user starts typing
+      if (fieldErrors.confirmPassword) {
+        setFieldErrors(prev => {
+          const newErrors = { ...prev };
+          delete newErrors.confirmPassword;
+          return newErrors;
+        });
+      }
     } else {
       setFormData(prev => ({
         ...prev,
@@ -54,8 +144,21 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onSwitchT
   };
 
   const passwordsMatch = formData.password === confirmPassword;
-  const isPasswordEmpty = formData.password === '';
   const isConfirmPasswordEmpty = confirmPassword === '';
+  
+  const getErrorMessage = (error: string): string => {
+    // Map generic server errors to user-friendly messages
+    if (error.includes('Registration failed')) {
+      return 'Unable to create your account. Please check your information and try again.';
+    }
+    if (error.includes('Network Error') || error.includes('timeout')) {
+      return 'Connection problem. Please check your internet connection and try again.';
+    }
+    if (error.includes('500')) {
+      return 'Server error. Please try again in a few moments.';
+    }
+    return error;
+  };
 
   return (
     <div className="w-full max-w-2xl mx-auto bg-white rounded-xl shadow-lg p-4 sm:p-6 md:p-8 border border-gray-100">
@@ -63,17 +166,16 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onSwitchT
         📝 Register for Better Call Saul
       </h2>
       
-      {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-3 py-2 sm:px-4 sm:py-3 rounded mb-3 sm:mb-4 text-xs sm:text-sm">
-          {error}
+      {error && Object.keys(fieldErrors).length === 0 && (
+        <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg mb-4 flex items-start gap-3">
+          <span className="text-red-500 text-lg">⚠️</span>
+          <div>
+            <p className="font-medium text-sm">Registration Error</p>
+            <p className="text-sm mt-1">{getErrorMessage(error)}</p>
+          </div>
         </div>
       )}
 
-      {!isPasswordEmpty && !isConfirmPasswordEmpty && !passwordsMatch && (
-        <div className="bg-yellow-100 border border-yellow-400 text-yellow-700 px-3 py-2 sm:px-4 sm:py-3 rounded mb-3 sm:mb-4 text-xs sm:text-sm">
-          Passwords do not match
-        </div>
-      )}
 
       <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
         {/* Registration Code - Most Important Field */}
@@ -88,10 +190,19 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onSwitchT
             value={formData.registrationCode}
             onChange={handleChange}
             required
-            className="block w-full px-4 py-3 text-base border-2 border-blue-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 font-mono tracking-wider"
+            className={`block w-full px-4 py-3 text-base border-2 rounded-lg shadow-sm focus:outline-none focus:ring-2 transition-colors duration-200 font-mono tracking-wider ${
+              fieldErrors.registrationCode
+                ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
+                : 'border-blue-300 focus:ring-blue-500 focus:border-blue-500'
+            }`}
             placeholder="Enter your registration code"
             style={{ textTransform: 'uppercase' }}
           />
+          {fieldErrors.registrationCode && (
+            <p className="text-red-600 text-xs mt-1 flex items-center gap-1">
+              <span>❌</span> {fieldErrors.registrationCode}
+            </p>
+          )}
           <p className="text-xs text-blue-600 mt-1">
             You need a valid registration code to create an account. Contact your administrator to obtain one.
           </p>
@@ -110,9 +221,18 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onSwitchT
               value={formData.firstName}
               onChange={handleChange}
               required
-              className="mt-1 block w-full px-4 py-3 text-base border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
+              className={`mt-1 block w-full px-4 py-3 text-base border rounded-lg shadow-sm focus:outline-none focus:ring-2 transition-colors duration-200 ${
+                fieldErrors.firstName
+                  ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
+                  : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
+              }`}
               placeholder="Enter your first name"
             />
+            {fieldErrors.firstName && (
+              <p className="text-red-600 text-xs mt-1 flex items-center gap-1">
+                <span>❌</span> {fieldErrors.firstName}
+              </p>
+            )}
           </div>
 
           <div>
@@ -126,9 +246,18 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onSwitchT
               value={formData.lastName}
               onChange={handleChange}
               required
-              className="mt-1 block w-full px-4 py-3 text-base border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
+              className={`mt-1 block w-full px-4 py-3 text-base border rounded-lg shadow-sm focus:outline-none focus:ring-2 transition-colors duration-200 ${
+                fieldErrors.lastName
+                  ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
+                  : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
+              }`}
               placeholder="Enter your last name"
             />
+            {fieldErrors.lastName && (
+              <p className="text-red-600 text-xs mt-1 flex items-center gap-1">
+                <span>❌</span> {fieldErrors.lastName}
+              </p>
+            )}
           </div>
         </div>
 
@@ -144,10 +273,19 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onSwitchT
             value={formData.email}
             onChange={handleChange}
             required
-            className="mt-1 block w-full px-4 py-3 text-base border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
+            className={`mt-1 block w-full px-4 py-3 text-base border rounded-lg shadow-sm focus:outline-none focus:ring-2 transition-colors duration-200 ${
+              fieldErrors.email
+                ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
+                : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
+            }`}
             placeholder="Enter your email address"
             autoComplete="email"
           />
+          {fieldErrors.email && (
+            <p className="text-red-600 text-xs mt-1 flex items-center gap-1">
+              <span>❌</span> {fieldErrors.email}
+            </p>
+          )}
         </div>
 
         {/* Password Fields */}
@@ -163,10 +301,55 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onSwitchT
               value={formData.password}
               onChange={handleChange}
               required
-              className="mt-1 block w-full px-4 py-3 text-base border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
+              className={`mt-1 block w-full px-4 py-3 text-base border rounded-lg shadow-sm focus:outline-none focus:ring-2 transition-colors duration-200 ${
+                fieldErrors.password
+                  ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
+                  : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
+              }`}
               placeholder="Create a password"
               autoComplete="new-password"
             />
+            {fieldErrors.password && (
+              <p className="text-red-600 text-xs mt-1 flex items-center gap-1">
+                <span>❌</span> {fieldErrors.password}
+              </p>
+            )}
+            {formData.password && !fieldErrors.password && (
+              <div className="mt-2 space-y-1">
+                <div className="flex items-center gap-2 text-xs">
+                  <span className={formData.password.length >= 8 ? 'text-green-600' : 'text-gray-400'}>
+                    {formData.password.length >= 8 ? '✅' : '⭕'}
+                  </span>
+                  <span className={formData.password.length >= 8 ? 'text-green-600' : 'text-gray-500'}>
+                    At least 8 characters
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 text-xs">
+                  <span className={/(?=.*[a-z])(?=.*[A-Z])/.test(formData.password) ? 'text-green-600' : 'text-gray-400'}>
+                    {/(?=.*[a-z])(?=.*[A-Z])/.test(formData.password) ? '✅' : '⭕'}
+                  </span>
+                  <span className={/(?=.*[a-z])(?=.*[A-Z])/.test(formData.password) ? 'text-green-600' : 'text-gray-500'}>
+                    Both uppercase and lowercase letters
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 text-xs">
+                  <span className={/(?=.*\d)/.test(formData.password) ? 'text-green-600' : 'text-gray-400'}>
+                    {/(?=.*\d)/.test(formData.password) ? '✅' : '⭕'}
+                  </span>
+                  <span className={/(?=.*\d)/.test(formData.password) ? 'text-green-600' : 'text-gray-500'}>
+                    At least one number
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 text-xs">
+                  <span className={/(?=.*[^a-zA-Z\d])/.test(formData.password) ? 'text-green-600' : 'text-gray-400'}>
+                    {/(?=.*[^a-zA-Z\d])/.test(formData.password) ? '✅' : '⭕'}
+                  </span>
+                  <span className={/(?=.*[^a-zA-Z\d])/.test(formData.password) ? 'text-green-600' : 'text-gray-500'}>
+                    At least one special character
+                  </span>
+                </div>
+              </div>
+            )}
           </div>
 
           <div>
@@ -181,15 +364,32 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onSwitchT
               onChange={handleChange}
               required
               className={`mt-1 block w-full px-4 py-3 text-base border rounded-lg shadow-sm focus:outline-none focus:ring-2 transition-colors duration-200 ${
-                !isConfirmPasswordEmpty && passwordsMatch
+                fieldErrors.confirmPassword
+                  ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
+                  : !isConfirmPasswordEmpty && passwordsMatch
                   ? 'border-green-300 focus:ring-green-500 focus:border-green-500'
                   : !isConfirmPasswordEmpty && !passwordsMatch
-                  ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
+                  ? 'border-yellow-300 focus:ring-yellow-500 focus:border-yellow-500'
                   : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
               }`}
               placeholder="Confirm your password"
               autoComplete="new-password"
             />
+            {fieldErrors.confirmPassword && (
+              <p className="text-red-600 text-xs mt-1 flex items-center gap-1">
+                <span>❌</span> {fieldErrors.confirmPassword}
+              </p>
+            )}
+            {!fieldErrors.confirmPassword && !isConfirmPasswordEmpty && passwordsMatch && (
+              <p className="text-green-600 text-xs mt-1 flex items-center gap-1">
+                <span>✅</span> Passwords match
+              </p>
+            )}
+            {!fieldErrors.confirmPassword && !isConfirmPasswordEmpty && !passwordsMatch && (
+              <p className="text-yellow-600 text-xs mt-1 flex items-center gap-1">
+                <span>⚠️</span> Passwords do not match
+              </p>
+            )}
           </div>
         </div>
 
@@ -231,7 +431,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onSwitchT
 
         <button
           type="submit"
-          disabled={isLoading || !passwordsMatch || isPasswordEmpty}
+          disabled={isLoading}
           className="w-full bg-green-600 text-white py-3 px-4 rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed text-base font-medium transition-colors duration-200 transform hover:scale-[1.02] active:scale-[0.98]"
         >
           {isLoading ? '📝 Creating Account...' : '🚀 Create Account'}
