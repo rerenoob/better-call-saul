@@ -43,7 +43,7 @@ public class AuthController : ControllerBase
                 UserId = Guid.NewGuid().ToString(),
                 Email = "test@example.com",
                 FullName = "Test Public Defender",
-                Roles = new List<string> { "PublicDefender" }
+                Roles = new List<string> { "User" }
             };
             
             return Ok(mockResponse);
@@ -89,7 +89,7 @@ public class AuthController : ControllerBase
                     UserId = Guid.NewGuid().ToString(),
                     Email = "admin@bettercallsaul.com",
                     FullName = "System Administrator",
-                    Roles = new List<string> { "Administrator", "PublicDefender" }
+                    Roles = new List<string> { "Admin" }
                 };
                 
                 return Ok(mockResponse);
@@ -126,21 +126,41 @@ public class AuthController : ControllerBase
             IsActive = true
         };
 
-        var result = await _userManager.CreateAsync(user, request.Password);
+        // Use a transaction to ensure atomicity
+        using var transaction = await _context.Database.BeginTransactionAsync();
+        
+        try
+        {
+            var result = await _userManager.CreateAsync(user, request.Password);
 
-        if (!result.Succeeded)
-            return BadRequest(new { errors = result.Errors.Select(e => e.Description) });
+            if (!result.Succeeded)
+                return BadRequest(new { errors = result.Errors.Select(e => e.Description) });
 
-        // Mark registration code as used
-        registrationCode.IsUsed = true;
-        registrationCode.UsedByUserId = user.Id;
-        registrationCode.UsedAt = DateTime.UtcNow;
-        registrationCode.UpdatedAt = DateTime.UtcNow;
+            // Assign default User role
+            try
+            {
+                await _userManager.AddToRoleAsync(user, "User");
+            }
+            catch (Exception ex)
+            {
+                // Log the error but continue with registration
+                Console.WriteLine($"Warning: Could not assign User role to {user.Email}: {ex.Message}");
+            }
 
-        await _context.SaveChangesAsync();
+            // Mark registration code as used with the user ID
+            registrationCode.IsUsed = true;
+            registrationCode.UsedByUserId = user.Id;
+            registrationCode.UsedAt = DateTime.UtcNow;
+            registrationCode.UpdatedAt = DateTime.UtcNow;
 
-        // Assign default role
-        await _userManager.AddToRoleAsync(user, "PublicDefender");
+            await _context.SaveChangesAsync();
+            await transaction.CommitAsync();
+        }
+        catch (Exception)
+        {
+            await transaction.RollbackAsync();
+            throw;
+        }
 
         // Automatically log in the user after successful registration
         var token = await _authenticationService.GenerateJwtToken(user);
