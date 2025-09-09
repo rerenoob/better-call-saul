@@ -10,13 +10,16 @@ namespace BetterCallSaul.API.Controllers;
 public class LegalResearchController : ControllerBase
 {
     private readonly ICourtListenerService _courtListenerService;
+    private readonly ICaseAnalysisService _caseAnalysisService;
     private readonly ILogger<LegalResearchController> _logger;
 
     public LegalResearchController(
         ICourtListenerService courtListenerService,
+        ICaseAnalysisService caseAnalysisService,
         ILogger<LegalResearchController> logger)
     {
         _courtListenerService = courtListenerService;
+        _caseAnalysisService = caseAnalysisService;
         _logger = logger;
     }
 
@@ -195,4 +198,100 @@ public class LegalResearchController : ControllerBase
             return StatusCode(503, new { Status = "Unhealthy", Service = "CourtListener", Error = ex.Message });
         }
     }
+
+    [HttpPost("analyze/case/{caseId}/document/{documentId}")]
+    public async Task<IActionResult> AnalyzeCase(
+        Guid caseId,
+        Guid documentId,
+        [FromBody] CaseAnalysisRequest request)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(request.DocumentText))
+            {
+                return BadRequest("Document text is required for analysis");
+            }
+
+            var analysis = await _caseAnalysisService.AnalyzeCaseAsync(caseId, documentId, request.DocumentText);
+            
+            return Ok(new
+            {
+                AnalysisId = analysis.Id,
+                Status = analysis.Status.ToString(),
+                CreatedAt = analysis.CreatedAt,
+                EstimatedCompletionTime = TimeSpan.FromMinutes(2) // Typical AI analysis time
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error analyzing case {CaseId} with document {DocumentId}", caseId, documentId);
+            return StatusCode(500, "An error occurred while analyzing the case");
+        }
+    }
+
+    [HttpGet("analysis/{analysisId}")]
+    public async Task<IActionResult> GetAnalysis(Guid analysisId)
+    {
+        try
+        {
+            var analysis = await _caseAnalysisService.GetAnalysisAsync(analysisId);
+            
+            return Ok(new
+            {
+                AnalysisId = analysis.Id,
+                CaseId = analysis.CaseId,
+                DocumentId = analysis.DocumentId,
+                Status = analysis.Status.ToString(),
+                ViabilityScore = analysis.ViabilityScore,
+                ConfidenceScore = analysis.ConfidenceScore,
+                AnalysisText = analysis.AnalysisText,
+                KeyLegalIssues = analysis.KeyLegalIssues,
+                PotentialDefenses = analysis.PotentialDefenses,
+                EvidenceStrength = analysis.EvidenceEvaluation.StrengthScore,
+                CreatedAt = analysis.CreatedAt,
+                CompletedAt = analysis.CompletedAt,
+                ProcessingTime = analysis.ProcessingTime
+            });
+        }
+        catch (KeyNotFoundException)
+        {
+            return NotFound("Analysis not found");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving analysis {AnalysisId}", analysisId);
+            return StatusCode(500, "An error occurred while retrieving the analysis");
+        }
+    }
+
+    [HttpGet("case/{caseId}/analyses")]
+    public async Task<IActionResult> GetCaseAnalyses(Guid caseId)
+    {
+        try
+        {
+            var analyses = await _caseAnalysisService.GetCaseAnalysesAsync(caseId);
+            
+            return Ok(analyses.Select(a => new
+            {
+                AnalysisId = a.Id,
+                DocumentId = a.DocumentId,
+                Status = a.Status.ToString(),
+                ViabilityScore = a.ViabilityScore,
+                ConfidenceScore = a.ConfidenceScore,
+                CreatedAt = a.CreatedAt,
+                CompletedAt = a.CompletedAt
+            }));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error retrieving analyses for case {CaseId}", caseId);
+            return StatusCode(500, "An error occurred while retrieving case analyses");
+        }
+    }
+}
+
+public class CaseAnalysisRequest
+{
+    public string DocumentText { get; set; } = string.Empty;
+    public string? CaseContext { get; set; }
 }

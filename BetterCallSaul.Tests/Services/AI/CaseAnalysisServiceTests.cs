@@ -44,6 +44,18 @@ public class CaseAnalysisServiceTests : IDisposable
         var caseId = Guid.NewGuid();
         var documentId = Guid.NewGuid();
         var documentText = "Test legal document content";
+        
+        // Mock successful AI response
+        var aiResponse = new Core.Models.Entities.AIResponse
+        {
+            Success = true,
+            GeneratedText = "Test analysis result",
+            ConfidenceScore = 0.85,
+            ProcessingTime = TimeSpan.FromSeconds(5)
+        };
+        
+        _openAIServiceMock.Setup(s => s.GenerateLegalAnalysisAsync(documentText, "Case analysis", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(aiResponse);
 
         // Act
         var result = await _caseAnalysisService.AnalyzeCaseAsync(caseId, documentId, documentText);
@@ -52,14 +64,19 @@ public class CaseAnalysisServiceTests : IDisposable
         Assert.NotNull(result);
         Assert.Equal(caseId, result.CaseId);
         Assert.Equal(documentId, result.DocumentId);
-        Assert.Equal(AnalysisStatus.Processing, result.Status);
+        Assert.Equal(AnalysisStatus.Completed, result.Status);
+        Assert.Equal("Test analysis result", result.AnalysisText);
+        Assert.Equal(0.85, result.ConfidenceScore);
         
         // Verify the record was saved to the database
         var savedAnalysis = await _context.CaseAnalyses.FirstOrDefaultAsync(ca => ca.Id == result.Id);
         Assert.NotNull(savedAnalysis);
         Assert.Equal(caseId, savedAnalysis.CaseId);
         Assert.Equal(documentId, savedAnalysis.DocumentId);
-        Assert.Equal(AnalysisStatus.Processing, savedAnalysis.Status);
+        Assert.Equal(AnalysisStatus.Completed, savedAnalysis.Status);
+        
+        // Verify OpenAI service was called
+        _openAIServiceMock.Verify(s => s.GenerateLegalAnalysisAsync(documentText, "Case analysis", It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
@@ -89,6 +106,44 @@ public class CaseAnalysisServiceTests : IDisposable
 
         // Act & Assert
         await Assert.ThrowsAsync<KeyNotFoundException>(() => _caseAnalysisService.GetAnalysisAsync(analysisId));
+    }
+
+    [Fact]
+    public async Task AnalyzeCaseAsync_OpenAIFailure_MarksAnalysisAsFailed()
+    {
+        // Arrange
+        var caseId = Guid.NewGuid();
+        var documentId = Guid.NewGuid();
+        var documentText = "Test legal document content";
+        
+        // Mock failed AI response
+        var aiResponse = new Core.Models.Entities.AIResponse
+        {
+            Success = false,
+            ErrorMessage = "AI service unavailable",
+            ProcessingTime = TimeSpan.Zero
+        };
+        
+        _openAIServiceMock.Setup(s => s.GenerateLegalAnalysisAsync(documentText, "Case analysis", It.IsAny<CancellationToken>()))
+            .ReturnsAsync(aiResponse);
+
+        // Act
+        var result = await _caseAnalysisService.AnalyzeCaseAsync(caseId, documentId, documentText);
+
+        // Assert
+        Assert.NotNull(result);
+        Assert.Equal(caseId, result.CaseId);
+        Assert.Equal(documentId, result.DocumentId);
+        Assert.Equal(AnalysisStatus.Failed, result.Status);
+        Assert.Contains("AI service unavailable", result.AnalysisText);
+        
+        // Verify the record was saved to the database
+        var savedAnalysis = await _context.CaseAnalyses.FirstOrDefaultAsync(ca => ca.Id == result.Id);
+        Assert.NotNull(savedAnalysis);
+        Assert.Equal(AnalysisStatus.Failed, savedAnalysis.Status);
+        
+        // Verify OpenAI service was called
+        _openAIServiceMock.Verify(s => s.GenerateLegalAnalysisAsync(documentText, "Case analysis", It.IsAny<CancellationToken>()), Times.Once);
     }
 
     [Fact]
