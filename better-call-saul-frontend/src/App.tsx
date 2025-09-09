@@ -7,6 +7,11 @@ import { RegisterForm } from './components/auth/RegisterForm';
 import { CaseDetail } from './components/CaseDetail';
 import { Dashboard } from './components/Dashboard';
 import { CaseUpload } from './components/CaseUpload';
+import { AdminLayout } from './components/admin/AdminLayout';
+import { AdminDashboard } from './pages/admin/AdminDashboard';
+import { UserManagement } from './pages/admin/UserManagement';
+import { SystemHealth } from './pages/admin/SystemHealth';
+import { AuditLogs } from './pages/admin/AuditLogs';
 
 // Create a client
 const queryClient = new QueryClient({
@@ -96,6 +101,21 @@ function App() {
                 <CaseUpload />
               </ProtectedRoute>
             } />
+            <Route path="/admin" element={
+              <ProtectedRoute requireAdmin>
+                <Navigate to="/admin/dashboard" replace />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin" element={
+              <ProtectedRoute requireAdmin>
+                <AdminLayout />
+              </ProtectedRoute>
+            }>
+              <Route path="dashboard" element={<AdminDashboard />} />
+              <Route path="users" element={<UserManagement />} />
+              <Route path="health" element={<SystemHealth />} />
+              <Route path="audit-logs" element={<AuditLogs />} />
+            </Route>
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Routes>

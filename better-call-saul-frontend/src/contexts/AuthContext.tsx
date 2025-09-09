@@ -11,6 +11,7 @@ interface AuthContextType extends AuthState {
   logout: () => Promise<void>;
   register: (userData: RegisterRequest) => Promise<void>;
   clearError: () => void;
+  isAdmin: boolean;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -132,6 +133,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     logout,
     register,
     clearError,
+    isAdmin: state.user?.roles.includes('Admin') || false,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

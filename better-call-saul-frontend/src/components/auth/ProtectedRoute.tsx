@@ -5,15 +5,17 @@ import { useAuth } from '../../hooks/useAuth';
 interface ProtectedRouteProps {
   children: React.ReactNode;
   requireAuth?: boolean;
+  requireAdmin?: boolean;
   redirectTo?: string;
 }
 
 export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   children,
   requireAuth = true,
+  requireAdmin = false,
   redirectTo = '/login',
 }) => {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, isAdmin } = useAuth();
   const location = useLocation();
 
   if (isLoading) {
@@ -26,6 +28,10 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
   if (requireAuth && !isAuthenticated) {
     return <Navigate to={redirectTo} state={{ from: location }} replace />;
+  }
+
+  if (requireAdmin && !isAdmin) {
+    return <Navigate to="/dashboard" replace />;
   }
 
   if (!requireAuth && isAuthenticated) {
