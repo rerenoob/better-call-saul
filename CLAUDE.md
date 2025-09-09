@@ -27,11 +27,11 @@ dotnet restore            # Restore NuGet packages
 
 **Frontend (React + TypeScript):**
 ```bash
+cd better-call-saul-frontend  # Navigate to frontend directory
 npm install               # Install dependencies
 npm run dev               # Start development server (http://localhost:5173)
 npm run build             # Build for production
 npm run preview           # Preview production build
-npm test                  # Run frontend tests (Jest/Vitest)
 npm run type-check        # TypeScript type checking
 npm run lint              # ESLint code quality checks
 ```
@@ -41,22 +41,58 @@ npm run lint              # ESLint code quality checks
 # Terminal 1 - Backend API
 dotnet watch
 
-# Terminal 2 - Frontend React app
-npm run dev
+# Terminal 2 - Frontend React app (from better-call-saul-frontend/)
+cd better-call-saul-frontend && npm run dev
+```
+
+**Testing Commands:**
+```bash
+# Backend tests
+dotnet test                                    # Run all backend tests
+dotnet test --filter Category=Unit           # Run unit tests only
+dotnet test --filter Category=Integration    # Run integration tests only
+
+# Frontend tests
+cd better-call-saul-frontend
+npx playwright test                           # Run E2E tests
+
+# Script-based testing
+./test-case-analysis.sh                       # Test case analysis endpoints
+```
+
+**Database Management:**
+```bash
+# Entity Framework migrations
+dotnet ef migrations add <MigrationName> --project BetterCallSaul.Infrastructure --startup-project BetterCallSaul.API
+dotnet ef database update --project BetterCallSaul.Infrastructure --startup-project BetterCallSaul.API
+
+# Registration code management
+./scripts/manage-registration-codes.sh seed 100    # Generate 100 codes
+./scripts/manage-registration-codes.sh list        # List existing codes
+./scripts/manage-registration-codes.sh stats       # Show statistics
+./scripts/manage-registration-codes.sh cleanup     # Remove expired codes
 ```
 
 ## Architecture
 
+The solution follows clean architecture principles with clear separation between layers.
+
+### Solution Structure
+- **BetterCallSaul.API** - Web API project with controllers and configuration
+- **BetterCallSaul.Core** - Domain entities, interfaces, and business logic
+- **BetterCallSaul.Infrastructure** - Data access, external services, and implementations
+- **BetterCallSaul.Tests** - Unit and integration tests
+- **better-call-saul-frontend/** - React TypeScript frontend application
+
 ### Backend (.NET 8 Web API)
 - **Entry Point:** `Program.cs` - ASP.NET Core Web API with JWT authentication
 - **Controllers:** RESTful API endpoints for case management, AI analysis, legal research
-- **Services:**
-  - `Services/CaseAnalysisService.cs` - AI-powered case analysis and predictions
-  - `Services/LegalResearchService.cs` - Integration with legal databases
-  - `Services/DocumentProcessingService.cs` - File upload and OCR processing
-  - `Services/AuthenticationService.cs` - JWT token management
+- **Core Services:**
+  - Case analysis with AI integration
+  - Legal research and document processing
+  - User authentication and registration code management
 - **Data Layer:**
-  - Entity Framework Core with SQL Server
+  - Entity Framework Core with SQLite (development) / SQL Server (production)
   - Models for cases, users, documents, analysis results
   - Audit logging and compliance tracking
 - **Configuration:**
@@ -121,10 +157,10 @@ npm run dev
 - Production secrets managed via Azure Key Vault
 
 ### Database
-- Entity Framework Core with SQL Server
-- Migrations managed via `dotnet ef` commands
-- Development database: LocalDB or SQL Server Express
-- Production: Azure SQL Database
+- Entity Framework Core with SQLite (development) / SQL Server (production)
+- Migrations managed via `dotnet ef` commands (see Database Management section above)
+- Local database file: `BetterCallSaul.db` in project root
+- Registration codes managed via `./scripts/manage-registration-codes.sh`
 
 ### External Services
 - Azure OpenAI Service for case analysis
