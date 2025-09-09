@@ -127,7 +127,7 @@ public class DatabaseSeedingService
     {
         _logger.LogInformation("Starting role seeding...");
 
-        var requiredRoles = new[] { "Administrator", "PublicDefender", "SuperUser" };
+        var requiredRoles = new[] { "User", "Admin" };
 
         foreach (var roleName in requiredRoles)
         {

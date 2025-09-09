@@ -84,22 +84,31 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onSwitchT
       
       // Handle specific error cases
       if (error && typeof error === 'object' && 'response' in error) {
-        const axiosError = error as { response?: { status?: number; data?: any } };
+        const axiosError = error as { response?: { status?: number; data?: unknown } };
         if (axiosError.response?.status === 400) {
           const errorData = axiosError.response.data;
-          if (errorData.message?.includes('registration code')) {
-            setFieldErrors({ registrationCode: 'Invalid registration code. Please check the code and try again.' });
-          } else if (errorData.message?.includes('email')) {
-            setFieldErrors({ email: 'This email is already registered. Please use a different email or try logging in.' });
-          } else {
-            // Handle validation errors from server
-            if (errorData.errors) {
-              const serverErrors: Record<string, string> = {};
-              Object.keys(errorData.errors).forEach(key => {
-                const fieldName = key.charAt(0).toLowerCase() + key.slice(1);
-                serverErrors[fieldName] = errorData.errors[key][0] || errorData.errors[key];
-              });
-              setFieldErrors(serverErrors);
+          // Type guard to check if errorData has the expected structure
+          if (errorData && typeof errorData === 'object') {
+            const data = errorData as { message?: string; errors?: Record<string, unknown> };
+            if (data.message?.includes('registration code')) {
+              setFieldErrors({ registrationCode: 'Invalid registration code. Please check the code and try again.' });
+            } else if (data.message?.includes('email')) {
+              setFieldErrors({ email: 'This email is already registered. Please use a different email or try logging in.' });
+            } else {
+              // Handle validation errors from server
+              if (data.errors) {
+                const serverErrors: Record<string, string> = {};
+                Object.keys(data.errors).forEach(key => {
+                  const fieldName = key.charAt(0).toLowerCase() + key.slice(1);
+                  const errorValue = data.errors![key];
+                  if (Array.isArray(errorValue)) {
+                    serverErrors[fieldName] = String(errorValue[0] || '');
+                  } else {
+                    serverErrors[fieldName] = String(errorValue || '');
+                  }
+                });
+                setFieldErrors(serverErrors);
+              }
             }
           }
         } else if (axiosError.response?.status === 409) {
