@@ -18,6 +18,7 @@ public class BetterCallSaulContext : IdentityDbContext<User, Role, Guid>
 
     public virtual DbSet<Case> Cases { get; set; } = null!;
     public virtual DbSet<Document> Documents { get; set; } = null!;
+    public virtual DbSet<DocumentAnnotation> DocumentAnnotations { get; set; } = null!;
     public virtual DbSet<AuditLog> AuditLogs { get; set; } = null!;
     public virtual DbSet<CaseAnalysis> CaseAnalyses { get; set; } = null!;
     public virtual DbSet<LegalCase> LegalCases { get; set; } = null!;

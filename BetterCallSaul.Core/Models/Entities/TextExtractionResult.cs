@@ -29,4 +29,7 @@ public class TextPage
     public string? Text { get; set; }
     public double Confidence { get; set; }
     public Dictionary<string, object>? PageMetadata { get; set; }
+    public List<TextBlock>? TextBlocks { get; set; }
+    public int Width { get; set; }
+    public int Height { get; set; }
 }

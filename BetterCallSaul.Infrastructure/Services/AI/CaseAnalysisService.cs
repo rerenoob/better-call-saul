@@ -119,6 +119,53 @@ public class CaseAnalysisService : ICaseAnalysisService
         await _context.SaveChangesAsync(cancellationToken);
     }
 
+    public async Task<ViabilityAssessment> AssessViabilityAsync(Guid caseId, string caseFacts, string[] charges, string[] evidence, CancellationToken cancellationToken = default)
+    {
+        _logger.LogInformation("Starting viability assessment for case {CaseId}", caseId);
+
+        var assessment = new ViabilityAssessment
+        {
+            CaseId = caseId,
+            CaseFacts = caseFacts,
+            Charges = charges,
+            Evidence = evidence,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        try
+        {
+            // Prepare viability assessment prompt
+            var prompt = BuildViabilityAssessmentPrompt(caseFacts, charges, evidence);
+            
+            // Call OpenAI service for viability assessment
+            var aiResponse = await _openAIService.GenerateLegalAnalysisAsync(prompt, "Viability Assessment", cancellationToken);
+            
+            if (aiResponse.Success && !string.IsNullOrEmpty(aiResponse.GeneratedText))
+            {
+                ParseViabilityResults(assessment, aiResponse.GeneratedText);
+                assessment.ConfidenceLevel = aiResponse.ConfidenceScore > 80 ? "High" : 
+                                           aiResponse.ConfidenceScore > 60 ? "Medium" : "Low";
+            }
+            else
+            {
+                _logger.LogWarning("AI viability assessment failed for case {CaseId}: {Error}", caseId, aiResponse.ErrorMessage);
+                assessment.ViabilityScore = 50.0; // Default neutral score
+                assessment.ConfidenceLevel = "Low";
+                assessment.Reasoning = "Unable to complete AI assessment. Manual review recommended.";
+            }
+
+            return assessment;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error during viability assessment for case {CaseId}", caseId);
+            assessment.ViabilityScore = 0;
+            assessment.ConfidenceLevel = "Low";
+            assessment.Reasoning = "Assessment failed due to technical error. Manual review required.";
+            return assessment;
+        }
+    }
+
     private void OnAnalysisProgress(AnalysisProgressEventArgs e)
     {
         AnalysisProgress?.Invoke(this, e);
@@ -180,6 +227,99 @@ public class CaseAnalysisService : ICaseAnalysisService
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Failed to parse structured data from AI analysis text");
+        }
+    }
+
+    private string BuildViabilityAssessmentPrompt(string caseFacts, string[] charges, string[] evidence)
+    {
+        return $@"
+Please assess the viability of this criminal defense case and provide a comprehensive analysis:
+
+CASE FACTS:
+{caseFacts}
+
+CHARGES:
+{string.Join(", ", charges)}
+
+AVAILABLE EVIDENCE:
+{string.Join("\n", evidence)}
+
+Please provide your assessment in the following format:
+
+VIABILITY SCORE: [0-100]%
+
+CONFIDENCE LEVEL: [High/Medium/Low]
+
+REASONING:
+[Detailed explanation of why this case has the assessed viability]
+
+STRENGTH FACTORS:
+- [List key factors that strengthen the defense]
+
+WEAKNESS FACTORS:  
+- [List key factors that weaken the defense]
+
+RECOMMENDED STRATEGY:
+[Primary recommended approach for defending this case]
+
+Focus on legal precedents, evidence quality, procedural issues, and potential defenses.
+";
+    }
+
+    private void ParseViabilityResults(ViabilityAssessment assessment, string analysisText)
+    {
+        try
+        {
+            // Extract viability score
+            var scoreMatch = System.Text.RegularExpressions.Regex.Match(analysisText, @"VIABILITY SCORE:\s*(\d+)%?");
+            if (scoreMatch.Success && double.TryParse(scoreMatch.Groups[1].Value, out var score))
+            {
+                assessment.ViabilityScore = score;
+            }
+
+            // Extract reasoning
+            var reasoningMatch = System.Text.RegularExpressions.Regex.Match(analysisText, @"REASONING:\s*(.*?)(?=STRENGTH FACTORS:|WEAKNESS FACTORS:|RECOMMENDED STRATEGY:|$)", System.Text.RegularExpressions.RegexOptions.Singleline);
+            if (reasoningMatch.Success)
+            {
+                assessment.Reasoning = reasoningMatch.Groups[1].Value.Trim();
+            }
+
+            // Extract strength factors
+            var strengthMatch = System.Text.RegularExpressions.Regex.Match(analysisText, @"STRENGTH FACTORS:\s*(.*?)(?=WEAKNESS FACTORS:|RECOMMENDED STRATEGY:|$)", System.Text.RegularExpressions.RegexOptions.Singleline);
+            if (strengthMatch.Success)
+            {
+                var strengths = strengthMatch.Groups[1].Value.Split(new[] { '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries)
+                    .Where(line => line.Trim().StartsWith("-"))
+                    .Select(line => line.Trim().TrimStart('-').Trim())
+                    .Where(factor => !string.IsNullOrEmpty(factor))
+                    .ToArray();
+                assessment.StrengthFactors = strengths;
+            }
+
+            // Extract weakness factors
+            var weaknessMatch = System.Text.RegularExpressions.Regex.Match(analysisText, @"WEAKNESS FACTORS:\s*(.*?)(?=RECOMMENDED STRATEGY:|$)", System.Text.RegularExpressions.RegexOptions.Singleline);
+            if (weaknessMatch.Success)
+            {
+                var weaknesses = weaknessMatch.Groups[1].Value.Split(new[] { '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries)
+                    .Where(line => line.Trim().StartsWith("-"))
+                    .Select(line => line.Trim().TrimStart('-').Trim())
+                    .Where(factor => !string.IsNullOrEmpty(factor))
+                    .ToArray();
+                assessment.WeaknessFactors = weaknesses;
+            }
+
+            // Extract recommended strategy
+            var strategyMatch = System.Text.RegularExpressions.Regex.Match(analysisText, @"RECOMMENDED STRATEGY:\s*(.*?)$", System.Text.RegularExpressions.RegexOptions.Singleline);
+            if (strategyMatch.Success)
+            {
+                assessment.RecommendedStrategy = strategyMatch.Groups[1].Value.Trim();
+            }
+
+            _logger.LogInformation("Parsed viability assessment for case {CaseId} with score {Score}%", assessment.CaseId, assessment.ViabilityScore);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to parse viability assessment results");
         }
     }
 }

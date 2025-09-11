@@ -86,7 +86,7 @@ public class CourtListenerService : ICourtListenerService
 
         if (_cache.TryGetValue(cacheKey, out LegalCase? cachedCase) && cachedCase != null)
         {
-            return Task.FromResult(cachedCase);
+            return Task.FromResult<LegalCase?>(cachedCase);
         }
 
         try
@@ -100,7 +100,7 @@ public class CourtListenerService : ICourtListenerService
                 _cache.Set(cacheKey, legalCase, TimeSpan.FromMinutes(CacheDurationMinutes));
             }
 
-            return Task.FromResult(legalCase);
+            return Task.FromResult<LegalCase?>(legalCase);
         }
         catch (Exception ex)
         {
@@ -115,7 +115,7 @@ public class CourtListenerService : ICourtListenerService
 
         if (_cache.TryGetValue(cacheKey, out CourtOpinion? cachedOpinion) && cachedOpinion != null)
         {
-            return Task.FromResult(cachedOpinion);
+            return Task.FromResult<CourtOpinion?>(cachedOpinion);
         }
 
         try
@@ -129,7 +129,7 @@ public class CourtListenerService : ICourtListenerService
                 _cache.Set(cacheKey, opinion, TimeSpan.FromMinutes(CacheDurationMinutes));
             }
 
-            return Task.FromResult(opinion);
+            return Task.FromResult<CourtOpinion?>(opinion);
         }
         catch (Exception ex)
         {

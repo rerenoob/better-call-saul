@@ -51,12 +51,7 @@ else
         options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 }
 
-// Ensure database is created
-using (var scope = builder.Services.BuildServiceProvider().CreateScope())
-{
-    var context = scope.ServiceProvider.GetRequiredService<BetterCallSaulContext>();
-    context.Database.EnsureCreated();
-}
+// Database initialization will be handled after app.Build()
 
 // Add ASP.NET Core Identity
 builder.Services.AddIdentity<User, Role>(options =>

@@ -60,7 +60,7 @@ public class JustiaService : IJustiaService
 
         if (_cache.TryGetValue(cacheKey, out LegalStatute? cachedStatute) && cachedStatute != null)
         {
-            return Task.FromResult(cachedStatute);
+            return Task.FromResult<LegalStatute?>(cachedStatute);
         }
 
         try
@@ -74,7 +74,7 @@ public class JustiaService : IJustiaService
                 _cache.Set(cacheKey, statute, TimeSpan.FromMinutes(CacheDurationMinutes));
             }
 
-            return Task.FromResult(statute);
+            return Task.FromResult<LegalStatute?>(statute);
         }
         catch (Exception ex)
         {

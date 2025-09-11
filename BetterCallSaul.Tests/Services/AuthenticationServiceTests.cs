@@ -3,6 +3,9 @@ using BetterCallSaul.Infrastructure.Services.Authentication;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Logging;
+using Microsoft.AspNetCore.Authentication;
 using Moq;
 using System.Security.Claims;
 using System.IdentityModel.Tokens.Jwt;
@@ -15,18 +18,29 @@ public class AuthenticationServiceTests
     private readonly Mock<UserManager<User>> _userManagerMock;
     private readonly Mock<SignInManager<User>> _signInManagerMock;
     private readonly Mock<IConfiguration> _configurationMock;
-    private readonly AuthenticationService _authService;
+    private readonly BetterCallSaul.Infrastructure.Services.Authentication.AuthenticationService _authService;
 
     public AuthenticationServiceTests()
     {
         _userManagerMock = new Mock<UserManager<User>>(
-            Mock.Of<IUserStore<User>>(), null, null, null, null, null, null, null, null);
+            Mock.Of<IUserStore<User>>(), 
+            Mock.Of<IOptions<IdentityOptions>>(), 
+            Mock.Of<IPasswordHasher<User>>(), 
+            new IUserValidator<User>[0], 
+            new IPasswordValidator<User>[0], 
+            Mock.Of<ILookupNormalizer>(), 
+            Mock.Of<IdentityErrorDescriber>(), 
+            Mock.Of<IServiceProvider>(), 
+            Mock.Of<ILogger<UserManager<User>>>());
         
         _signInManagerMock = new Mock<SignInManager<User>>(
             _userManagerMock.Object, 
             Mock.Of<IHttpContextAccessor>(), 
             Mock.Of<IUserClaimsPrincipalFactory<User>>(), 
-            null, null, null, null);
+            Mock.Of<IOptions<IdentityOptions>>(), 
+            Mock.Of<ILogger<SignInManager<User>>>(), 
+            Mock.Of<IAuthenticationSchemeProvider>(), 
+            Mock.Of<IUserConfirmation<User>>());
 
         _configurationMock = new Mock<IConfiguration>();
         _configurationMock.Setup(c => c["JwtSettings:SecretKey"]).Returns("TestSecretKey123456789012345678901234567890");
@@ -34,7 +48,7 @@ public class AuthenticationServiceTests
         _configurationMock.Setup(c => c["JwtSettings:Audience"]).Returns("TestAudience");
         _configurationMock.Setup(c => c["JwtSettings:ExpiryMinutes"]).Returns("60");
 
-        _authService = new AuthenticationService(
+        _authService = new BetterCallSaul.Infrastructure.Services.Authentication.AuthenticationService(
             Mock.Of<BetterCallSaul.Infrastructure.Data.BetterCallSaulContext>(),
             _userManagerMock.Object,
             _signInManagerMock.Object,

@@ -102,7 +102,7 @@ public class AdminController : ControllerBase
                 u.CreatedAt,
                 u.UpdatedAt,
                 CasesCount = u.Cases.Count,
-                LastActivity = u.Cases.OrderByDescending(c => c.CreatedAt).FirstOrDefault().CreatedAt
+                LastActivity = u.Cases.Any() ? (DateTime?)u.Cases.OrderByDescending(c => c.CreatedAt).First().CreatedAt : null
             })
             .FirstOrDefaultAsync();
 

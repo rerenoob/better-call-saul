@@ -8,6 +8,7 @@ public interface ICaseAnalysisService
     Task<CaseAnalysis> GetAnalysisAsync(Guid analysisId, CancellationToken cancellationToken = default);
     Task<List<CaseAnalysis>> GetCaseAnalysesAsync(Guid caseId, CancellationToken cancellationToken = default);
     Task UpdateAnalysisStatusAsync(Guid analysisId, AnalysisStatus status, string? message = null, CancellationToken cancellationToken = default);
+    Task<ViabilityAssessment> AssessViabilityAsync(Guid caseId, string caseFacts, string[] charges, string[] evidence, CancellationToken cancellationToken = default);
     
     // Real-time progress updates
     event EventHandler<AnalysisProgressEventArgs> AnalysisProgress;
