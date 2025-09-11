@@ -43,25 +43,51 @@ public class AuthController : ControllerBase
                     FirstName = "Test",
                     LastName = "Public Defender",
                     IsActive = true,
-                    UserName = "test@example.com"
+                    UserName = "test@example.com",
+                    SecurityStamp = Guid.NewGuid().ToString(),
+                    ConcurrencyStamp = Guid.NewGuid().ToString(),
+                    EmailConfirmed = true,
+                    LockoutEnabled = false,
+                    TwoFactorEnabled = false,
+                    AccessFailedCount = 0
                 };
 
-                var token = await _authenticationService.GenerateJwtToken(mockUser);
-                var refreshToken = await _authenticationService.GenerateRefreshToken();
+                // Add mock user to database temporarily for JWT generation to work
+                _context.Users.Add(mockUser);
+                await _context.SaveChangesAsync();
 
-                var mockResponse = new AuthResponse
+                // Reload the user from database to ensure all properties are properly set
+                var reloadedUser = await _userManager.FindByIdAsync(mockUser.Id.ToString());
+                if (reloadedUser != null)
                 {
-                    Token = token,
-                    RefreshToken = refreshToken,
-                    Expiration = DateTime.Now.AddMinutes(60),
-                    UserId = mockUser.Id.ToString(),
-                    Email = "test@example.com",
-                    FullName = "Test Public Defender",
-                    Roles = new List<string> { "User" }
-                };
+                    // Assign User role
+                    await _userManager.AddToRoleAsync(reloadedUser, "User");
+
+                    var token = await _authenticationService.GenerateJwtToken(reloadedUser);
+                    var refreshToken = await _authenticationService.GenerateRefreshToken();
+
+                    // Clean up - remove the mock user
+                    _context.Users.Remove(reloadedUser);
+                    await _context.SaveChangesAsync();
+
+                    var mockResponse = new AuthResponse
+                    {
+                        Token = token,
+                        RefreshToken = refreshToken,
+                        Expiration = DateTime.Now.AddMinutes(60),
+                        UserId = reloadedUser.Id.ToString(),
+                        Email = "test@example.com",
+                        FullName = "Test Public Defender",
+                        Roles = new List<string> { "User" }
+                    };
                 
-                Console.WriteLine("WARNING: Using temporary test credentials for production compatibility");
-                return Ok(mockResponse);
+                    Console.WriteLine("SUCCESS: JWT token generated successfully with real authentication service");
+                    return Ok(mockResponse);
+                }
+                else
+                {
+                    throw new InvalidOperationException("Failed to reload mock user from database");
+                }
             }
             catch (Exception ex)
             {

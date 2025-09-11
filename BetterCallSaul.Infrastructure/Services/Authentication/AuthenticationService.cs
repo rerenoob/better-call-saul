@@ -48,7 +48,10 @@ public class AuthenticationService : IAuthenticationService
             claims.Add(new Claim(ClaimTypes.Role, role));
         }
 
-        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["JwtSettings:SecretKey"] ?? throw new InvalidOperationException("JWT SecretKey is not configured")));
+        var secretKey = Environment.GetEnvironmentVariable("JWT_SECRET_KEY") ?? 
+                        _configuration["JwtSettings:SecretKey"] ?? 
+                        throw new InvalidOperationException("JWT SecretKey is not configured");
+        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
         var token = new JwtSecurityToken(
@@ -76,7 +79,10 @@ public class AuthenticationService : IAuthenticationService
         try
         {
             var tokenHandler = new JwtSecurityTokenHandler();
-            var key = Encoding.UTF8.GetBytes(_configuration["JwtSettings:SecretKey"] ?? throw new InvalidOperationException("JWT SecretKey is not configured"));
+            var secretKey = Environment.GetEnvironmentVariable("JWT_SECRET_KEY") ?? 
+                            _configuration["JwtSettings:SecretKey"] ?? 
+                            throw new InvalidOperationException("JWT SecretKey is not configured");
+            var key = Encoding.UTF8.GetBytes(secretKey);
 
             tokenHandler.ValidateToken(token, new TokenValidationParameters
             {
