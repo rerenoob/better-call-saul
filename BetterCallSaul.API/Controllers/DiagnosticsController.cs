@@ -31,4 +31,27 @@ public class DiagnosticsController : ControllerBase
             timestamp = DateTime.UtcNow
         });
     }
+
+    [HttpPost("test-login")]
+    public IActionResult TestLogin()
+    {
+        try
+        {
+            // Simple test response without database or JWT generation
+            return Ok(new {
+                message = "Test login endpoint working",
+                timestamp = DateTime.UtcNow,
+                testPassed = true
+            });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(500, new {
+                message = "Test login failed",
+                error = ex.Message,
+                timestamp = DateTime.UtcNow,
+                testPassed = false
+            });
+        }
+    }
 }

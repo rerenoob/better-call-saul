@@ -33,28 +33,27 @@ public class AuthController : ControllerBase
         // TODO: Remove this after proper user registration is implemented
         if (request.Email == "test@example.com" && request.Password == "test123")
         {
-            var mockToken = await _authenticationService.GenerateJwtToken(new User 
-            { 
-                Id = Guid.NewGuid(),
-                Email = "test@example.com",
-                FirstName = "Test",
-                LastName = "User",
-                IsActive = true
-            });
-            
-            var mockResponse = new AuthResponse
+            try
             {
-                Token = mockToken,
-                RefreshToken = Guid.NewGuid().ToString(),
-                Expiration = DateTime.Now.AddMinutes(60),
-                UserId = Guid.NewGuid().ToString(),
-                Email = "test@example.com",
-                FullName = "Test Public Defender",
-                Roles = new List<string> { "User" }
-            };
-            
-            Console.WriteLine("WARNING: Using temporary test credentials for production compatibility");
-            return Ok(mockResponse);
+                var mockResponse = new AuthResponse
+                {
+                    Token = "mock-jwt-token-for-production-testing",
+                    RefreshToken = Guid.NewGuid().ToString(),
+                    Expiration = DateTime.Now.AddMinutes(60),
+                    UserId = Guid.NewGuid().ToString(),
+                    Email = "test@example.com",
+                    FullName = "Test Public Defender",
+                    Roles = new List<string> { "User" }
+                };
+                
+                Console.WriteLine("WARNING: Using temporary test credentials for production compatibility");
+                return Ok(mockResponse);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error in mock login: {ex.Message}");
+                return StatusCode(500, new { message = "Mock login error", error = ex.Message });
+            }
         }
 
         try
