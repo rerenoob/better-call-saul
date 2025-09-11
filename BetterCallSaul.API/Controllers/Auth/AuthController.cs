@@ -35,12 +35,26 @@ public class AuthController : ControllerBase
         {
             try
             {
+                // Create a mock user for JWT token generation
+                var mockUser = new User
+                {
+                    Id = Guid.NewGuid(),
+                    Email = "test@example.com",
+                    FirstName = "Test",
+                    LastName = "Public Defender",
+                    IsActive = true,
+                    UserName = "test@example.com"
+                };
+
+                var token = await _authenticationService.GenerateJwtToken(mockUser);
+                var refreshToken = await _authenticationService.GenerateRefreshToken();
+
                 var mockResponse = new AuthResponse
                 {
-                    Token = "mock-jwt-token-for-production-testing",
-                    RefreshToken = Guid.NewGuid().ToString(),
+                    Token = token,
+                    RefreshToken = refreshToken,
                     Expiration = DateTime.Now.AddMinutes(60),
-                    UserId = Guid.NewGuid().ToString(),
+                    UserId = mockUser.Id.ToString(),
                     Email = "test@example.com",
                     FullName = "Test Public Defender",
                     Roles = new List<string> { "User" }
@@ -51,8 +65,19 @@ public class AuthController : ControllerBase
             }
             catch (Exception ex)
             {
-                Console.WriteLine($"Error in mock login: {ex.Message}");
-                return StatusCode(500, new { message = "Mock login error", error = ex.Message });
+                Console.WriteLine($"Error in mock login with JWT generation: {ex.Message}");
+                // Fallback to simple mock token if JWT generation fails
+                var fallbackResponse = new AuthResponse
+                {
+                    Token = "mock-jwt-token-fallback",
+                    RefreshToken = Guid.NewGuid().ToString(),
+                    Expiration = DateTime.Now.AddMinutes(60),
+                    UserId = Guid.NewGuid().ToString(),
+                    Email = "test@example.com",
+                    FullName = "Test Public Defender",
+                    Roles = new List<string> { "User" }
+                };
+                return Ok(fallbackResponse);
             }
         }
 
