@@ -1,69 +1,67 @@
-# React + TypeScript + Vite
+# Better Call Saul - Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Modern React TypeScript frontend for the Better Call Saul AI legal assistant platform.
 
-Currently, two official plugins are available:
+## Technology Stack
+- **React 18** with TypeScript for type safety
+- **Vite** for fast development and building
+- **Tailwind CSS** for responsive styling
+- **React Query** for server state management
+- **React Router** for navigation
+- **Recharts** for data visualization
+- **ESLint & Prettier** for code quality
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Features
+- 🔐 JWT-based authentication with automatic token refresh
+- 📊 Interactive dashboard with case metrics and analytics
+- 📄 Document viewer with annotation support
+- 🔍 AI-powered case analysis interface
+- 📈 Report generation and export capabilities
+- 🎨 Modern, responsive UI with dark/light mode support
+- ⚡ Real-time updates via SignalR integration
 
-## Expanding the ESLint configuration
+## Quick Start
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      ...tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      ...tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      ...tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+### Development
+```bash
+npm install           # Install dependencies
+npm run dev          # Start development server (http://localhost:5173)
+npm run type-check   # TypeScript type checking
+npm run lint         # ESLint code quality check
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
-
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+### Production
+```bash
+npm run build        # Build for production
+npm run preview      # Preview production build
 ```
+
+### Testing
+```bash
+npx playwright test  # Run E2E tests
+```
+
+## Project Structure
+```
+src/
+├── components/      # Reusable UI components
+├── pages/          # Page-level components
+├── services/       # API integration and HTTP client
+├── hooks/          # Custom React hooks
+├── types/          # TypeScript type definitions
+├── utils/          # Utility functions and helpers
+└── styles/         # Global styles and Tailwind config
+```
+
+## Environment Configuration
+- `.env.development` - Development environment variables
+- `.env.production` - Production environment variables
+
+## API Integration
+The frontend communicates with the .NET Web API backend via:
+- RESTful API endpoints for data operations
+- SignalR for real-time updates during AI analysis
+- JWT tokens for secure authentication
+- TypeScript-generated client types for type safety
+
+For backend API documentation, visit `/swagger` when the API is running.
