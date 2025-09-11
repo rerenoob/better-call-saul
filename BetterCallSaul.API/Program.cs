@@ -74,20 +74,9 @@ var jwtSettings = builder.Configuration.GetSection("JwtSettings");
 var secretKey = Environment.GetEnvironmentVariable("JWT_SECRET_KEY") ?? 
                 jwtSettings["SecretKey"];
 
-// Provide a temporary fallback for production deployment issues
 if (string.IsNullOrEmpty(secretKey))
 {
-    if (builder.Environment.IsProduction())
-    {
-        // SECURITY WARNING: This is a temporary fallback for production deployment
-        // The environment variable JWT_SECRET_KEY MUST be configured in production
-        Log.Fatal("SECURITY WARNING: JWT_SECRET_KEY environment variable is missing in production. Using temporary key.");
-        secretKey = "TEMP_PRODUCTION_KEY_MUST_BE_REPLACED_WITH_REAL_SECRET_32_CHARS_MIN!";
-    }
-    else
-    {
-        throw new InvalidOperationException("JWT SecretKey is not configured. Set JWT_SECRET_KEY environment variable.");
-    }
+    throw new InvalidOperationException("JWT SecretKey is not configured. Set JWT_SECRET_KEY environment variable.");
 }
 
 var key = Encoding.UTF8.GetBytes(secretKey);

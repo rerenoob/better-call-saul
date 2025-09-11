@@ -8,6 +8,7 @@ public class UploadResult
     public string? FileName { get; set; }
     public long FileSize { get; set; }
     public string? FileType { get; set; }
+    public string? StoragePath { get; set; }
     public string? UploadSessionId { get; set; }
     public DateTime UploadedAt { get; set; } = DateTime.UtcNow;
     

@@ -143,6 +143,47 @@ public class FileUploadController : ControllerBase
         }
     }
 
+    [HttpGet("sas-token/{blobName}")]
+    public async Task<ActionResult<object>> GenerateSasToken(string blobName, [FromQuery] int expiryMinutes = 60)
+    {
+        try
+        {
+            // Check if the current service is AzureBlobStorageService
+            if (_fileUploadService is not AzureBlobStorageService azureStorageService)
+            {
+                return BadRequest(new { error = "SAS tokens are only available when using Azure Blob Storage" });
+            }
+
+            // Validate user has access to this blob (you would implement proper authorization here)
+            var userId = GetCurrentUserId();
+            if (userId == Guid.Empty)
+            {
+                return Unauthorized(new { error = "User not authenticated" });
+            }
+
+            // Generate SAS token
+            var expiryTime = TimeSpan.FromMinutes(expiryMinutes);
+            var sasToken = await azureStorageService.GenerateSasTokenAsync(blobName, expiryTime);
+
+            return Ok(new 
+            {
+                SasToken = sasToken,
+                ExpiryMinutes = expiryMinutes,
+                BlobName = blobName,
+                GeneratedAt = DateTime.UtcNow
+            });
+        }
+        catch (FileNotFoundException)
+        {
+            return NotFound(new { error = $"Blob '{blobName}' not found" });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error generating SAS token for blob: {BlobName}", blobName);
+            return StatusCode(500, new { error = $"Internal server error: {ex.Message}" });
+        }
+    }
+
     private Guid GetCurrentUserId()
     {
         var userIdClaim = User.FindFirst("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier");
