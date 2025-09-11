@@ -4,13 +4,30 @@ import { FileUploadResponse, CaseCreationResponse, UploadFile } from '../types/u
 export const fileUploadService = {
   uploadFile: async (
     file: File, 
-    onProgress?: (progress: number) => void
+    onProgress?: (progress: number) => void,
+    caseId?: string,
+    uploadSessionId?: string
   ): Promise<FileUploadResponse> => {
     const formData = new FormData();
     formData.append('file', file);
+    
+    // Use default values if not provided
+    if (caseId) {
+      formData.append('caseId', caseId);
+    } else {
+      // Use a temporary GUID for standalone uploads
+      formData.append('caseId', '00000000-0000-0000-0000-000000000000');
+    }
+    
+    if (uploadSessionId) {
+      formData.append('uploadSessionId', uploadSessionId);
+    } else {
+      // Generate a unique session ID
+      formData.append('uploadSessionId', `upload-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`);
+    }
 
     try {
-      const response = await apiClient.post<FileUploadResponse>('/files/upload', formData, {
+      const response = await apiClient.post<FileUploadResponse>('/fileupload/upload', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
@@ -71,7 +88,7 @@ export const fileUploadService = {
 
   deleteFile: async (fileId: string): Promise<{ success: boolean; error?: string }> => {
     try {
-      await apiClient.delete(`/files/${fileId}`);
+      await apiClient.delete(`/fileupload/${fileId}`);
       return { success: true };
     } catch (error: unknown) {
       return {

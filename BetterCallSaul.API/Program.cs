@@ -14,6 +14,7 @@ using BetterCallSaul.Infrastructure.Services.LegalResearch;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Serilog;
 using System.Text;
@@ -103,7 +104,28 @@ builder.Services.AddAuthentication(options =>
 
 // Add services
 builder.Services.AddScoped<IAuthenticationService, AuthenticationService>();
-builder.Services.AddScoped<IFileUploadService, FileUploadService>();
+// Configure file upload service based on Azure storage settings
+builder.Services.AddScoped<IFileUploadService>(serviceProvider =>
+{
+    var azureOptions = serviceProvider.GetRequiredService<IOptions<AzureBlobStorageOptions>>().Value;
+    var logger = serviceProvider.GetRequiredService<ILogger<IFileUploadService>>();
+    
+    if (azureOptions.UseAzureStorage && !string.IsNullOrEmpty(azureOptions.ConnectionString))
+    {
+        var azureLogger = serviceProvider.GetRequiredService<ILogger<AzureBlobStorageService>>();
+        return new AzureBlobStorageService(
+            serviceProvider.GetRequiredService<IOptions<AzureBlobStorageOptions>>(),
+            azureLogger);
+    }
+    else
+    {
+        logger.LogWarning("Azure Blob Storage not configured or disabled, falling back to local file storage");
+        var context = serviceProvider.GetRequiredService<BetterCallSaulContext>();
+        var fileValidationService = serviceProvider.GetRequiredService<IFileValidationService>();
+        var fileUploadLogger = serviceProvider.GetRequiredService<ILogger<FileUploadService>>();
+        return new FileUploadService(context, fileValidationService, fileUploadLogger);
+    }
+});
 builder.Services.AddScoped<IVirusScanningService, ClamAvService>();
 builder.Services.AddScoped<IFileValidationService, FileValidationService>();
 builder.Services.AddScoped<ITextExtractionService, MockTextExtractionService>();
@@ -133,6 +155,27 @@ builder.Services.Configure<OpenAIOptions>(options =>
 });
 builder.Services.AddScoped<IAzureOpenAIService, AzureOpenAIService>();
 builder.Services.AddScoped<ICaseAnalysisService, CaseAnalysisService>();
+
+// Configure Azure Blob Storage
+builder.Services.Configure<AzureBlobStorageOptions>(options =>
+{
+    var section = builder.Configuration.GetSection(AzureBlobStorageOptions.SectionName);
+    section.Bind(options);
+    
+    // Override connection string from environment variable if provided
+    var connectionString = Environment.GetEnvironmentVariable("AZURE_BLOB_STORAGE_CONNECTION_STRING");
+    if (!string.IsNullOrEmpty(connectionString))
+    {
+        options.ConnectionString = connectionString;
+    }
+    
+    // Override UseAzureStorage from environment variable if provided
+    var useAzureStorage = Environment.GetEnvironmentVariable("USE_AZURE_STORAGE");
+    if (!string.IsNullOrEmpty(useAzureStorage) && bool.TryParse(useAzureStorage, out var useAzure))
+    {
+        options.UseAzureStorage = useAzure;
+    }
+});
 
 // Configure CORS
 builder.Services.AddCors(options =>
