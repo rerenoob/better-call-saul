@@ -71,7 +71,10 @@ builder.Services.AddIdentity<User, Role>(options =>
 
 // Configure JWT Authentication
 var jwtSettings = builder.Configuration.GetSection("JwtSettings");
-var key = Encoding.UTF8.GetBytes(jwtSettings["SecretKey"] ?? throw new InvalidOperationException("JWT SecretKey is not configured"));
+var secretKey = Environment.GetEnvironmentVariable("JWT_SECRET_KEY") ?? 
+                jwtSettings["SecretKey"] ?? 
+                throw new InvalidOperationException("JWT SecretKey is not configured. Set JWT_SECRET_KEY environment variable.");
+var key = Encoding.UTF8.GetBytes(secretKey);
 
 builder.Services.AddAuthentication(options =>
 {
@@ -114,7 +117,15 @@ builder.Services.AddScoped<LegalTextSimilarity>();
 builder.Services.AddMemoryCache();
 
 // Configure Azure OpenAI
-builder.Services.Configure<OpenAIOptions>(builder.Configuration.GetSection(OpenAIOptions.SectionName));
+builder.Services.Configure<OpenAIOptions>(options =>
+{
+    var section = builder.Configuration.GetSection(OpenAIOptions.SectionName);
+    section.Bind(options);
+    
+    // Map configuration to new property names
+    options.EndpointFromConfig = section["Endpoint"];
+    options.ApiKeyFromConfig = section["ApiKey"];
+});
 builder.Services.AddScoped<IAzureOpenAIService, AzureOpenAIService>();
 builder.Services.AddScoped<ICaseAnalysisService, CaseAnalysisService>();
 

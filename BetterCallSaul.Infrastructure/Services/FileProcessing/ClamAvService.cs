@@ -8,10 +8,12 @@ public class ClamAvService : IVirusScanningService
     private readonly ILogger<ClamAvService> _logger;
     private readonly Random _random = new();
     private bool _scannerAvailable = true;
+    private readonly bool _enableRandomDetection;
 
-    public ClamAvService(ILogger<ClamAvService> logger)
+    public ClamAvService(ILogger<ClamAvService> logger, bool enableRandomDetection = false)
     {
         _logger = logger;
+        _enableRandomDetection = enableRandomDetection;
     }
 
     public async Task<ScanResult> ScanFileAsync(string filePath, string fileName)
@@ -68,8 +70,8 @@ public class ClamAvService : IVirusScanningService
                 };
             }
 
-            // 1% chance of random virus detection for testing
-            if (_random.Next(100) < 1)
+            // Optional random virus detection for testing (disabled by default for unit tests)
+            if (_enableRandomDetection && _random.Next(100) < 1)
             {
                 var fakeViruses = new[] { "Trojan.Generic", "Worm.Exploit", "Backdoor.Agent", "Ransomware.Crypto" };
                 return new ScanResult
@@ -115,8 +117,8 @@ public class ClamAvService : IVirusScanningService
 
     public async Task<bool> IsScannerAvailableAsync()
     {
-        // Simulate occasional scanner unavailability
-        if (_random.Next(100) < 5) // 5% chance of scanner being down
+        // Simulate occasional scanner unavailability (only when random detection is enabled)
+        if (_enableRandomDetection && _random.Next(100) < 5) // 5% chance of scanner being down
         {
             _scannerAvailable = false;
             await Task.Delay(TimeSpan.FromSeconds(30)); // Scanner down for 30 seconds

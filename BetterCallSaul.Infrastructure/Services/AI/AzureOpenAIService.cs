@@ -207,7 +207,7 @@ public class AzureOpenAIService : IAzureOpenAIService
 
     public async IAsyncEnumerable<string> StreamAnalysisAsync(AIRequest request, [EnumeratorCancellation] CancellationToken cancellationToken = default)
     {
-        if (_openAIClient == null)
+        if (_openAIClient == null || string.IsNullOrEmpty(_options.DeploymentName))
         {
             yield break;
         }
@@ -224,13 +224,24 @@ public class AzureOpenAIService : IAzureOpenAIService
             }
         };
 
-        var response = await _openAIClient.GetChatCompletionsStreamingAsync(chatCompletionsOptions, cancellationToken);
+        Response<ChatCompletions>? response = null;
         
-        await foreach (var update in response)
+        try
         {
-            if (update.ContentUpdate != null)
+            response = await _openAIClient.GetChatCompletionsAsync(chatCompletionsOptions, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error during streaming analysis setup");
+            yield break;
+        }
+
+        if (response?.Value?.Choices?.Count > 0)
+        {
+            var content = response.Value.Choices[0]?.Message?.Content;
+            if (!string.IsNullOrEmpty(content))
             {
-                yield return update.ContentUpdate;
+                yield return content;
             }
         }
     }

@@ -29,26 +29,6 @@ public class AuthController : ControllerBase
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] LoginRequest request)
     {
-        // Mock user for testing - bypasses database
-        if (request.Email == "test@example.com" && request.Password == "test123")
-        {
-            var mockToken = "mock-jwt-token-for-testing";
-            var mockRefreshToken = "mock-refresh-token";
-            
-            var mockResponse = new AuthResponse
-            {
-                Token = mockToken,
-                RefreshToken = mockRefreshToken,
-                Expiration = DateTime.Now.AddMinutes(60),
-                UserId = Guid.NewGuid().ToString(),
-                Email = "test@example.com",
-                FullName = "Test Public Defender",
-                Roles = new List<string> { "User" }
-            };
-            
-            return Ok(mockResponse);
-        }
-
         try
         {
             var user = await _authenticationService.AuthenticateUser(request.Email, request.Password);
@@ -73,29 +53,11 @@ public class AuthController : ControllerBase
 
             return Ok(response);
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            // Return mock user if database is not working
-            if (request.Email == "admin@bettercallsaul.com" && request.Password == "admin123")
-            {
-                var mockToken = "mock-jwt-token-for-admin";
-                var mockRefreshToken = "mock-refresh-token-admin";
-                
-                var mockResponse = new AuthResponse
-                {
-                    Token = mockToken,
-                    RefreshToken = mockRefreshToken,
-                    Expiration = DateTime.Now.AddMinutes(60),
-                    UserId = Guid.NewGuid().ToString(),
-                    Email = "admin@bettercallsaul.com",
-                    FullName = "System Administrator",
-                    Roles = new List<string> { "Admin" }
-                };
-                
-                return Ok(mockResponse);
-            }
-            
-            return Unauthorized(new { message = "Invalid credentials or system error" });
+            // Log the exception for debugging but don't expose internal details
+            Console.WriteLine($"Login error: {ex.Message}");
+            return Unauthorized(new { message = "Invalid credentials" });
         }
     }
 
@@ -205,30 +167,6 @@ public class AuthController : ControllerBase
     {
         try
         {
-            // Check for mock token in Authorization header
-            var authHeader = Request.Headers["Authorization"].FirstOrDefault();
-            if (authHeader != null && authHeader.StartsWith("Bearer "))
-            {
-                var token = authHeader.Substring("Bearer ".Length);
-                
-                // Return mock profile for mock tokens
-                if (token.StartsWith("mock-"))
-                {
-                    var mockUser = new
-                    {
-                        Id = Guid.NewGuid(),
-                        Email = token.Contains("admin") ? "admin@bettercallsaul.com" : "test@example.com",
-                        FirstName = token.Contains("admin") ? "System" : "Test",
-                        LastName = token.Contains("admin") ? "Administrator" : "User",
-                        FullName = token.Contains("admin") ? "System Administrator" : "Test Public Defender",
-                        IsActive = true
-                    };
-                    
-                    return Ok(mockUser);
-                }
-            }
-            
-            // Try real authentication if not a mock token
             var user = await _authenticationService.GetCurrentUserAsync();
             if (user == null)
                 return Unauthorized();
@@ -243,8 +181,10 @@ public class AuthController : ControllerBase
                 IsActive = user.IsActive
             });
         }
-        catch (Exception)
+        catch (Exception ex)
         {
+            // Log the exception for debugging but don't expose internal details
+            Console.WriteLine($"Profile error: {ex.Message}");
             return Unauthorized();
         }
     }

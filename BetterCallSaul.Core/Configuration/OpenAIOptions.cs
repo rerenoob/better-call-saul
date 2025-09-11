@@ -4,8 +4,11 @@ public class OpenAIOptions
 {
     public const string SectionName = "AzureOpenAI";
     
-    public string? Endpoint { get; set; }
-    public string? ApiKey { get; set; }
+    public string? Endpoint => Environment.GetEnvironmentVariable("AZURE_OPENAI_ENDPOINT") ?? EndpointFromConfig;
+    public string? ApiKey => Environment.GetEnvironmentVariable("AZURE_OPENAI_API_KEY") ?? ApiKeyFromConfig;
+    
+    public string? EndpointFromConfig { get; set; }
+    public string? ApiKeyFromConfig { get; set; }
     public string? DeploymentName { get; set; }
     public string? Model { get; set; } = "gpt-4";
     public int MaxRetries { get; set; } = 3;

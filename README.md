@@ -45,6 +45,16 @@ Better Call Saul leverages artificial intelligence to help public defense attorn
 git clone https://github.com/rerenoob/better-call-saul.git
 cd better-call-saul
 
+# 🔒 Configure environment variables (REQUIRED)
+cp .env.example .env
+# Edit .env with your actual values:
+# - Generate a secure JWT secret key (32+ characters)
+# - Add your Azure OpenAI endpoint and API key
+nano .env
+
+# Load environment variables
+source .env  # or export them manually
+
 # Restore dependencies and build
 dotnet restore
 dotnet build
@@ -55,6 +65,15 @@ dotnet ef database update --project BetterCallSaul.Infrastructure --startup-proj
 # Start the API (https://localhost:7191)
 dotnet run --project BetterCallSaul.API
 ```
+
+### 🔐 Security Configuration
+**IMPORTANT:** This application requires proper environment variable configuration for security:
+
+1. **JWT Secret Key:** Must be 32+ characters, cryptographically secure
+2. **Azure OpenAI Credentials:** Your actual Azure OpenAI service endpoint and API key
+3. **Never commit secrets:** Secrets should never be committed to version control
+
+See `SECURITY_FIXES.md` for detailed security information.
 
 ### Frontend Setup
 ```bash
