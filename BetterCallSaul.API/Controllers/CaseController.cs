@@ -123,6 +123,13 @@ public class CaseController : ControllerBase
         return Ok(recentCases);
     }
 
+    [HttpOptions]
+    [HttpOptions("{*path}")]
+    public IActionResult OptionsHandler()
+    {
+        return Ok();
+    }
+
     [HttpPost("create-with-files")]
     [Authorize]
     public async Task<ActionResult<CaseCreationResponse>> CreateCaseWithFiles([FromBody] CreateCaseWithFilesRequest request)
