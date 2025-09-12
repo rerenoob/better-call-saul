@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Case } from '../types/case';
 import { caseService } from '../services/caseService';
+import { useAuth } from '../hooks/useAuth';
 
 interface ChatMessage {
   id: string;
@@ -13,27 +14,55 @@ interface ChatMessage {
 export const CaseDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [caseData, setCaseData] = useState<Case | null>(null);
   const [loading, setLoading] = useState(true);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [currentMessage, setCurrentMessage] = useState('');
   const [isAITyping, setIsAITyping] = useState(false);
+  const [relevantCaseLaw, setRelevantCaseLaw] = useState<{caseName: string; summary: string}[]>([]);
 
   useEffect(() => {
     if (id) {
       loadCaseData(id);
     }
-  }, [id]);
+  }, [id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const loadCaseData = async (caseId: string) => {
     try {
       setLoading(true);
       const caseDetails = await caseService.getCase(caseId);
       setCaseData(caseDetails);
+      
+      // Load case analysis data
+      await loadCaseAnalysis();
+      
+      // Load relevant case law
+      await loadRelevantCaseLaw();
     } catch (error) {
       console.error('Failed to load case data:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadCaseAnalysis = async () => {
+    try {
+      // This would integrate with the case analysis API endpoint
+      // For now, we'll use the case data itself
+      // Analysis data is already in caseData
+    } catch (error) {
+      console.error('Failed to load case analysis:', error);
+    }
+  };
+
+  const loadRelevantCaseLaw = async () => {
+    try {
+      // This would integrate with the legal research API
+      // For production, this should call an actual legal research service
+      setRelevantCaseLaw([]); // Empty array for now - will be populated by API
+    } catch (error) {
+      console.error('Failed to load relevant case law:', error);
     }
   };
 
@@ -62,11 +91,17 @@ export const CaseDetail: React.FC = () => {
       };
 
       setChatMessages(prev => [...prev, aiMessage]);
-    } catch (error) {
-      console.error('Failed to get AI response:', error);
+    } catch (error: unknown) {
+      let errorMessageText = 'I apologize, but I encountered an error processing your request. Please try again.';
+      
+      if (typeof error === 'object' && error !== null && 'response' in error) {
+        const responseError = error as { response?: { data?: { error?: string } } };
+        errorMessageText = responseError.response?.data?.error || errorMessageText;
+      }
+      
       const errorMessage: ChatMessage = {
         id: (Date.now() + 1).toString(),
-        message: 'I apologize, but I encountered an error processing your request. Please try again.',
+        message: errorMessageText,
         isAI: true,
         timestamp: new Date()
       };
@@ -168,8 +203,8 @@ export const CaseDetail: React.FC = () => {
               PD
             </div>
             <div className="ml-3">
-              <p className="text-sm font-semibold">Alex Rivera</p>
-              <p className="text-xs text-slate-400">Public Defender</p>
+              <p className="text-sm font-semibold">{user?.name || 'User'}</p>
+              <p className="text-xs text-slate-400">{user?.role || 'Public Defender'}</p>
             </div>
           </div>
           <button
@@ -200,9 +235,7 @@ export const CaseDetail: React.FC = () => {
             <div>
               <h1 className="text-3xl font-bold text-slate-800">{caseData.title}</h1>
               <p className="text-slate-500 mt-1">
-                Client: {caseData.description?.includes('Client:') 
-                  ? caseData.description.split('Client:')[1].split('.')[0].trim() 
-                  : 'Not specified'}
+                Case Number: {caseData.caseNumber}
               </p>
             </div>
             <div className="text-right">
@@ -229,10 +262,7 @@ export const CaseDetail: React.FC = () => {
                   AI Case Summary
                 </h3>
                 <p className="text-slate-600 leading-relaxed">
-                  {caseData.description?.includes('Client:') 
-                    ? caseData.description.split('Client:')[1].split('.').slice(1).join('.').trim() || 'The case against Michael Johnson relies heavily on circumstantial evidence and a single, uncorroborated witness testimony. The witness has a history of credibility issues. Physical evidence linking Mr. Johnson to the scene is inconclusive. The prosecution\'s timeline has significant inconsistencies that can be challenged. Motion to suppress the witness testimony is likely to be granted.'
-                    : 'The case against Michael Johnson relies heavily on circumstantial evidence and a single, uncorroborated witness testimony. The witness has a history of credibility issues. Physical evidence linking Mr. Johnson to the scene is inconclusive. The prosecution\'s timeline has significant inconsistencies that can be challenged. Motion to suppress the witness testimony is likely to be granted.'
-                  }
+                  {caseData.description || 'No case summary available. Please analyze this case to generate an AI summary.'}
                 </p>
               </div>
 
@@ -304,18 +334,18 @@ export const CaseDetail: React.FC = () => {
                 Relevant Case Law
               </h3>
               <div className="space-y-4">
-                <div className="bg-gray-50 p-4 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer">
-                  <p className="font-semibold text-gray-800">Crawford v. Washington (2004)</p>
-                  <p className="text-sm text-gray-500 mt-1">Impacts admissibility of witness testimony and confrontation clause issues.</p>
-                </div>
-                <div className="bg-gray-50 p-4 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer">
-                  <p className="font-semibold text-gray-800">Brady v. Maryland (1963)</p>
-                  <p className="text-sm text-gray-500 mt-1">Relates to prosecution\'s duty to disclose exculpatory evidence.</p>
-                </div>
-                <div className="bg-gray-50 p-4 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer">
-                  <p className="font-semibold text-gray-800">Terry v. Ohio (1968)</p>
-                  <p className="text-sm text-gray-500 mt-1">Concerns the legality of investigatory stops and frisks.</p>
-                </div>
+                {relevantCaseLaw.length > 0 ? (
+                  relevantCaseLaw.map((caseLaw, index) => (
+                    <div key={index} className="bg-gray-50 p-4 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer">
+                      <p className="font-semibold text-gray-800">{caseLaw.caseName}</p>
+                      <p className="text-sm text-gray-500 mt-1">{caseLaw.summary}</p>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-center text-gray-500 text-sm py-8">
+                    No relevant case law found. Analyze this case to discover applicable precedents.
+                  </div>
+                )}
               </div>
             </div>
 
