@@ -8,41 +8,41 @@ export const caseService = {
     if (filters?.assignedTo) params.append('assignedTo', filters.assignedTo);
     if (filters?.search) params.append('search', filters.search);
 
-    const response = await apiClient.get<Case[]>(`/case?${params.toString()}`);
+    const response = await apiClient.get<Case[]>(`/Case?${params.toString()}`);
     return response.data;
   },
 
   getCase: async (id: string): Promise<Case> => {
-    const response = await apiClient.get<Case>(`/case/${id}`);
+    const response = await apiClient.get<Case>(`/Case/${id}`);
     return response.data;
   },
 
   createCase: async (caseData: Omit<Case, 'id' | 'createdAt' | 'updatedAt'>): Promise<Case> => {
-    const response = await apiClient.post<Case>('/case', caseData);
+    const response = await apiClient.post<Case>('/Case', caseData);
     return response.data;
   },
 
   updateCase: async (id: string, caseData: Partial<Case>): Promise<Case> => {
-    const response = await apiClient.put<Case>(`/case/${id}`, caseData);
+    const response = await apiClient.put<Case>(`/Case/${id}`, caseData);
     return response.data;
   },
 
   deleteCase: async (id: string): Promise<void> => {
-    await apiClient.delete(`/case/${id}`);
+    await apiClient.delete(`/Case/${id}`);
   },
 
   getStatistics: async (): Promise<CaseStatistics> => {
-    const response = await apiClient.get<CaseStatistics>('/cases/statistics');
+    const response = await apiClient.get<CaseStatistics>('/Case/statistics');
     return response.data;
   },
 
   getRecentCases: async (limit: number = 10): Promise<Case[]> => {
-    const response = await apiClient.get<Case[]>(`/cases/recent?limit=${limit}`);
+    const response = await apiClient.get<Case[]>(`/Case/recent?limit=${limit}`);
     return response.data;
   },
 
   chatWithAI: async (caseId: string, message: string): Promise<{ success: boolean; generatedText?: string; errorMessage?: string }> => {
-    const response = await apiClient.post(`/cases/${caseId}/chat`, { message });
+    const response = await apiClient.post(`/Case/${caseId}/chat`, { message });
     return response.data;
   },
 };
