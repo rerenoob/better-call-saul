@@ -11,7 +11,6 @@ namespace BetterCallSaul.API.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
-[Authorize]
 [EnableCors("ReactFrontend")]
 public class CaseController : ControllerBase
 {
@@ -27,6 +26,7 @@ public class CaseController : ControllerBase
     }
 
     [HttpGet("{id}")]
+    [Authorize]
     public async Task<ActionResult<Case>> GetCase(Guid id)
     {
         var caseItem = await _context.Cases
@@ -41,6 +41,7 @@ public class CaseController : ControllerBase
     }
 
     [HttpPost("{id}/chat")]
+    [Authorize]
     public async Task<ActionResult<AIResponse>> ChatWithAI(Guid id, [FromBody] ChatRequest request)
     {
         try
@@ -72,6 +73,7 @@ public class CaseController : ControllerBase
     }
 
     [HttpGet]
+    [Authorize]
     public async Task<ActionResult<IEnumerable<Case>>> GetCases()
     {
         var cases = await _context.Cases
@@ -82,6 +84,7 @@ public class CaseController : ControllerBase
     }
 
     [HttpGet("statistics")]
+    [Authorize]
     public async Task<ActionResult> GetStatistics()
     {
         var total = await _context.Cases.CountAsync();
@@ -109,6 +112,7 @@ public class CaseController : ControllerBase
     }
 
     [HttpGet("recent")]
+    [Authorize]
     public async Task<ActionResult<IEnumerable<Case>>> GetRecentCases([FromQuery] int limit = 10)
     {
         var recentCases = await _context.Cases
@@ -120,6 +124,7 @@ public class CaseController : ControllerBase
     }
 
     [HttpPost("create-with-files")]
+    [Authorize]
     public async Task<ActionResult<CaseCreationResponse>> CreateCaseWithFiles([FromBody] CreateCaseWithFilesRequest request)
     {
         try
