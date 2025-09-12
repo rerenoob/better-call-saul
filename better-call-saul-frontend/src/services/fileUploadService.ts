@@ -71,8 +71,8 @@ export const fileUploadService = {
   ): Promise<CaseCreationResponse> => {
     try {
       const response = await apiClient.post<CaseCreationResponse>('/cases/create-with-files', {
-        caseName,
-        clientName,
+        title: caseName,
+        description: clientName ? `Client: ${clientName}` : undefined,
         fileIds,
       });
 

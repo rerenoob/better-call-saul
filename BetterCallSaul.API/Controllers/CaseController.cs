@@ -116,9 +116,106 @@ public class CaseController : ControllerBase
 
         return Ok(recentCases);
     }
+
+    [HttpPost("create-with-files")]
+    public async Task<ActionResult<CaseCreationResponse>> CreateCaseWithFiles([FromBody] CreateCaseWithFilesRequest request)
+    {
+        try
+        {
+            _logger.LogInformation("Creating case with files: {Title}", request.Title);
+
+            // Get current user ID
+            var userId = GetCurrentUserId();
+            if (userId == Guid.Empty)
+            {
+                return Unauthorized(new CaseCreationResponse
+                {
+                    Success = false,
+                    CaseId = string.Empty,
+                    Error = "User not authenticated"
+                });
+            }
+
+            // Create the case
+            var caseItem = new Case
+            {
+                Id = Guid.NewGuid(),
+                Title = request.Title,
+                Description = request.Description,
+                UserId = userId,
+                CaseNumber = $"CASE-{DateTime.UtcNow:yyyyMMdd}-{Guid.NewGuid().ToString()[..8].ToUpper()}",
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow,
+                Status = CaseStatus.New
+            };
+
+            _context.Cases.Add(caseItem);
+
+            // If files are provided, associate them with the case
+            if (request.FileIds != null && request.FileIds.Count > 0)
+            {
+                var documents = await _context.Documents
+                    .Where(d => request.FileIds.Contains(d.Id.ToString()))
+                    .ToListAsync();
+
+                foreach (var document in documents)
+                {
+                    document.CaseId = caseItem.Id;
+                    document.UpdatedAt = DateTime.UtcNow;
+                }
+            }
+
+            await _context.SaveChangesAsync();
+
+            _logger.LogInformation("Successfully created case {CaseId} with {FileCount} files", 
+                caseItem.Id, request.FileIds?.Count ?? 0);
+
+            return Ok(new CaseCreationResponse
+            {
+                Success = true,
+                CaseId = caseItem.Id.ToString(),
+                Message = "Case created successfully"
+            });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error creating case with files");
+            return StatusCode(500, new CaseCreationResponse
+            {
+                Success = false,
+                CaseId = string.Empty,
+                Error = "Internal server error"
+            });
+        }
+    }
+
+    private Guid GetCurrentUserId()
+    {
+        var userIdClaim = User.FindFirst("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier");
+        if (userIdClaim != null && Guid.TryParse(userIdClaim.Value, out var userId))
+        {
+            return userId;
+        }
+        return Guid.Empty;
+    }
 }
 
 public class ChatRequest
 {
     public string Message { get; set; } = string.Empty;
+}
+
+public class CreateCaseWithFilesRequest
+{
+    public string Title { get; set; } = string.Empty;
+    public string? Description { get; set; }
+    public List<string> FileIds { get; set; } = new();
+}
+
+public class CaseCreationResponse
+{
+    public bool Success { get; set; }
+    public string CaseId { get; set; } = string.Empty;
+    public string? Message { get; set; }
+    public string? Error { get; set; }
 }
