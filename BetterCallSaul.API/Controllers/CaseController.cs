@@ -5,6 +5,7 @@ using BetterCallSaul.Core.Enums;
 using Microsoft.AspNetCore.Authorization;
 using BetterCallSaul.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Cors;
 
 namespace BetterCallSaul.API.Controllers;
 
@@ -118,6 +119,7 @@ public class CaseController : ControllerBase
     }
 
     [HttpPost("create-with-files")]
+    [EnableCors("ReactFrontend")]
     public async Task<ActionResult<CaseCreationResponse>> CreateCaseWithFiles([FromBody] CreateCaseWithFilesRequest request)
     {
         try
