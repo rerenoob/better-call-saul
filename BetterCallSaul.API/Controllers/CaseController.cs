@@ -12,6 +12,7 @@ namespace BetterCallSaul.API.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
+[EnableCors("ReactFrontend")]
 public class CaseController : ControllerBase
 {
     private readonly IAzureOpenAIService _aiService;
@@ -119,7 +120,6 @@ public class CaseController : ControllerBase
     }
 
     [HttpPost("create-with-files")]
-    [EnableCors("ReactFrontend")]
     public async Task<ActionResult<CaseCreationResponse>> CreateCaseWithFiles([FromBody] CreateCaseWithFilesRequest request)
     {
         try
