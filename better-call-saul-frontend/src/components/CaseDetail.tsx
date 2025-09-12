@@ -17,6 +17,7 @@ export const CaseDetail: React.FC = () => {
   const { user } = useAuth();
   const [caseData, setCaseData] = useState<Case | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [currentMessage, setCurrentMessage] = useState('');
   const [isAITyping, setIsAITyping] = useState(false);
@@ -31,6 +32,7 @@ export const CaseDetail: React.FC = () => {
   const loadCaseData = async (caseId: string) => {
     try {
       setLoading(true);
+      setError(null);
       const caseDetails = await caseService.getCase(caseId);
       setCaseData(caseDetails);
       
@@ -41,6 +43,8 @@ export const CaseDetail: React.FC = () => {
       await loadRelevantCaseLaw();
     } catch (error) {
       console.error('Failed to load case data:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to load case data';
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -69,9 +73,10 @@ export const CaseDetail: React.FC = () => {
   const handleSendMessage = async () => {
     if (!currentMessage.trim() || !id) return;
 
+    const messageToSend = currentMessage;
     const userMessage: ChatMessage = {
       id: Date.now().toString(),
-      message: currentMessage,
+      message: messageToSend,
       isAI: false,
       timestamp: new Date()
     };
@@ -81,7 +86,7 @@ export const CaseDetail: React.FC = () => {
     setIsAITyping(true);
 
     try {
-      const response = await caseService.chatWithAI(id, currentMessage);
+      const response = await caseService.chatWithAI(id, messageToSend);
       
       const aiMessage: ChatMessage = {
         id: (Date.now() + 1).toString(),
@@ -155,7 +160,9 @@ export const CaseDetail: React.FC = () => {
     return (
       <div className="min-h-screen bg-gray-100 flex items-center justify-center">
         <div className="text-center">
-          <p className="text-xl text-gray-600">Case not found</p>
+          <p className="text-xl text-gray-600">
+            {error ? `Error: ${error}` : 'Case not found'}
+          </p>
           <button 
             onClick={() => navigate('/dashboard')}
             className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
@@ -203,8 +210,8 @@ export const CaseDetail: React.FC = () => {
               PD
             </div>
             <div className="ml-3">
-              <p className="text-sm font-semibold">{user?.name || 'User'}</p>
-              <p className="text-xs text-slate-400">{user?.role || 'Public Defender'}</p>
+              <p className="text-sm font-semibold">{user?.fullName || 'User'}</p>
+              <p className="text-xs text-slate-400">{user?.roles?.[0] || 'Public Defender'}</p>
             </div>
           </div>
           <button
@@ -323,17 +330,16 @@ export const CaseDetail: React.FC = () => {
                 </div>
               </div>
             </div>
-          </div>
 
-          {/* Right Column: Ask AI Chat & Case Law */}
-          <div className="space-y-6">
-            {/* Relevant Case Law */}
-            <div className="bg-white rounded-lg shadow p-6">
-              <h3 className="text-xl font-semibold text-gray-700 mb-4 flex items-center">
-                <span className="mr-2">📚</span>
-                Relevant Case Law
-              </h3>
-              <div className="space-y-4">
+            {/* Right Column: Ask AI Chat & Case Law */}
+            <div className="space-y-6">
+              {/* Relevant Case Law */}
+              <div className="bg-white rounded-lg shadow p-6">
+                <h3 className="text-xl font-semibold text-gray-700 mb-4 flex items-center">
+                  <span className="mr-2">📚</span>
+                  Relevant Case Law
+                </h3>
+                <div className="space-y-4">
                 {relevantCaseLaw.length > 0 ? (
                   relevantCaseLaw.map((caseLaw, index) => (
                     <div key={index} className="bg-gray-50 p-4 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer">
@@ -412,6 +418,7 @@ export const CaseDetail: React.FC = () => {
                 </button>
               </div>
             </div>
+          </div>
           </div>
         </div>
       </main>
