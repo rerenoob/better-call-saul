@@ -68,10 +68,10 @@ export const CaseUpload: React.FC = () => {
         setIsCreatingCase(false);
         setIsAnalyzing(true);
 
-        // Simulate AI analysis time
+        // Wait for AI analysis to complete (with real polling or just a reasonable delay)
         setTimeout(() => {
           navigate(`/cases/${createCaseResult.caseId}`);
-        }, 3000);
+        }, 8000); // Increased to 8 seconds to allow for OCR + AI analysis
       } else {
         setError(createCaseResult.error || 'Failed to create case. Please try again.');
         setIsCreatingCase(false);
@@ -101,8 +101,8 @@ export const CaseUpload: React.FC = () => {
               AI Analysis in Progress...
             </h2>
             <p className="text-gray-600">
-              Our AI is reviewing your case files, identifying key facts, and searching for relevant precedents. 
-              This should only take a moment.
+              Our AI is extracting text from your documents, analyzing the case content, and generating insights. 
+              This process takes a few moments to complete.
             </p>
           </div>
         </div>

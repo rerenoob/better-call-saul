@@ -15,12 +15,14 @@ namespace BetterCallSaul.API.Controllers;
 public class CaseController : ControllerBase
 {
     private readonly IAzureOpenAIService _aiService;
+    private readonly ICaseAnalysisService _caseAnalysisService;
     private readonly ILogger<CaseController> _logger;
     private readonly BetterCallSaulContext _context;
 
-    public CaseController(IAzureOpenAIService aiService, ILogger<CaseController> logger, BetterCallSaulContext context)
+    public CaseController(IAzureOpenAIService aiService, ICaseAnalysisService caseAnalysisService, ILogger<CaseController> logger, BetterCallSaulContext context)
     {
         _aiService = aiService;
+        _caseAnalysisService = caseAnalysisService;
         _logger = logger;
         _context = context;
     }
@@ -184,11 +186,14 @@ public class CaseController : ControllerBase
             _logger.LogInformation("Successfully created case {CaseId} with {FileCount} files", 
                 caseItem.Id, request.FileIds?.Count ?? 0);
 
+            // Trigger case analysis for uploaded documents
+            _ = Task.Run(async () => await AnalyzeCaseDocumentsAsync(caseItem.Id));
+
             return Ok(new CaseCreationResponse
             {
                 Success = true,
                 CaseId = caseItem.Id.ToString(),
-                Message = "Case created successfully"
+                Message = "Case created successfully. Analysis will begin shortly."
             });
         }
         catch (Exception ex)
@@ -211,6 +216,110 @@ public class CaseController : ControllerBase
             return userId;
         }
         return Guid.Empty;
+    }
+
+    private async Task AnalyzeCaseDocumentsAsync(Guid caseId)
+    {
+        try
+        {
+            _logger.LogInformation("Starting background case analysis for case {CaseId}", caseId);
+
+            // Wait a moment for text extraction to complete
+            await Task.Delay(TimeSpan.FromSeconds(5));
+
+            // Get documents with extracted text for this case
+            var documentsWithText = await _context.Documents
+                .Where(d => d.CaseId == caseId && 
+                           d.Status == DocumentStatus.Processed && 
+                           d.ExtractedText != null &&
+                           !string.IsNullOrEmpty(d.ExtractedText.FullText))
+                .Include(d => d.ExtractedText)
+                .ToListAsync();
+
+            if (!documentsWithText.Any())
+            {
+                _logger.LogWarning("No documents with extracted text found for case {CaseId}. Retrying in 10 seconds...", caseId);
+                await Task.Delay(TimeSpan.FromSeconds(10));
+                
+                // Retry once more
+                documentsWithText = await _context.Documents
+                    .Where(d => d.CaseId == caseId && 
+                               d.Status == DocumentStatus.Processed && 
+                               d.ExtractedText != null &&
+                               !string.IsNullOrEmpty(d.ExtractedText.FullText))
+                    .Include(d => d.ExtractedText)
+                    .ToListAsync();
+
+                if (!documentsWithText.Any())
+                {
+                    _logger.LogWarning("Still no documents with extracted text found for case {CaseId}. Skipping analysis.", caseId);
+                    return;
+                }
+            }
+
+            // Analyze each document
+            CaseAnalysis? latestAnalysis = null;
+            foreach (var document in documentsWithText)
+            {
+                try
+                {
+                    var analysis = await _caseAnalysisService.AnalyzeCaseAsync(
+                        caseId, 
+                        document.Id, 
+                        document.ExtractedText?.FullText ?? "");
+
+                    latestAnalysis = analysis;
+                    _logger.LogInformation("Completed analysis for document {DocumentId} in case {CaseId}", document.Id, caseId);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error analyzing document {DocumentId} for case {CaseId}", document.Id, caseId);
+                }
+            }
+
+            // Update case with analysis results
+            if (latestAnalysis != null)
+            {
+                await UpdateCaseWithAnalysisResults(caseId, latestAnalysis);
+            }
+
+            _logger.LogInformation("Completed background case analysis for case {CaseId}", caseId);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error during background case analysis for case {CaseId}", caseId);
+        }
+    }
+
+    private async Task UpdateCaseWithAnalysisResults(Guid caseId, CaseAnalysis analysis)
+    {
+        try
+        {
+            var caseItem = await _context.Cases.FindAsync(caseId);
+            if (caseItem != null)
+            {
+                // Update case with AI analysis results
+                caseItem.Description = !string.IsNullOrEmpty(analysis.AnalysisText) 
+                    ? analysis.AnalysisText.Substring(0, Math.Min(analysis.AnalysisText.Length, 1000)) + "..."
+                    : caseItem.Description;
+                
+                // Set success probability based on viability score
+                if (analysis.ViabilityScore > 0)
+                {
+                    caseItem.SuccessProbability = (decimal)(analysis.ViabilityScore / 100.0); // Convert to decimal
+                }
+
+                caseItem.UpdatedAt = DateTime.UtcNow;
+                await _context.SaveChangesAsync();
+
+                _logger.LogInformation("Updated case {CaseId} with analysis results. Success probability: {Probability}", 
+                    caseId, caseItem.SuccessProbability);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error updating case {CaseId} with analysis results", caseId);
+        }
     }
 }
 

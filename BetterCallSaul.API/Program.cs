@@ -122,8 +122,9 @@ builder.Services.AddScoped<IFileUploadService>(serviceProvider =>
         logger.LogWarning("Azure Blob Storage not configured or disabled, falling back to local file storage");
         var context = serviceProvider.GetRequiredService<BetterCallSaulContext>();
         var fileValidationService = serviceProvider.GetRequiredService<IFileValidationService>();
+        var textExtractionService = serviceProvider.GetRequiredService<ITextExtractionService>();
         var fileUploadLogger = serviceProvider.GetRequiredService<ILogger<FileUploadService>>();
-        return new FileUploadService(context, fileValidationService, fileUploadLogger);
+        return new FileUploadService(context, fileValidationService, textExtractionService, fileUploadLogger);
     }
 });
 builder.Services.AddScoped<IVirusScanningService, ClamAvService>();

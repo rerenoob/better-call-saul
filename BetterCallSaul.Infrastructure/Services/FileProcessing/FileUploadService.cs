@@ -11,16 +11,19 @@ public class FileUploadService : IFileUploadService
 {
     private readonly BetterCallSaulContext _context;
     private readonly IFileValidationService _fileValidationService;
+    private readonly ITextExtractionService _textExtractionService;
     private readonly ILogger<FileUploadService> _logger;
     private const long MaxUserUploadSizePerHour = 500 * 1024 * 1024; // 500MB per hour
 
     public FileUploadService(
         BetterCallSaulContext context, 
         IFileValidationService fileValidationService,
+        ITextExtractionService textExtractionService,
         ILogger<FileUploadService> logger)
     {
         _context = context;
         _fileValidationService = fileValidationService;
+        _textExtractionService = textExtractionService;
         _logger = logger;
     }
 
@@ -78,14 +81,17 @@ public class FileUploadService : IFileUploadService
             _context.Documents.Add(document);
             await _context.SaveChangesAsync();
 
+            // Perform text extraction after successful upload
+            await ExtractTextFromDocumentAsync(document, storagePath);
+
             result.Success = true;
             result.FileId = document.Id;
             result.FileName = document.FileName;
             result.FileSize = document.FileSize;
             result.FileType = document.FileType;
-            result.Message = "File uploaded successfully";
+            result.Message = "File uploaded and text extracted successfully";
 
-            _logger.LogInformation("File uploaded successfully: {FileName} (ID: {FileId})", file.FileName, document.Id);
+            _logger.LogInformation("File uploaded and processed successfully: {FileName} (ID: {FileId})", file.FileName, document.Id);
         }
         catch (Exception ex)
         {
@@ -160,5 +166,66 @@ public class FileUploadService : IFileUploadService
         return await _context.Documents
             .Where(d => d.UploadedById == userId && d.CreatedAt >= cutoffTime && !d.IsDeleted)
             .SumAsync(d => d.FileSize);
+    }
+
+    private async Task ExtractTextFromDocumentAsync(Document document, string storagePath)
+    {
+        try
+        {
+            // Update document status to processing
+            document.Status = Core.Enums.DocumentStatus.Processing;
+            await _context.SaveChangesAsync();
+
+            _logger.LogInformation("Starting text extraction for document: {DocumentId}", document.Id);
+
+            // Check if text extraction is supported for this file type
+            if (!await _textExtractionService.SupportsFileTypeAsync(document.OriginalFileName ?? ""))
+            {
+                _logger.LogWarning("Text extraction not supported for file type: {FileType}", document.FileType);
+                document.Status = Core.Enums.DocumentStatus.Failed;
+                await _context.SaveChangesAsync();
+                return;
+            }
+
+            // Extract text using the text extraction service
+            var extractionResult = await _textExtractionService.ExtractTextAsync(storagePath, document.OriginalFileName ?? "");
+
+            if (extractionResult.Success && !string.IsNullOrEmpty(extractionResult.ExtractedText))
+            {
+                // Create DocumentText record
+                var documentText = new DocumentText
+                {
+                    DocumentId = document.Id,
+                    FullText = extractionResult.ExtractedText,
+                    ConfidenceScore = extractionResult.ConfidenceScore,
+                    PageCount = extractionResult.Pages?.Count ?? 1,
+                    CharacterCount = extractionResult.ExtractedText.Length,
+                    Language = "en", // Default to English
+                    ExtractionMetadata = extractionResult.Metadata,
+                    Pages = extractionResult.Pages
+                };
+
+                // Link the extracted text to the document
+                document.ExtractedText = documentText;
+                document.Status = Core.Enums.DocumentStatus.Processed;
+
+                _logger.LogInformation("Text extraction completed for document: {DocumentId}. Extracted {CharCount} characters.", 
+                    document.Id, extractionResult.ExtractedText.Length);
+            }
+            else
+            {
+                _logger.LogError("Text extraction failed for document: {DocumentId}. Error: {Error}", 
+                    document.Id, extractionResult.ErrorMessage);
+                document.Status = Core.Enums.DocumentStatus.Failed;
+            }
+
+            await _context.SaveChangesAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error during text extraction for document: {DocumentId}", document.Id);
+            document.Status = Core.Enums.DocumentStatus.Failed;
+            await _context.SaveChangesAsync();
+        }
     }
 }

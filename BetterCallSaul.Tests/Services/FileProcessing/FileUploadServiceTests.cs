@@ -13,6 +13,7 @@ public class FileUploadServiceTests : IDisposable
 {
     private readonly BetterCallSaulContext _context;
     private readonly Mock<BetterCallSaul.Infrastructure.Services.FileProcessing.IFileValidationService> _fileValidationServiceMock;
+    private readonly Mock<ITextExtractionService> _textExtractionServiceMock;
     private readonly Mock<ILogger<FileUploadService>> _loggerMock;
     private readonly FileUploadService _fileUploadService;
 
@@ -30,11 +31,13 @@ public class FileUploadServiceTests : IDisposable
         _context.Database.EnsureCreated();
         
         _fileValidationServiceMock = new Mock<BetterCallSaul.Infrastructure.Services.FileProcessing.IFileValidationService>();
+        _textExtractionServiceMock = new Mock<ITextExtractionService>();
         _loggerMock = new Mock<ILogger<FileUploadService>>();
         
         _fileUploadService = new FileUploadService(
             _context,
             _fileValidationServiceMock.Object,
+            _textExtractionServiceMock.Object,
             _loggerMock.Object);
     }
 
@@ -59,7 +62,7 @@ public class FileUploadServiceTests : IDisposable
         Assert.True(result.Success);
         Assert.Equal(uploadSessionId, result.UploadSessionId);
         Assert.NotEqual(Guid.Empty, result.FileId);
-        Assert.Equal("File uploaded successfully", result.Message);
+        Assert.Equal("File uploaded and text extracted successfully", result.Message);
         Assert.Equal(1024, result.FileSize);
         
         // Verify the document was saved to the database
