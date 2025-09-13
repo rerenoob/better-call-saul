@@ -1,0 +1,102 @@
+name: Build and Test
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        configuration: [Debug, Release]
+        environment: [Development, Production]
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.0.x'
+
+    - name: Restore dependencies
+      run: dotnet restore
+
+    - name: Build in ${{ matrix.configuration }} mode
+      run: dotnet build --configuration ${{ matrix.configuration }} --no-restore
+
+    - name: Test build with ${{ matrix.environment }} environment
+      env:
+        ASPNETCORE_ENVIRONMENT: ${{ matrix.environment }}
+        JWT_SECRET_KEY: "TestSecretKeyForCI32CharsMinimumLength!"
+        # Mock Azure services for CI
+        AZURE_OPENAI_ENDPOINT: "https://mock-openai.example.com/"
+        AZURE_OPENAI_API_KEY: "mock-key-for-ci-testing"
+        AZURE_FORM_RECOGNIZER_ENDPOINT: "https://mock-form.example.com/"
+        AZURE_FORM_RECOGNIZER_API_KEY: "mock-key-for-ci-testing"
+      run: |
+        cd BetterCallSaul.API
+        timeout 30s dotnet run --configuration ${{ matrix.configuration }} --no-build || true
+        # Check if the app started without missing dependency errors
+        if [ $? -eq 124 ]; then
+          echo "✅ App started successfully (timeout after 30s as expected)"
+        else
+          echo "❌ App failed to start - checking for dependency issues"
+          exit 1
+        fi
+
+    - name: Run unit tests
+      run: dotnet test --configuration ${{ matrix.configuration }} --no-build --verbosity normal
+
+    - name: Check for missing dependencies in Release build
+      if: matrix.configuration == 'Release'
+      run: |
+        cd BetterCallSaul.API/bin/Release/net8.0
+        # Check if all referenced assemblies are present
+        dotnet BetterCallSaul.API.dll --help 2>&1 | grep -q "Serilog.Sinks.ApplicationInsights" && echo "❌ Missing ApplicationInsights dependency" && exit 1 || echo "✅ All dependencies present"
+
+  dependency-check:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.0.x'
+
+    - name: Verify Serilog configuration dependencies
+      run: |
+        echo "Checking for Serilog sink dependencies in configuration..."
+
+        # Check if ApplicationInsights sink is configured but package is missing
+        if grep -q "Serilog.Sinks.ApplicationInsights" BetterCallSaul.API/appsettings.Production.json; then
+          if ! grep -q "Serilog.Sinks.ApplicationInsights" BetterCallSaul.API/BetterCallSaul.API.csproj; then
+            echo "❌ ERROR: ApplicationInsights sink configured but package not referenced!"
+            exit 1
+          else
+            echo "✅ ApplicationInsights sink properly configured and referenced"
+          fi
+        fi
+
+        # Check for other potential missing sinks
+        grep -E "\"Name\":\s*\"[^\"]*\"" BetterCallSaul.API/appsettings.Production.json | while read -r line; do
+          sink_name=$(echo "$line" | sed -n 's/.*"Name":\s*"\([^"]*\)".*/\1/p')
+          echo "Checking sink: $sink_name"
+
+          case "$sink_name" in
+            "ApplicationInsights")
+              # Already checked above
+              ;;
+            "Console")
+              grep -q "Serilog.Sinks.Console" BetterCallSaul.API/BetterCallSaul.API.csproj || (echo "❌ Missing Serilog.Sinks.Console package" && exit 1)
+              ;;
+            *)
+              echo "⚠️  Warning: Unknown sink '$sink_name' - verify package is referenced"
+              ;;
+          esac
+        done

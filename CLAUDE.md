@@ -187,3 +187,29 @@ The solution follows clean architecture principles with clear separation between
 3. Run tests: `dotnet test` (backend), `npm test` (frontend)
 4. Build for production: `dotnet publish`, `npm run build`
 
+## Production Deployment Safeguards
+
+### Dependency Management
+- **Critical**: Always verify Serilog sink dependencies when modifying logging configuration
+- If adding new sinks to `appsettings.Production.json`, ensure corresponding NuGet packages are installed
+- Required packages for current configuration:
+  - `Serilog.Sinks.Console` (for Console sink)
+  - `Serilog.Sinks.ApplicationInsights` (for ApplicationInsights sink)
+
+### Pre-deployment Checklist
+1. **Build Verification**: Run `dotnet build --configuration Release` to ensure all dependencies are resolved
+2. **Production Environment Test**: Test startup with Production environment settings locally
+3. **Dependency Audit**: Verify all Serilog sinks in config have corresponding packages referenced
+4. **CI/CD Pipeline**: GitHub Actions workflow automatically validates dependencies and build integrity
+
+### Common Issues Prevention
+- **Missing Serilog Sinks**: The build will fail in CI if configuration references missing sink packages
+- **Environment Variables**: All required secrets are validated during startup
+- **Azure Service Dependencies**: Mock endpoints used in CI to validate service integration points
+
+### Troubleshooting Production Issues
+1. Check Azure App Service logs: `az webapp log download --name bettercallsaul-api --resource-group bettercallsaul-rg`
+2. Look for missing dependency errors in Docker logs
+3. Verify all app settings are configured in Azure portal
+4. Use GitHub Actions workflow to test configuration changes before deployment
+
