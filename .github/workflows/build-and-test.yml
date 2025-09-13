@@ -40,12 +40,17 @@ jobs:
         AZURE_FORM_RECOGNIZER_API_KEY: "mock-key-for-ci-testing"
       run: |
         cd BetterCallSaul.API
-        timeout 30s dotnet run --configuration ${{ matrix.configuration }} --no-build || true
+        set +e  # Disable exit on error to capture timeout exit code
+        timeout 30s dotnet run --configuration ${{ matrix.configuration }} --no-build
+        EXIT_CODE=$?
+        set -e  # Re-enable exit on error
         # Check if the app started without missing dependency errors
-        if [ $? -eq 124 ]; then
+        if [ $EXIT_CODE -eq 124 ]; then
           echo "✅ App started successfully (timeout after 30s as expected)"
+        elif [ $EXIT_CODE -eq 0 ]; then
+          echo "✅ App started and exited cleanly"
         else
-          echo "❌ App failed to start - checking for dependency issues"
+          echo "❌ App failed to start - exit code: $EXIT_CODE"
           exit 1
         fi
 
@@ -56,8 +61,13 @@ jobs:
       if: matrix.configuration == 'Release'
       run: |
         cd BetterCallSaul.API/bin/Release/net8.0
-        # Check if all referenced assemblies are present
-        dotnet BetterCallSaul.API.dll --help 2>&1 | grep -q "Serilog.Sinks.ApplicationInsights" && echo "❌ Missing ApplicationInsights dependency" && exit 1 || echo "✅ All dependencies present"
+        # Verify the Serilog.Sinks.ApplicationInsights.dll is present
+        if [ ! -f "Serilog.Sinks.ApplicationInsights.dll" ]; then
+          echo "❌ Missing Serilog.Sinks.ApplicationInsights.dll in Release build"
+          exit 1
+        else
+          echo "✅ All dependencies present in Release build"
+        fi
 
   dependency-check:
     runs-on: ubuntu-latest
