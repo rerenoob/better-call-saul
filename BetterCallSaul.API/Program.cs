@@ -129,7 +129,29 @@ builder.Services.AddScoped<IFileUploadService>(serviceProvider =>
 });
 builder.Services.AddScoped<IVirusScanningService, ClamAvService>();
 builder.Services.AddScoped<IFileValidationService, FileValidationService>();
-builder.Services.AddScoped<ITextExtractionService, MockTextExtractionService>();
+
+// Configure text extraction service - use Azure Form Recognizer in production, mock in development
+builder.Services.AddScoped<ITextExtractionService>(serviceProvider =>
+{
+    var env = serviceProvider.GetRequiredService<IWebHostEnvironment>();
+    var formRecognizerOptions = serviceProvider.GetRequiredService<IOptions<FormRecognizerOptions>>().Value;
+    
+    // Use Azure Form Recognizer if configured and not in development, otherwise use mock
+    if (!env.IsDevelopment() && 
+        !string.IsNullOrEmpty(formRecognizerOptions.Endpoint) && 
+        !string.IsNullOrEmpty(formRecognizerOptions.ApiKey))
+    {
+        var logger = serviceProvider.GetRequiredService<ILogger<AzureFormRecognizerService>>();
+        return new AzureFormRecognizerService(
+            serviceProvider.GetRequiredService<IOptions<FormRecognizerOptions>>(),
+            logger);
+    }
+    else
+    {
+        var logger = serviceProvider.GetRequiredService<ILogger<MockTextExtractionService>>();
+        return new MockTextExtractionService(logger);
+    }
+});
 builder.Services.AddScoped<DatabaseSeedingService>();
 
 builder.Services.AddHttpContextAccessor();
@@ -176,6 +198,22 @@ builder.Services.Configure<AzureBlobStorageOptions>(options =>
     {
         options.UseAzureStorage = useAzure;
     }
+});
+
+// Configure Azure Form Recognizer
+builder.Services.Configure<FormRecognizerOptions>(options =>
+{
+    var section = builder.Configuration.GetSection(FormRecognizerOptions.SectionName);
+    section.Bind(options);
+    
+    // Override from environment variables if provided
+    var endpoint = Environment.GetEnvironmentVariable("AZURE_FORM_RECOGNIZER_ENDPOINT");
+    var apiKey = Environment.GetEnvironmentVariable("AZURE_FORM_RECOGNIZER_API_KEY");
+    
+    if (!string.IsNullOrEmpty(endpoint))
+        options.EndpointFromConfig = endpoint;
+    if (!string.IsNullOrEmpty(apiKey))
+        options.ApiKeyFromConfig = apiKey;
 });
 
 // Configure CORS

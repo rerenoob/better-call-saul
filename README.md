@@ -199,8 +199,17 @@ az webapp create --name better-call-saul-api --plan better-call-saul-plan --reso
 Configure these in production:
 - `AzureOpenAI:Endpoint` - Azure OpenAI service endpoint
 - `AzureOpenAI:ApiKey` - Azure OpenAI API key
+- `AzureFormRecognizer:EndpointFromConfig` - Azure Form Recognizer endpoint
+- `AzureFormRecognizer:ApiKeyFromConfig` - Azure Form Recognizer API key
 - `ConnectionStrings:DefaultConnection` - SQL Server connection string
 - `JwtSettings:SecretKey` - JWT signing key
+
+Or use environment variables:
+- `AZURE_OPENAI_ENDPOINT` - Azure OpenAI service endpoint
+- `AZURE_OPENAI_API_KEY` - Azure OpenAI API key
+- `AZURE_FORM_RECOGNIZER_ENDPOINT` - Azure Form Recognizer endpoint
+- `AZURE_FORM_RECOGNIZER_API_KEY` - Azure Form Recognizer API key
+- `AZURE_BLOB_STORAGE_CONNECTION_STRING` - Azure Blob Storage connection string
 
 ## 🤝 Contributing
 

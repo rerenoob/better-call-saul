@@ -99,6 +99,11 @@ Server=tcp:YOUR_SQL_SERVER.database.windows.net,1433;Initial Catalog=YOUR_DATABA
 ### Backend API (App Service Settings)
 - `ASPNETCORE_ENVIRONMENT`: Production
 - `DefaultConnection`: SQL Database connection string (configured as connection string)
+- `AZURE_FORM_RECOGNIZER_ENDPOINT`: https://your-form-recognizer-instance.cognitiveservices.azure.com/
+- `AZURE_FORM_RECOGNIZER_API_KEY`: your-form-recognizer-api-key
+- `AZURE_OPENAI_ENDPOINT`: https://your-openai-instance.openai.azure.com/
+- `AZURE_OPENAI_API_KEY`: your-openai-api-key
+- `AZURE_BLOB_STORAGE_CONNECTION_STRING`: your-blob-storage-connection-string
 
 ### Frontend (Static Web App Settings)
 - `VITE_API_BASE_URL`: https://bettercallsaul-api-gphmb8cvc6h7g3fu.centralus-01.azurewebsites.net
