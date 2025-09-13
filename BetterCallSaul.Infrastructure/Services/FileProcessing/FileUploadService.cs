@@ -4,6 +4,7 @@ using BetterCallSaul.Infrastructure.Validators;
 using Microsoft.AspNetCore.Http;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using BetterCallSaul.Core.Enums;
 
 namespace BetterCallSaul.Infrastructure.Services.FileProcessing;
 
@@ -214,18 +215,75 @@ public class FileUploadService : IFileUploadService
             }
             else
             {
-                _logger.LogError("Text extraction failed for document: {DocumentId}. Error: {Error}", 
-                    document.Id, extractionResult.ErrorMessage);
+                _logger.LogError("Text extraction failed for document: {DocumentId}. Error: {Error}. Status: {Status}, ProcessingTime: {ProcessingTime}ms", 
+                    document.Id, extractionResult.ErrorMessage, extractionResult.Status, extractionResult.ProcessingTime.TotalMilliseconds);
                 document.Status = Core.Enums.DocumentStatus.Failed;
+                document.Metadata = new Dictionary<string, object>
+                {
+                    ["extraction_error"] = extractionResult.ErrorMessage ?? "Unknown error",
+                    ["extraction_status"] = extractionResult.Status.ToString(),
+                    ["processing_time_ms"] = extractionResult.ProcessingTime.TotalMilliseconds,
+                    ["failed_at"] = DateTime.UtcNow
+                };
+                
+                // Create audit log for OCR failure
+                await CreateAuditLogAsync(
+                    "OCR_FAILURE",
+                    $"Text extraction failed for document {document.Id}: {extractionResult.ErrorMessage}",
+                    "Document",
+                    document.Id,
+                    AuditLogLevel.Error
+                );
             }
 
             await _context.SaveChangesAsync();
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error during text extraction for document: {DocumentId}", document.Id);
+            _logger.LogError(ex, "Critical error during text extraction for document: {DocumentId}. Exception type: {ExceptionType}", 
+                document.Id, ex.GetType().Name);
             document.Status = Core.Enums.DocumentStatus.Failed;
+            document.Metadata = new Dictionary<string, object>
+            {
+                ["extraction_error"] = $"Critical error: {ex.Message}",
+                ["exception_type"] = ex.GetType().Name,
+                ["exception_stack_trace"] = ex.StackTrace ?? "No stack trace",
+                ["failed_at"] = DateTime.UtcNow
+            };
+            
+            // Create audit log for critical OCR failure
+            await CreateAuditLogAsync(
+                "OCR_CRITICAL_FAILURE",
+                $"Critical text extraction error for document {document.Id}: {ex.Message}",
+                "Document",
+                document.Id,
+                AuditLogLevel.Critical
+            );
+            
             await _context.SaveChangesAsync();
+        }
+    }
+
+    private async Task CreateAuditLogAsync(string action, string description, string entityType, Guid entityId, AuditLogLevel level)
+    {
+        try
+        {
+            var auditLog = new AuditLog
+            {
+                Action = action,
+                Description = description,
+                EntityType = entityType,
+                EntityId = entityId,
+                Level = level,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            _context.AuditLogs.Add(auditLog);
+            await _context.SaveChangesAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to create audit log for {Action}", action);
         }
     }
 }

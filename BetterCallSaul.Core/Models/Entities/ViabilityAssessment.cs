@@ -32,4 +32,6 @@ public class ViabilityAssessment
     
     public Guid CreatedBy { get; set; }
     public virtual User CreatedByUser { get; set; } = null!;
+    
+    public Dictionary<string, object>? Metadata { get; set; }
 }

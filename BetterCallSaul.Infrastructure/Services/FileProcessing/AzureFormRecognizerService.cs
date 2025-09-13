@@ -99,26 +99,39 @@ public class AzureFormRecognizerService : ITextExtractionService
         }
         catch (RequestFailedException ex)
         {
-            _logger.LogError(ex, "Azure Form Recognizer error for file: {FileName}", fileName);
+            _logger.LogError(ex, "Azure Form Recognizer error for file: {FileName}. Status: {StatusCode}, ErrorCode: {ErrorCode}", 
+                fileName, ex.Status, ex.ErrorCode);
             return new TextExtractionResult
             {
                 Success = false,
-                ErrorMessage = $"Azure Form Recognizer error: {ex.Message}",
+                ErrorMessage = $"Azure Form Recognizer error: {ex.Message} (Status: {ex.Status}, Code: {ex.ErrorCode})",
                 Status = TextExtractionStatus.ProcessingError,
                 FileName = fileName,
-                ProcessingTime = DateTime.UtcNow - startTime
+                ProcessingTime = DateTime.UtcNow - startTime,
+                Metadata = new Dictionary<string, object>
+                {
+                    ["azure_error_code"] = ex.ErrorCode ?? "unknown",
+                    ["azure_status_code"] = (int)ex.Status,
+                    ["azure_operation_failed"] = true
+                }
             };
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error extracting text from file: {FileName}", fileName);
+            _logger.LogError(ex, "Critical error extracting text from file: {FileName}. Exception type: {ExceptionType}", 
+                fileName, ex.GetType().Name);
             return new TextExtractionResult
             {
                 Success = false,
-                ErrorMessage = $"Extraction error: {ex.Message}",
+                ErrorMessage = $"Critical extraction error: {ex.Message}",
                 Status = TextExtractionStatus.ProcessingError,
                 FileName = fileName,
-                ProcessingTime = DateTime.UtcNow - startTime
+                ProcessingTime = DateTime.UtcNow - startTime,
+                Metadata = new Dictionary<string, object>
+                {
+                    ["exception_type"] = ex.GetType().Name,
+                    ["exception_stack_trace"] = ex.StackTrace ?? "No stack trace"
+                }
             };
         }
     }

@@ -44,4 +44,6 @@ public class Document : IAuditableEntity
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? UpdatedAt { get; set; }
     public bool IsDeleted { get; set; } = false;
+    
+    public Dictionary<string, object>? Metadata { get; set; }
 }

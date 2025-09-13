@@ -76,12 +76,17 @@ public class AzureOpenAIService : IAzureOpenAIService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error analyzing case with Azure OpenAI");
+            _logger.LogError(ex, "Error analyzing case with Azure OpenAI. Exception type: {ExceptionType}", ex.GetType().Name);
             return new AIResponse
             {
                 Success = false,
-                ErrorMessage = ex.Message,
-                ProcessingTime = TimeSpan.Zero
+                ErrorMessage = $"Azure OpenAI service error: {ex.Message}",
+                ProcessingTime = TimeSpan.Zero,
+                Metadata = new Dictionary<string, object>
+                {
+                    ["error_type"] = ex.GetType().Name,
+                    ["azure_openai_failed"] = true
+                }
             };
         }
     }
@@ -142,12 +147,17 @@ public class AzureOpenAIService : IAzureOpenAIService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error predicting case outcome with Azure OpenAI");
+            _logger.LogError(ex, "Error predicting case outcome with Azure OpenAI. Exception type: {ExceptionType}", ex.GetType().Name);
             return new AIResponse
             {
                 Success = false,
-                ErrorMessage = ex.Message,
-                ProcessingTime = TimeSpan.Zero
+                ErrorMessage = $"Azure OpenAI prediction error: {ex.Message}",
+                ProcessingTime = TimeSpan.Zero,
+                Metadata = new Dictionary<string, object>
+                {
+                    ["error_type"] = ex.GetType().Name,
+                    ["azure_openai_failed"] = true
+                }
             };
         }
     }
@@ -195,12 +205,17 @@ public class AzureOpenAIService : IAzureOpenAIService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error summarizing legal document with Azure OpenAI");
+            _logger.LogError(ex, "Error summarizing legal document with Azure OpenAI. Exception type: {ExceptionType}", ex.GetType().Name);
             return new AIResponse
             {
                 Success = false,
-                ErrorMessage = ex.Message,
-                ProcessingTime = TimeSpan.Zero
+                ErrorMessage = $"Azure OpenAI summarization error: {ex.Message}",
+                ProcessingTime = TimeSpan.Zero,
+                Metadata = new Dictionary<string, object>
+                {
+                    ["error_type"] = ex.GetType().Name,
+                    ["azure_openai_failed"] = true
+                }
             };
         }
     }

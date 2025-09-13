@@ -115,3 +115,6 @@ better-call-saul-frontend/frontend-dist.zip
 # Logs
 *.log
 logs/
+
+# Prod test
+prod-cred.txt

@@ -43,6 +43,20 @@ public class BetterCallSaulContext : IdentityDbContext<User, Role, Guid>
                 v => System.Text.Json.JsonSerializer.Serialize(v, (System.Text.Json.JsonSerializerOptions?)null),
                 v => System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, object>>(v, (System.Text.Json.JsonSerializerOptions?)null));
 
+        // Configure Document Metadata property
+        modelBuilder.Entity<Document>()
+            .Property(e => e.Metadata)
+            .HasConversion(
+                v => System.Text.Json.JsonSerializer.Serialize(v, (System.Text.Json.JsonSerializerOptions?)null),
+                v => System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, object>>(v, (System.Text.Json.JsonSerializerOptions?)null));
+
+        // Configure ViabilityAssessment Metadata property
+        modelBuilder.Entity<ViabilityAssessment>()
+            .Property(e => e.Metadata)
+            .HasConversion(
+                v => System.Text.Json.JsonSerializer.Serialize(v, (System.Text.Json.JsonSerializerOptions?)null),
+                v => System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, object>>(v, (System.Text.Json.JsonSerializerOptions?)null));
+
         // Configure complex types as JSON
         modelBuilder.Entity<CaseAnalysis>()
             .Property(e => e.KeyLegalIssues)

@@ -3,6 +3,7 @@ using BetterCallSaul.Core.Interfaces.Services;
 using BetterCallSaul.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using BetterCallSaul.Core.Enums;
 
 namespace BetterCallSaul.Infrastructure.Services.AI;
 
@@ -84,9 +85,16 @@ public class CaseAnalysisService : ICaseAnalysisService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error analyzing case {CaseId} with document {DocumentId}", caseId, documentId);
+            _logger.LogError(ex, "Critical error analyzing case {CaseId} with document {DocumentId}. Exception type: {ExceptionType}", 
+                caseId, documentId, ex.GetType().Name);
             analysis.Status = AnalysisStatus.Failed;
             analysis.AnalysisText = $"Analysis failed: {ex.Message}";
+            analysis.Metadata = new Dictionary<string, object>
+            {
+                ["error_type"] = ex.GetType().Name,
+                ["error_stack_trace"] = ex.StackTrace ?? "No stack trace",
+                ["failed_at"] = DateTime.UtcNow
+            };
             
             OnAnalysisProgress(new AnalysisProgressEventArgs
             {
@@ -94,8 +102,17 @@ public class CaseAnalysisService : ICaseAnalysisService
                 CaseId = caseId,
                 Status = AnalysisStatus.Failed,
                 ProgressPercentage = 0,
-                Message = ex.Message
+                Message = $"Critical analysis failure: {ex.Message}"
             });
+
+            // Create audit log for case analysis failure
+            await CreateAuditLogAsync(
+                "CASE_ANALYSIS_FAILURE",
+                $"Case analysis failed for case {caseId} with document {documentId}: {ex.Message}",
+                "CaseAnalysis",
+                analysis.Id,
+                AuditLogLevel.Error
+            );
         }
 
         await _context.SaveChangesAsync(cancellationToken);
@@ -148,20 +165,53 @@ public class CaseAnalysisService : ICaseAnalysisService
             }
             else
             {
-                _logger.LogWarning("AI viability assessment failed for case {CaseId}: {Error}", caseId, aiResponse.ErrorMessage);
+                _logger.LogWarning("AI viability assessment failed for case {CaseId}: {Error}. Confidence: {Confidence}", 
+                    caseId, aiResponse.ErrorMessage, aiResponse.ConfidenceScore);
                 assessment.ViabilityScore = 50.0; // Default neutral score
                 assessment.ConfidenceLevel = "Low";
-                assessment.Reasoning = "Unable to complete AI assessment. Manual review recommended.";
+                assessment.Reasoning = $"Unable to complete AI assessment: {aiResponse.ErrorMessage}";
+                assessment.Metadata = new Dictionary<string, object>
+                {
+                    ["ai_error"] = aiResponse.ErrorMessage ?? "Unknown error",
+                    ["ai_confidence"] = aiResponse.ConfidenceScore,
+                    ["assessment_failed"] = true
+                };
+
+                // Create audit log for AI assessment failure
+                await CreateAuditLogAsync(
+                    "AI_ASSESSMENT_FAILURE",
+                    $"AI viability assessment failed for case {caseId}: {aiResponse.ErrorMessage}",
+                    "ViabilityAssessment",
+                    Guid.NewGuid(), // No assessment ID yet
+                    AuditLogLevel.Warning
+                );
             }
 
             return assessment;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error during viability assessment for case {CaseId}", caseId);
+            _logger.LogError(ex, "Critical error during viability assessment for case {CaseId}. Exception type: {ExceptionType}", 
+                caseId, ex.GetType().Name);
             assessment.ViabilityScore = 0;
             assessment.ConfidenceLevel = "Low";
-            assessment.Reasoning = "Assessment failed due to technical error. Manual review required.";
+            assessment.Reasoning = $"Assessment failed due to technical error: {ex.Message}";
+            assessment.Metadata = new Dictionary<string, object>
+            {
+                ["error_type"] = ex.GetType().Name,
+                ["error_stack_trace"] = ex.StackTrace ?? "No stack trace",
+                ["assessment_failed"] = true
+            };
+
+            // Create audit log for critical assessment failure
+            await CreateAuditLogAsync(
+                "VIABILITY_ASSESSMENT_CRITICAL_FAILURE",
+                $"Critical viability assessment error for case {caseId}: {ex.Message}",
+                "ViabilityAssessment",
+                Guid.NewGuid(), // No assessment ID yet
+                AuditLogLevel.Critical
+            );
+
             return assessment;
         }
     }
@@ -320,6 +370,29 @@ Focus on legal precedents, evidence quality, procedural issues, and potential de
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Failed to parse viability assessment results");
+        }
+    }
+
+    private async Task CreateAuditLogAsync(string action, string description, string entityType, Guid entityId, AuditLogLevel level)
+    {
+        try
+        {
+            var auditLog = new AuditLog
+            {
+                Action = action,
+                Description = description,
+                EntityType = entityType,
+                EntityId = entityId,
+                Level = level,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            _context.AuditLogs.Add(auditLog);
+            await _context.SaveChangesAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to create audit log for {Action}", action);
         }
     }
 }

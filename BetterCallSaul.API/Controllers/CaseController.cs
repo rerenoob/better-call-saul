@@ -276,7 +276,17 @@ public class CaseController : ControllerBase
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Error analyzing document {DocumentId} for case {CaseId}", document.Id, caseId);
+                    _logger.LogError(ex, "Error analyzing document {DocumentId} for case {CaseId}. Exception type: {ExceptionType}", 
+                        document.Id, caseId, ex.GetType().Name);
+                    
+                    // Create audit log for document analysis failure
+                    await CreateAuditLogAsync(
+                        "DOCUMENT_ANALYSIS_FAILURE",
+                        $"Document analysis failed for document {document.Id} in case {caseId}: {ex.Message}",
+                        "Document",
+                        document.Id,
+                        AuditLogLevel.Error
+                    );
                 }
             }
 
@@ -290,7 +300,17 @@ public class CaseController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error during background case analysis for case {CaseId}", caseId);
+            _logger.LogError(ex, "Critical error during background case analysis for case {CaseId}. Exception type: {ExceptionType}", 
+                caseId, ex.GetType().Name);
+            
+            // Create audit log for background analysis failure
+            await CreateAuditLogAsync(
+                "BACKGROUND_ANALYSIS_FAILURE",
+                $"Background case analysis failed for case {caseId}: {ex.Message}",
+                "Case",
+                caseId,
+                AuditLogLevel.Critical
+            );
         }
     }
 
@@ -321,7 +341,31 @@ public class CaseController : ControllerBase
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error updating case {CaseId} with analysis results", caseId);
+            _logger.LogError(ex, "Error updating case {CaseId} with analysis results. Exception type: {ExceptionType}", 
+                caseId, ex.GetType().Name);
+        }
+    }
+
+    private async Task CreateAuditLogAsync(string action, string description, string entityType, Guid entityId, AuditLogLevel level)
+    {
+        try
+        {
+            var auditLog = new AuditLog
+            {
+                Action = action,
+                Description = description,
+                EntityType = entityType,
+                EntityId = entityId,
+                Level = level,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            _context.AuditLogs.Add(auditLog);
+            await _context.SaveChangesAsync();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to create audit log for {Action}", action);
         }
     }
 }
