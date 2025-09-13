@@ -44,6 +44,7 @@ public class Case : IAuditableEntity
     // Navigation properties
     public virtual User User { get; set; } = null!;
     public virtual ICollection<Document> Documents { get; set; } = new List<Document>();
+    public virtual ICollection<CaseAnalysis> CaseAnalyses { get; set; } = new List<CaseAnalysis>();
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public DateTime? UpdatedAt { get; set; }

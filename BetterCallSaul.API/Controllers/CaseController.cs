@@ -32,6 +32,9 @@ public class CaseController : ControllerBase
     public async Task<ActionResult<Case>> GetCase(Guid id)
     {
         var caseItem = await _context.Cases
+            .Include(c => c.Documents)
+                .ThenInclude(d => d.ExtractedText)  // Include OCR text results
+            .Include(c => c.CaseAnalyses)           // Include AI case analyses
             .FirstOrDefaultAsync(c => c.Id == id);
 
         if (caseItem == null)

@@ -181,6 +181,33 @@ The solution follows clean architecture principles with clear separation between
 - CI/CD: Azure DevOps or GitHub Actions
 - Monitoring: Application Insights
 
+#### Azure App Service Environment Variables
+**Required for production deployment:**
+```bash
+# Database Connection String
+ConnectionStrings__DefaultConnection="Data Source=BetterCallSaul.db"
+# Or for SQL Server: "Server=your-server;Database=BetterCallSaul;User Id=username;Password=password;TrustServerCertificate=true;"
+
+# JWT Authentication
+JWT_SECRET_KEY="your-secure-secret-key-at-least-32-chars"
+
+# Environment
+ASPNETCORE_ENVIRONMENT="Production"
+```
+
+**Set via Azure CLI:**
+```bash
+az webapp config appsettings set --name bettercallsaul-api --resource-group bettercallsaul-rg --settings \
+  "ConnectionStrings__DefaultConnection=Data Source=BetterCallSaul.db" \
+  "JWT_SECRET_KEY=your-secure-secret-key" \
+  "ASPNETCORE_ENVIRONMENT=Production"
+```
+
+**Set via Azure Portal:**
+- Navigate to: Azure Portal → App Service → Configuration → Application settings
+- Add each key-value pair above
+- Restart the App Service after configuration changes
+
 ### Development Workflow
 1. Start backend API: `dotnet watch`
 2. Start frontend dev server: `npm run dev`
@@ -210,6 +237,10 @@ The solution follows clean architecture principles with clear separation between
 ### Troubleshooting Production Issues
 1. Check Azure App Service logs: `az webapp log download --name bettercallsaul-api --resource-group bettercallsaul-rg`
 2. Look for missing dependency errors in Docker logs
-3. Verify all app settings are configured in Azure portal
+3. **Verify all app settings are configured in Azure portal** - Most common cause of 503 errors
+   - Check `ConnectionStrings__DefaultConnection` is set
+   - Check `JWT_SECRET_KEY` is set (minimum 32 characters)
+   - Check `ASPNETCORE_ENVIRONMENT` is set to "Production"
 4. Use GitHub Actions workflow to test configuration changes before deployment
+5. **If API returns 503 Service Unavailable**: Missing environment variables - verify steps in "Azure App Service Environment Variables" section above
 
