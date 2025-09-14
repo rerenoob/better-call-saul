@@ -148,34 +148,9 @@ public class FileUploadController : ControllerBase
     {
         try
         {
-            // Check if the current service is AzureBlobStorageService
-            if (_fileUploadService is not AzureBlobStorageService azureStorageService)
-            {
-                return BadRequest(new { error = "SAS tokens are only available when using Azure Blob Storage" });
-            }
-
-            // Validate user has access to this blob (you would implement proper authorization here)
-            var userId = GetCurrentUserId();
-            if (userId == Guid.Empty)
-            {
-                return Unauthorized(new { error = "User not authenticated" });
-            }
-
-            // Generate SAS token
-            var expiryTime = TimeSpan.FromMinutes(expiryMinutes);
-            var sasToken = await azureStorageService.GenerateSasTokenAsync(blobName, expiryTime);
-
-            return Ok(new 
-            {
-                SasToken = sasToken,
-                ExpiryMinutes = expiryMinutes,
-                BlobName = blobName,
-                GeneratedAt = DateTime.UtcNow
-            });
-        }
-        catch (FileNotFoundException)
-        {
-            return NotFound(new { error = $"Blob '{blobName}' not found" });
+            // SAS tokens are only available when using Azure Blob Storage
+            // Since we're removing Azure services, this endpoint is no longer supported
+            return BadRequest(new { error = "SAS tokens are only available when using Azure Blob Storage. This feature is not available in the current configuration." });
         }
         catch (Exception ex)
         {

@@ -7,16 +7,13 @@ namespace BetterCallSaul.Tests.Configuration;
 public class CloudProviderOptionsTests
 {
     [Fact]
-    public void CloudProviderOptions_LoadsFromConfiguration_WithAzureAsDefault()
+    public void CloudProviderOptions_LoadsFromConfiguration_WithAWSAsDefault()
     {
         // Arrange
         var configuration = new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?>
             {
-                ["CloudProvider:Active"] = "Azure",
-                ["CloudProvider:Azure:OpenAI:Endpoint"] = "https://azure-openai-endpoint",
-                ["CloudProvider:Azure:BlobStorage:ConnectionString"] = "azure-connection-string",
-                ["CloudProvider:Azure:FormRecognizer:EndpointFromConfig"] = "https://azure-form-recognizer-endpoint",
+                ["CloudProvider:Active"] = "AWS",
                 ["CloudProvider:AWS:Bedrock:Region"] = "us-east-1",
                 ["CloudProvider:AWS:S3:BucketName"] = "test-bucket",
                 ["CloudProvider:AWS:Textract:Region"] = "us-west-2"
@@ -28,11 +25,7 @@ public class CloudProviderOptionsTests
         configuration.GetSection(CloudProviderOptions.SectionName).Bind(options);
 
         // Assert
-        Assert.Equal("Azure", options.Active);
-        Assert.NotNull(options.Azure);
-        Assert.NotNull(options.Azure.OpenAI);
-        Assert.NotNull(options.Azure.BlobStorage);
-        Assert.NotNull(options.Azure.FormRecognizer);
+        Assert.Equal("AWS", options.Active);
         
         Assert.NotNull(options.AWS);
         Assert.NotNull(options.AWS.Bedrock);
@@ -52,7 +45,7 @@ public class CloudProviderOptionsTests
         var configuration = new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?>
             {
-                ["CloudProvider:Active"] = "Azure"
+                ["CloudProvider:Active"] = "Azure" // This should be overridden
             })
             .Build();
 
@@ -83,7 +76,7 @@ public class CloudProviderOptionsTests
         var configuration = new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?>
             {
-                ["CloudProvider:Active"] = "Azure"
+                ["CloudProvider:Active"] = "AWS"
             })
             .Build();
 
@@ -98,8 +91,8 @@ public class CloudProviderOptionsTests
             options.Active = cloudProvider;
         }
 
-        // Assert - should remain Azure since GCP is invalid
-        Assert.Equal("Azure", options.Active);
+        // Assert - should remain AWS since GCP is invalid
+        Assert.Equal("AWS", options.Active);
         
         // Cleanup
         Environment.SetEnvironmentVariable("CLOUD_PROVIDER", null);

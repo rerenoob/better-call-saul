@@ -10,12 +10,12 @@ namespace BetterCallSaul.Infrastructure.Services.AI;
 public class CaseAnalysisService : ICaseAnalysisService
 {
     private readonly BetterCallSaulContext _context;
-    private readonly IAzureOpenAIService _openAIService;
+    private readonly IAIService _openAIService;
     private readonly ILogger<CaseAnalysisService> _logger;
 
     public event EventHandler<AnalysisProgressEventArgs>? AnalysisProgress;
 
-    public CaseAnalysisService(BetterCallSaulContext context, IAzureOpenAIService openAIService, ILogger<CaseAnalysisService> logger)
+    public CaseAnalysisService(BetterCallSaulContext context, IAIService openAIService, ILogger<CaseAnalysisService> logger)
     {
         _context = context;
         _openAIService = openAIService;

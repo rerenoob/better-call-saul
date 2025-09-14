@@ -14,12 +14,12 @@ namespace BetterCallSaul.API.Controllers;
 [EnableCors("ReactFrontend")]
 public class CaseController : ControllerBase
 {
-    private readonly IAzureOpenAIService _aiService;
+    private readonly IAIService _aiService;
     private readonly ICaseAnalysisService _caseAnalysisService;
     private readonly ILogger<CaseController> _logger;
     private readonly BetterCallSaulContext _context;
 
-    public CaseController(IAzureOpenAIService aiService, ICaseAnalysisService caseAnalysisService, ILogger<CaseController> logger, BetterCallSaulContext context)
+    public CaseController(IAIService aiService, ICaseAnalysisService caseAnalysisService, ILogger<CaseController> logger, BetterCallSaulContext context)
     {
         _aiService = aiService;
         _caseAnalysisService = caseAnalysisService;

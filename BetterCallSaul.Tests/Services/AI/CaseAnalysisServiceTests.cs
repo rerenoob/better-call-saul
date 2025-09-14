@@ -11,7 +11,7 @@ namespace BetterCallSaul.Tests.Services.AI;
 public class CaseAnalysisServiceTests : IDisposable
 {
     private readonly BetterCallSaulContext _context;
-    private readonly Mock<Core.Interfaces.Services.IAzureOpenAIService> _openAIServiceMock;
+    private readonly Mock<Core.Interfaces.Services.IAIService> _openAIServiceMock;
     private readonly Mock<ILogger<CaseAnalysisService>> _loggerMock;
     private readonly CaseAnalysisService _caseAnalysisService;
 
@@ -28,7 +28,7 @@ public class CaseAnalysisServiceTests : IDisposable
         // Ensure database is created and ready
         _context.Database.EnsureCreated();
         
-        _openAIServiceMock = new Mock<Core.Interfaces.Services.IAzureOpenAIService>();
+        _openAIServiceMock = new Mock<Core.Interfaces.Services.IAIService>();
         _loggerMock = new Mock<ILogger<CaseAnalysisService>>();
         
         _caseAnalysisService = new CaseAnalysisService(

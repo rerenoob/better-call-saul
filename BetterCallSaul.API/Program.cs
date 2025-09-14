@@ -151,57 +151,8 @@ builder.Services.AddScoped<ICaseMatchingService, IntelligentCaseMatchingService>
 builder.Services.AddScoped<LegalTextSimilarity>();
 builder.Services.AddMemoryCache();
 
-// Configure Azure OpenAI
-builder.Services.Configure<OpenAIOptions>(options =>
-{
-    var section = builder.Configuration.GetSection(OpenAIOptions.SectionName);
-    section.Bind(options);
-    
-    // Map configuration to new property names
-    options.EndpointFromConfig = section["Endpoint"];
-    options.ApiKeyFromConfig = section["ApiKey"];
-});
-
-builder.Services.AddScoped<IAzureOpenAIService, AzureOpenAIService>();
 builder.Services.AddScoped<AWSBedrockService>();
 builder.Services.AddScoped<ICaseAnalysisService, CaseAnalysisService>();
-
-// Configure Azure Blob Storage
-builder.Services.Configure<AzureBlobStorageOptions>(options =>
-{
-    var section = builder.Configuration.GetSection(AzureBlobStorageOptions.SectionName);
-    section.Bind(options);
-    
-    // Override connection string from environment variable if provided
-    var connectionString = Environment.GetEnvironmentVariable("AZURE_BLOB_STORAGE_CONNECTION_STRING");
-    if (!string.IsNullOrEmpty(connectionString))
-    {
-        options.ConnectionString = connectionString;
-    }
-    
-    // Override UseAzureStorage from environment variable if provided
-    var useAzureStorage = Environment.GetEnvironmentVariable("USE_AZURE_STORAGE");
-    if (!string.IsNullOrEmpty(useAzureStorage) && bool.TryParse(useAzureStorage, out var useAzure))
-    {
-        options.UseAzureStorage = useAzure;
-    }
-});
-
-// Configure Azure Form Recognizer
-builder.Services.Configure<FormRecognizerOptions>(options =>
-{
-    var section = builder.Configuration.GetSection(FormRecognizerOptions.SectionName);
-    section.Bind(options);
-    
-    // Override from environment variables if provided
-    var endpoint = Environment.GetEnvironmentVariable("AZURE_FORM_RECOGNIZER_ENDPOINT");
-    var apiKey = Environment.GetEnvironmentVariable("AZURE_FORM_RECOGNIZER_API_KEY");
-    
-    if (!string.IsNullOrEmpty(endpoint))
-        options.EndpointFromConfig = endpoint;
-    if (!string.IsNullOrEmpty(apiKey))
-        options.ApiKeyFromConfig = apiKey;
-});
 
 // Configure Cloud Provider Options
 builder.Services.Configure<CloudProviderOptions>(options =>
