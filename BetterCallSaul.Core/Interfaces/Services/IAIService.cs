@@ -3,7 +3,7 @@ using BetterCallSaul.Core.Models.Entities;
 namespace BetterCallSaul.Core.Interfaces.Services;
 
 /// <summary>
-/// Generic AI service interface for Azure/AWS provider switching
+/// Generic AI service interface for AI provider implementations
 /// </summary>
 public interface IAIService
 {
