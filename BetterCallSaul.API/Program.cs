@@ -127,6 +127,30 @@ builder.Services.AddScoped<IFileUploadService>(serviceProvider =>
         return new FileUploadService(context, fileValidationService, textExtractionService, fileUploadLogger);
     }
 });
+
+// Configure storage service (same logic as file upload service)
+builder.Services.AddScoped<IStorageService>(serviceProvider =>
+{
+    var azureOptions = serviceProvider.GetRequiredService<IOptions<AzureBlobStorageOptions>>().Value;
+    var logger = serviceProvider.GetRequiredService<ILogger<IStorageService>>();
+    
+    if (azureOptions.UseAzureStorage && !string.IsNullOrEmpty(azureOptions.ConnectionString))
+    {
+        var azureLogger = serviceProvider.GetRequiredService<ILogger<AzureBlobStorageService>>();
+        return new AzureBlobStorageService(
+            serviceProvider.GetRequiredService<IOptions<AzureBlobStorageOptions>>(),
+            azureLogger);
+    }
+    else
+    {
+        logger.LogWarning("Azure Blob Storage not configured or disabled, falling back to local file storage");
+        var context = serviceProvider.GetRequiredService<BetterCallSaulContext>();
+        var fileValidationService = serviceProvider.GetRequiredService<IFileValidationService>();
+        var textExtractionService = serviceProvider.GetRequiredService<ITextExtractionService>();
+        var fileUploadLogger = serviceProvider.GetRequiredService<ILogger<FileUploadService>>();
+        return new FileUploadService(context, fileValidationService, textExtractionService, fileUploadLogger);
+    }
+});
 builder.Services.AddScoped<IVirusScanningService, ClamAvService>();
 builder.Services.AddScoped<IFileValidationService, FileValidationService>();
 

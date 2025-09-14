@@ -1,4 +1,6 @@
+using BetterCallSaul.Core.Interfaces.Services;
 using BetterCallSaul.Core.Models.Entities;
+using BetterCallSaul.Core.Models.ServiceResponses;
 using BetterCallSaul.Infrastructure.Data;
 using BetterCallSaul.Infrastructure.Validators;
 using Microsoft.AspNetCore.Http;
@@ -8,7 +10,7 @@ using BetterCallSaul.Core.Enums;
 
 namespace BetterCallSaul.Infrastructure.Services.FileProcessing;
 
-public class FileUploadService : IFileUploadService
+public class FileUploadService : IFileUploadService, IStorageService
 {
     private readonly BetterCallSaulContext _context;
     private readonly IFileValidationService _fileValidationService;
@@ -30,7 +32,18 @@ public class FileUploadService : IFileUploadService
 
     public async Task<UploadResult> UploadFileAsync(IFormFile file, Guid caseId, Guid userId, string uploadSessionId)
     {
-        var result = new UploadResult { UploadSessionId = uploadSessionId };
+        var storageResult = await UploadFileToStorageAsync(file, caseId, userId, uploadSessionId);
+        return ConvertToUploadResult(storageResult);
+    }
+
+    async Task<StorageResult> IStorageService.UploadFileAsync(IFormFile file, Guid caseId, Guid userId, string uploadSessionId)
+    {
+        return await UploadFileToStorageAsync(file, caseId, userId, uploadSessionId);
+    }
+
+    public async Task<StorageResult> UploadFileToStorageAsync(IFormFile file, Guid caseId, Guid userId, string uploadSessionId)
+    {
+        var result = new StorageResult { UploadSessionId = uploadSessionId };
 
         try
         {
@@ -86,11 +99,14 @@ public class FileUploadService : IFileUploadService
             await ExtractTextFromDocumentAsync(document, storagePath);
 
             result.Success = true;
-            result.FileId = document.Id;
             result.FileName = document.FileName;
             result.FileSize = document.FileSize;
             result.FileType = document.FileType;
             result.Message = "File uploaded and text extracted successfully";
+            
+            // Add FileId to metadata for database reference
+            result.Metadata ??= new Dictionary<string, string>();
+            result.Metadata["FileId"] = document.Id.ToString();
 
             _logger.LogInformation("File uploaded and processed successfully: {FileName} (ID: {FileId})", file.FileName, document.Id);
         }
@@ -103,6 +119,39 @@ public class FileUploadService : IFileUploadService
         }
 
         return result;
+    }
+
+    public async Task<string> GenerateSecureUrlAsync(string storagePath, TimeSpan expiryTime)
+    {
+        // For local file storage, we don't generate secure URLs
+        // In production, this would be handled by a proper storage service
+        // For development, return the local file path
+        return storagePath;
+    }
+
+    private UploadResult ConvertToUploadResult(StorageResult storageResult)
+    {
+        var uploadResult = new UploadResult
+        {
+            Success = storageResult.Success,
+            Message = storageResult.Message,
+            StoragePath = storageResult.StoragePath,
+            FileName = storageResult.FileName,
+            FileSize = storageResult.FileSize,
+            FileType = storageResult.FileType,
+            UploadSessionId = storageResult.UploadSessionId,
+            UploadedAt = storageResult.UploadedAt,
+            ErrorCode = storageResult.ErrorCode,
+            ValidationErrors = storageResult.ValidationErrors
+        };
+
+        // Extract FileId from metadata if available
+        if (storageResult.Metadata != null && storageResult.Metadata.TryGetValue("FileId", out var fileIdStr) && Guid.TryParse(fileIdStr, out var fileId))
+        {
+            uploadResult.FileId = fileId;
+        }
+
+        return uploadResult;
     }
 
     public Task<bool> ValidateFileAsync(IFormFile file)

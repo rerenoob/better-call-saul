@@ -4,7 +4,9 @@ using Azure.Storage.Blobs.Models;
 using Azure.Storage.Blobs.Specialized;
 using Azure.Storage.Sas;
 using BetterCallSaul.Core.Configuration;
+using BetterCallSaul.Core.Interfaces.Services;
 using BetterCallSaul.Core.Models.Entities;
+using BetterCallSaul.Core.Models.ServiceResponses;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -12,7 +14,7 @@ using System.Net;
 
 namespace BetterCallSaul.Infrastructure.Services.FileProcessing;
 
-public class AzureBlobStorageService : IFileUploadService
+public class AzureBlobStorageService : IFileUploadService, IStorageService
 {
     private readonly BlobServiceClient? _blobServiceClient;
     private readonly AzureBlobStorageOptions _options;
@@ -37,7 +39,18 @@ public class AzureBlobStorageService : IFileUploadService
 
     public async Task<UploadResult> UploadFileAsync(IFormFile file, Guid caseId, Guid userId, string uploadSessionId)
     {
-        var result = new UploadResult { UploadSessionId = uploadSessionId };
+        var storageResult = await UploadFileToStorageAsync(file, caseId, userId, uploadSessionId);
+        return ConvertToUploadResult(storageResult);
+    }
+
+    async Task<StorageResult> IStorageService.UploadFileAsync(IFormFile file, Guid caseId, Guid userId, string uploadSessionId)
+    {
+        return await UploadFileToStorageAsync(file, caseId, userId, uploadSessionId);
+    }
+
+    public async Task<StorageResult> UploadFileToStorageAsync(IFormFile file, Guid caseId, Guid userId, string uploadSessionId)
+    {
+        var result = new StorageResult { UploadSessionId = uploadSessionId };
 
         try
         {
@@ -92,6 +105,63 @@ public class AzureBlobStorageService : IFileUploadService
         }
 
         return result;
+    }
+
+    public async Task<string> GenerateSecureUrlAsync(string storagePath, TimeSpan expiryTime)
+    {
+        try
+        {
+            if (_containerClient == null)
+            {
+                throw new InvalidOperationException("Azure Blob Storage is not configured");
+            }
+
+            var blobUri = new Uri(storagePath);
+            var blobName = blobUri.Segments.Last();
+            var blobClient = _containerClient.GetBlobClient(blobName);
+
+            // Check if blob exists
+            if (!await blobClient.ExistsAsync())
+            {
+                throw new FileNotFoundException("Blob not found", blobName);
+            }
+
+            // Create SAS token
+            var sasBuilder = new BlobSasBuilder
+            {
+                BlobContainerName = _containerClient.Name,
+                BlobName = blobName,
+                Resource = "b",
+                ExpiresOn = DateTimeOffset.UtcNow.Add(expiryTime)
+            };
+
+            sasBuilder.SetPermissions(BlobSasPermissions.Read);
+
+            var sasToken = blobClient.GenerateSasUri(sasBuilder);
+            return sasToken.ToString();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error generating secure URL for blob: {StoragePath}", storagePath);
+            throw;
+        }
+    }
+
+    private UploadResult ConvertToUploadResult(StorageResult storageResult)
+    {
+        return new UploadResult
+        {
+            Success = storageResult.Success,
+            Message = storageResult.Message,
+            StoragePath = storageResult.StoragePath,
+            FileName = storageResult.FileName,
+            FileSize = storageResult.FileSize,
+            FileType = storageResult.FileType,
+            UploadSessionId = storageResult.UploadSessionId,
+            UploadedAt = storageResult.UploadedAt,
+            ErrorCode = storageResult.ErrorCode,
+            ValidationErrors = storageResult.ValidationErrors
+        };
     }
 
     public Task<bool> ValidateFileAsync(IFormFile file)
