@@ -10,8 +10,7 @@ Pass the prompt to Crush as the command.
 
 Use Crush to complete the following:
 
-1. Task Execution (read ~/Projects/dev-prompts/task-execution.md first)
-2. Task Verification (read ~/Projects/dev-prompts/verification.prompt.md first)
+1. Task Verification (read ~/Projects/dev-prompts/verification.prompt.md first)
 
 For task execution, call Crush for each task. Perform one task at a time.
 
