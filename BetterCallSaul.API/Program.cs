@@ -233,8 +233,7 @@ builder.Services.AddScoped<IAIService>(serviceProvider =>
     if (cloudProviderOptions.Active == "AWS")
     {
         logger.LogInformation("Using AWS Bedrock AI service");
-        // TODO: Implement AWS Bedrock service
-        throw new NotImplementedException("AWS Bedrock service not yet implemented");
+        return serviceProvider.GetRequiredService<AWSBedrockService>();
     }
     else
     {
@@ -245,6 +244,7 @@ builder.Services.AddScoped<IAIService>(serviceProvider =>
 });
 
 builder.Services.AddScoped<IAzureOpenAIService, AzureOpenAIService>();
+builder.Services.AddScoped<AWSBedrockService>();
 builder.Services.AddScoped<ICaseAnalysisService, CaseAnalysisService>();
 
 // Configure Azure Blob Storage
