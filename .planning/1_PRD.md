@@ -1,169 +1,166 @@
-# Product Requirements Document: AWS Migration
-*Created: 2025-09-14*
+# Azure Removal & Code Simplification - Product Requirements Document
+
+**Created:** 2025-09-14
+**Version:** 1.0
 
 ## Overview
 
-### Problem Statement
-The Better Call Saul application is currently tightly coupled to Azure services (OpenAI, Blob Storage, Form Recognizer), creating vendor lock-in and limiting deployment flexibility. The application needs AWS compatibility to provide deployment flexibility and potentially reduce costs.
-
 ### Feature Summary
-Migrate the Better Call Saul AI Lawyer application from Azure-specific services to AWS-compatible services while maintaining all existing functionality and performance characteristics.
+Remove all Azure-specific code from the Better Call Saul application and simplify the dual-cloud architecture to use only local/mock services or keep AWS services where beneficial. This initiative aims to reduce complexity, eliminate vendor lock-in, reduce dependencies, and streamline the development/deployment process.
+
+### Problem Statement
+The current codebase supports both Azure and AWS cloud providers through a complex configuration system, resulting in:
+- High maintenance overhead with dual service implementations
+- Increased deployment complexity with multiple cloud-specific configurations
+- Vendor lock-in risk across two cloud providers
+- Complex dependency injection logic for cloud provider selection
+- Additional licensing/service costs for unused Azure services
 
 ### Goals
-1. **AWS Compatibility**: Enable production deployment on AWS infrastructure
-2. **Service Migration**: Replace Azure services with AWS equivalents
-3. **Configuration-Driven**: Switch between Azure and AWS using environment variables
-4. **Feature Parity**: Maintain all existing functionality with AWS services
-5. **Cost Optimization**: Leverage AWS pricing advantages where applicable
+1. **Simplify Architecture**: Eliminate dual-cloud provider pattern
+2. **Reduce Dependencies**: Remove Azure-specific NuGet packages and configurations
+3. **Improve Maintainability**: Single code path for each service type
+4. **Cost Optimization**: Eliminate unused cloud service costs
+5. **Development Efficiency**: Simplified local development setup
 
 ### Success Metrics
-- ✅ Application deploys successfully on AWS with full functionality
-- ✅ Minimal code changes required to switch between Azure and AWS
-- ✅ All existing features work identically on AWS
-- ✅ Performance remains within 10% of current Azure implementation
-- ✅ AWS deployment provides cost advantages over Azure
+- ✅ Zero Azure-specific code references remaining
+- ✅ Reduced NuGet package dependencies by 4+ packages
+- ✅ Single configuration path for all services
+- ✅ All tests pass with simplified architecture
+- ✅ Local development works without cloud dependencies
 
 ## Requirements
 
 ### Core Functional Requirements
 
-#### Service Migration Layer
-- **FR-1**: Create interfaces for AI, storage, and document processing services
-- **FR-2**: Implement Azure and AWS service adapters
-- **FR-3**: Configuration-based service selection (Azure/AWS)
-- **FR-4**: Consistent error handling and retry policies
+**R1: Service Replacement Strategy**
+- Replace Azure OpenAI with local mock AI service or keep AWS Bedrock
+- Replace Azure Blob Storage with local file storage or keep AWS S3
+- Replace Azure Form Recognizer with mock text extraction service or keep AWS Textract
+- Maintain existing API contracts and interfaces
 
-#### AI Services
-- **FR-5**: Support Azure OpenAI and AWS Bedrock
-- **FR-6**: Compatible prompting interface between Azure OpenAI and Bedrock
-- **FR-7**: Streaming analysis support for both providers
-- **FR-8**: Token counting and usage tracking for both services
+**R2: Configuration Simplification**
+- Remove CloudProviderOptions dual-provider pattern
+- Simplify appsettings.json configuration structure
+- Remove Azure-specific environment variable requirements
+- Maintain backward compatibility during transition
 
-#### File Storage
-- **FR-9**: Support Azure Blob Storage and AWS S3
-- **FR-10**: Consistent file operations (upload, download, delete, presigned URLs)
-- **FR-11**: Azure to AWS file migration capabilities
-- **FR-12**: Secure access token generation for both providers
+**R3: Dependency Management**
+- Remove Azure.AI.OpenAI package dependency
+- Remove Azure.Storage.Blobs package dependency
+- Remove Azure.AI.FormRecognizer package dependency
+- Keep or consolidate AWS packages as needed
 
-#### Document Processing
-- **FR-13**: Support Azure Form Recognizer and AWS Textract
-- **FR-14**: Unified text extraction results format
-- **FR-15**: Confidence scoring normalization between services
-- **FR-16**: Multi-language document support for both services
+**R4: Code Cleanup**
+- Remove Azure-specific service implementations
+- Remove Azure-specific interfaces (IAzureOpenAIService)
+- Remove Azure-specific configuration classes
+- Remove Azure-specific tests and mocks
 
-#### Configuration Management
-- **FR-17**: Environment variable-driven provider selection (Azure/AWS)
-- **FR-18**: Provider-specific settings validation on startup
-- **FR-19**: Fallback mechanisms for service unavailability
-- **FR-20**: Secrets management integration for Azure Key Vault and AWS Secrets Manager
+### Constraints
 
-### Non-Functional Requirements
+**C1: API Compatibility**
+- Must maintain existing REST API endpoints
+- No breaking changes to frontend integration
+- Preserve existing data models and responses
 
-#### Performance
-- **NFR-1**: Response times within 10% of current Azure implementation
-- **NFR-2**: Support for concurrent requests across all providers
-- **NFR-3**: Efficient resource utilization for cost optimization
+**C2: Data Preservation**
+- No data loss during migration
+- Existing file uploads must remain accessible
+- Database schema remains unchanged
 
-#### Reliability
-- **NFR-4**: 99.9% uptime across all supported cloud providers
-- **NFR-5**: Graceful degradation when services are unavailable
-- **NFR-6**: Comprehensive error logging and monitoring
+**C3: Testing Coverage**
+- All existing tests must be updated to work with new architecture
+- No reduction in test coverage percentage
+- Integration tests must pass with new service implementations
 
-#### Security
-- **NFR-7**: End-to-end encryption for all cloud providers
-- **NFR-8**: Secure credential management per provider
-- **NFR-9**: Audit logging for compliance requirements
+**C4: Performance**
+- Local services should provide reasonable response times
+- Mock services should simulate realistic delays
+- No significant degradation in user experience
 
-#### Scalability
-- **NFR-10**: Auto-scaling support on AWS and Azure
-- **NFR-11**: Load balancing and distributed deployment capabilities
+### Dependencies
+
+**D1: Service Selection Decision**
+- Decision needed: Keep AWS services, use local/mock services, or hybrid approach
+- AWS services provide production-ready functionality
+- Local/mock services eliminate cloud dependencies entirely
+
+**D2: Data Migration Planning**
+- If removing Azure Blob Storage, need file migration strategy
+- Local storage implementation must handle existing file references
+- File access patterns must remain consistent
 
 ## User Experience
 
-### Deployment Flow
-1. **Provider Selection**: Configure cloud provider via environment variables
-2. **Service Configuration**: Set provider-specific endpoints and credentials
-3. **Validation**: System validates configuration and connectivity on startup
-4. **Runtime**: Application operates identically regardless of provider
+### Basic User Flow
+1. **Developer Experience**: Simplified local development without cloud setup requirements
+2. **Production Deployment**: Single cloud provider or fully local deployment
+3. **Admin Configuration**: Reduced configuration complexity in deployment environments
+4. **End User**: No visible changes to application functionality
 
-### Administrative Experience
-- Configuration changes require only environment variable updates
-- Real-time provider switching for disaster recovery scenarios
-- Unified monitoring and logging across all providers
-- Cost optimization through provider comparison tools
+### UI Considerations
+- No UI changes required
+- All existing functionality preserved
+- Performance should remain consistent
+- Error messages updated to reflect new service architecture
 
 ## Acceptance Criteria
 
-### Provider Support
-- [ ] AWS deployment with Bedrock, S3, and Textract
-- [ ] Azure deployment (current functionality maintained)
-- [ ] Local/development deployment with mock services
-- [ ] Provider switching between Azure and AWS via configuration
+### Primary Acceptance Criteria
 
-### Feature Compatibility
-- [ ] All existing API endpoints function identically
-- [ ] Case analysis produces equivalent results across providers
-- [ ] File upload/download works seamlessly
-- [ ] Document text extraction maintains accuracy levels
-- [ ] User authentication and authorization preserved
+**AC1: Azure Code Removal**
+- All Azure-specific service files deleted
+- All Azure NuGet packages removed from .csproj files
+- All Azure configuration classes removed
+- No references to "Azure", "Blob", or "FormRecognizer" in remaining code
 
-### Operational Requirements
-- [ ] Single configuration file controls all provider settings
-- [ ] Zero-downtime provider switching for supported scenarios
-- [ ] Comprehensive health checks for all services
-- [ ] Automated testing pipeline validates all provider combinations
+**AC2: Service Functionality**
+- AI analysis continues to work (mock or AWS Bedrock)
+- File upload/storage continues to work (local or AWS S3)
+- Text extraction continues to work (mock or AWS Textract)
+- All existing API endpoints return expected responses
+
+**AC3: Configuration Cleanup**
+- Single service selection per feature area
+- Removed dual-provider configuration logic
+- Simplified appsettings.json structure
+- Clear documentation of new configuration requirements
+
+**AC4: Testing Coverage**
+- All unit tests pass with updated service implementations
+- Integration tests validate new service architecture
+- Mock services provide realistic test scenarios
+- Test coverage percentage maintained or improved
 
 ## Open Questions ⚠️
 
-### Technical Uncertainties
-- **Q1**: How should we handle provider-specific AI model differences (e.g., token limits, context windows)?
-- **Q2**: Should we implement automatic provider failover or require manual configuration?
-- **Q3**: How do we normalize confidence scores across different document processing services?
-- **Q4**: What's the approach for handling provider-specific features not available elsewhere?
+**Q1: Service Selection Strategy**
+- Should we keep AWS services (Bedrock, S3, Textract) for production capability?
+- Should we use only local/mock services for full cloud independence?
+- Should we use a hybrid approach (local dev, AWS prod)?
 
-### Business Decisions
-- **Q5**: Should AWS be the primary deployment target going forward?
-- **Q6**: Should we maintain separate deployment templates for Azure and AWS?
-- **Q7**: How do we handle cost optimization between Azure and AWS?
-- **Q8**: What's the strategy for AWS-specific performance optimizations?
+**Q2: File Migration Strategy**
+- Are there existing files in Azure Blob Storage that need migration?
+- How do we handle file URLs that reference Azure storage?
+- What's the strategy for maintaining file access during transition?
 
-### Operational Concerns
-- **Q9**: How do we manage secrets across Azure and AWS?
-- **Q10**: Should monitoring and logging be provider-specific or unified?
-- **Q11**: What's the disaster recovery strategy between Azure and AWS?
-- **Q12**: How do we handle data residency requirements across regions?
+**Q3: AI Service Selection**
+- Keep AWS Bedrock for production AI capabilities?
+- Use local mock AI service for all environments?
+- Consider alternative local AI solutions (Ollama, local models)?
 
-## Dependencies
-
-### External Dependencies
-- Cloud provider SDKs (AWS SDK, Azure SDK)
-- Provider-specific AI service access (API keys, service accounts)
-- Container orchestration platform (Kubernetes, Docker, cloud-native)
-- Secrets management system (AWS Secrets Manager, Azure Key Vault)
-
-### Internal Dependencies
-- Database migration strategy for provider-specific metadata
-- Frontend configuration updates for provider-specific endpoints
-- DevOps pipeline updates for multi-provider deployments
-- Testing infrastructure for provider validation
-
-## Constraints
-
-### Technical Constraints
-- Must maintain backward compatibility with existing Azure deployments
-- Provider abstractions must not introduce significant performance overhead
-- Configuration changes must be possible without code modifications
-- All providers must support the same core functionality set
-
-### Business Constraints
-- Migration must be completed within 4-5 weeks for AWS deployment readiness
-- Zero disruption to current Azure production environment
-- Implementation should allow future provider additions with minimal changes
-- Cost optimization must not compromise functionality or security
+**Q4: Deployment Impact**
+- How does this affect existing production deployments?
+- What's the rollback strategy if issues arise?
+- Are there any existing Azure resources that need decommissioning?
 
 ## Next Steps
-1. Create detailed architecture decisions document
-2. Design service abstraction interfaces and provider implementations
-3. Develop comprehensive testing strategy for multi-provider validation
-4. Plan phased migration approach with AWS as primary target
-5. Establish monitoring and deployment strategies for cloud-agnostic operations
+
+1. **Decision Phase**: Resolve open questions about service selection strategy
+2. **Technical Planning**: Create detailed implementation plan based on decisions
+3. **Risk Assessment**: Identify and plan mitigation for technical risks
+4. **Implementation**: Execute removal and simplification in phases
+5. **Testing**: Validate all functionality with new architecture
+6. **Documentation**: Update all relevant documentation and deployment guides
