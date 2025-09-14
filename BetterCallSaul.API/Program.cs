@@ -110,13 +110,13 @@ if (builder.Environment.IsDevelopment())
 {
     // Development environment - use mock/local services
     builder.Services.AddScoped<IFileUploadService, FileUploadService>();
-    builder.Services.AddScoped<IStorageService, FileUploadService>();
+    builder.Services.AddScoped<IStorageService, LocalFileStorageService>();
     builder.Services.AddScoped<ITextExtractionService, MockTextExtractionService>();
     builder.Services.AddScoped<IAIService, MockAIService>();
     
     Log.Information("Development environment: Registered mock services");
     Log.Information("  IFileUploadService -> FileUploadService");
-    Log.Information("  IStorageService -> FileUploadService");
+    Log.Information("  IStorageService -> LocalFileStorageService");
     Log.Information("  ITextExtractionService -> MockTextExtractionService");
     Log.Information("  IAIService -> MockAIService");
 }
@@ -154,18 +154,18 @@ builder.Services.AddMemoryCache();
 builder.Services.AddScoped<AWSBedrockService>();
 builder.Services.AddScoped<ICaseAnalysisService, CaseAnalysisService>();
 
-// Configure Cloud Provider Options
-builder.Services.Configure<CloudProviderOptions>(options =>
+// Configure AWS Options
+builder.Services.Configure<AWSOptions>(options =>
 {
-    var section = builder.Configuration.GetSection(CloudProviderOptions.SectionName);
+    var section = builder.Configuration.GetSection(AWSOptions.SectionName);
     section.Bind(options);
-    
-    // Override Active provider from environment variable
-    var cloudProvider = Environment.GetEnvironmentVariable("CLOUD_PROVIDER");
-    if (!string.IsNullOrEmpty(cloudProvider) && cloudProvider == "AWS")
-    {
-        options.Active = cloudProvider;
-    }
+});
+
+// Configure Local Storage Options
+builder.Services.Configure<LocalStorageOptions>(options =>
+{
+    var section = builder.Configuration.GetSection("LocalStorage");
+    section.Bind(options);
 });
 
 // Configure CORS

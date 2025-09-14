@@ -22,20 +22,16 @@ public class AWSS3ServiceIntegrationTests
         services.AddSingleton(loggerMock.Object);
         
         // Configure AWS options
-        var cloudProviderOptions = new CloudProviderOptions
+        var awsOptions = new AWSOptions
         {
-            Active = "AWS",
-            AWS = new AWSOptions
+            S3 = new S3Options
             {
-                S3 = new S3Options
-                {
-                    BucketName = "test-bucket",
-                    Region = "us-east-1"
-                }
+                BucketName = "test-bucket",
+                Region = "us-east-1"
             }
         };
         
-        services.AddSingleton(Options.Create(cloudProviderOptions));
+        services.AddSingleton(Options.Create(awsOptions));
         services.AddScoped<IStorageService, AWSS3StorageService>();
         
         var serviceProvider = services.BuildServiceProvider();
@@ -49,7 +45,7 @@ public class AWSS3ServiceIntegrationTests
     }
 
     [Fact]
-    public void ServiceRegistration_AzureConfigured_ResolvesAWSService()
+    public void ServiceRegistration_InvalidProvider_ResolvesAWSService()
     {
         // Arrange
         var services = new ServiceCollection();
@@ -58,21 +54,17 @@ public class AWSS3ServiceIntegrationTests
         var loggerMock = new Mock<ILogger<AWSS3StorageService>>();
         services.AddSingleton(loggerMock.Object);
         
-        // Configure with invalid provider (Azure is no longer supported)
-        var cloudProviderOptions = new CloudProviderOptions
+        // Configure AWS options
+        var awsOptions = new AWSOptions
         {
-            Active = "InvalidProvider",
-            AWS = new AWSOptions
+            S3 = new S3Options
             {
-                S3 = new S3Options
-                {
-                    BucketName = "test-bucket",
-                    Region = "us-east-1"
-                }
+                BucketName = "test-bucket",
+                Region = "us-east-1"
             }
         };
         
-        services.AddSingleton(Options.Create(cloudProviderOptions));
+        services.AddSingleton(Options.Create(awsOptions));
         services.AddScoped<IStorageService, AWSS3StorageService>();
         
         var serviceProvider = services.BuildServiceProvider();
@@ -89,22 +81,18 @@ public class AWSS3ServiceIntegrationTests
     public async Task AWSS3StorageService_WithAWSConfiguration_DetectsAsConfigured()
     {
         // Arrange
-        var cloudProviderOptions = new CloudProviderOptions
+        var awsOptions = new AWSOptions
         {
-            Active = "AWS",
-            AWS = new AWSOptions
+            S3 = new S3Options
             {
-                S3 = new S3Options
-                {
-                    BucketName = "test-bucket",
-                    Region = "us-east-1"
-                }
+                BucketName = "test-bucket",
+                Region = "us-east-1"
             }
         };
 
         var loggerMock = new Mock<ILogger<AWSS3StorageService>>();
         var service = new AWSS3StorageService(
-            Options.Create(cloudProviderOptions),
+            Options.Create(awsOptions),
             loggerMock.Object);
 
         // Act - Test with a simple method that doesn't require S3 client

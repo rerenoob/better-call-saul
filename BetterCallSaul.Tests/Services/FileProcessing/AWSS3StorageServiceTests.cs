@@ -19,20 +19,17 @@ public class AWSS3StorageServiceTests
     {
         _loggerMock = new Mock<ILogger<AWSS3StorageService>>();
 
-        var cloudProviderOptions = new CloudProviderOptions
+        var awsOptions = new AWSOptions
         {
-            AWS = new AWSOptions
+            S3 = new S3Options
             {
-                S3 = new S3Options
-                {
-                    BucketName = "", // Empty for testing unconfigured state
-                    Region = ""
-                }
+                BucketName = "", // Empty for testing unconfigured state
+                Region = ""
             }
         };
 
         _awsS3StorageService = new AWSS3StorageService(
-            Options.Create(cloudProviderOptions),
+            Options.Create(awsOptions),
             _loggerMock.Object);
     }
 

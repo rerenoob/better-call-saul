@@ -18,10 +18,10 @@ public class AWSTextractService : ITextExtractionService
     private const int MaxSyncPages = 3000; // Textract sync limit
 
     public AWSTextractService(
-        IOptions<CloudProviderOptions> cloudProviderOptions,
+        IOptions<AWSOptions> awsOptions,
         ILogger<AWSTextractService> logger)
     {
-        _options = cloudProviderOptions.Value.AWS.Textract;
+        _options = awsOptions.Value.Textract;
         _logger = logger;
         
         // Only initialize Textract client if AWS is configured

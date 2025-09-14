@@ -19,10 +19,10 @@ public class AWSS3StorageService : IStorageService
     private const long MaxFileSize = 100 * 1024 * 1024; // 100MB limit
 
     public AWSS3StorageService(
-        IOptions<CloudProviderOptions> cloudProviderOptions,
+        IOptions<AWSOptions> awsOptions,
         ILogger<AWSS3StorageService> logger)
     {
-        _options = cloudProviderOptions.Value.AWS.S3;
+        _options = awsOptions.Value.S3;
         _logger = logger;
         
         // Only initialize S3 client if AWS is configured

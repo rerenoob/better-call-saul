@@ -17,19 +17,16 @@ public class AWSTextractServiceTests
     {
         _loggerMock = new Mock<ILogger<AWSTextractService>>();
 
-        var cloudProviderOptions = new CloudProviderOptions
+        var awsOptions = new AWSOptions
         {
-            AWS = new AWSOptions
+            Textract = new TextractOptions
             {
-                Textract = new TextractOptions
-                {
-                    Region = "" // Empty for testing unconfigured state
-                }
+                Region = "" // Empty for testing unconfigured state
             }
         };
 
         _awsTextractService = new AWSTextractService(
-            Options.Create(cloudProviderOptions),
+            Options.Create(awsOptions),
             _loggerMock.Object);
     }
 
@@ -178,20 +175,17 @@ public class AWSTextractServiceTests
     public void Constructor_WithNullRegion_DoesNotInitializeClient()
     {
         // Arrange
-        var cloudProviderOptions = new CloudProviderOptions
+        var awsOptions = new AWSOptions
         {
-            AWS = new AWSOptions
+            Textract = new TextractOptions
             {
-                Textract = new TextractOptions
-                {
-                    Region = null!
-                }
+                Region = null!
             }
         };
 
         // Act
         var service = new AWSTextractService(
-            Options.Create(cloudProviderOptions),
+            Options.Create(awsOptions),
             _loggerMock.Object);
 
         // Assert - Should not throw and client should be null
@@ -202,20 +196,17 @@ public class AWSTextractServiceTests
     public void Constructor_WithEmptyRegion_DoesNotInitializeClient()
     {
         // Arrange
-        var cloudProviderOptions = new CloudProviderOptions
+        var awsOptions = new AWSOptions
         {
-            AWS = new AWSOptions
+            Textract = new TextractOptions
             {
-                Textract = new TextractOptions
-                {
-                    Region = ""
-                }
+                Region = ""
             }
         };
 
         // Act
         var service = new AWSTextractService(
-            Options.Create(cloudProviderOptions),
+            Options.Create(awsOptions),
             _loggerMock.Object);
 
         // Assert - Should not throw and client should be null

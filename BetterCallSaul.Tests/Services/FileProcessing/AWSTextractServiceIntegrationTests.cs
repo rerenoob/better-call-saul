@@ -22,19 +22,15 @@ public class AWSTextractServiceIntegrationTests
         services.AddSingleton(loggerMock.Object);
         
         // Configure AWS options
-        var cloudProviderOptions = new CloudProviderOptions
+        var awsOptions = new AWSOptions
         {
-            Active = "AWS",
-            AWS = new AWSOptions
+            Textract = new TextractOptions
             {
-                Textract = new TextractOptions
-                {
-                    Region = "us-east-1"
-                }
+                Region = "us-east-1"
             }
         };
         
-        services.AddSingleton(Options.Create(cloudProviderOptions));
+        services.AddSingleton(Options.Create(awsOptions));
         services.AddScoped<ITextExtractionService, AWSTextractService>();
         
         var serviceProvider = services.BuildServiceProvider();
@@ -52,15 +48,11 @@ public class AWSTextractServiceIntegrationTests
     public void AWSTextractService_WithAWSConfiguration_DetectsAsConfigured()
     {
         // Arrange
-        var cloudProviderOptions = new CloudProviderOptions
+        var awsOptions = new AWSOptions
         {
-            Active = "AWS",
-            AWS = new AWSOptions
+            Textract = new TextractOptions
             {
-                Textract = new TextractOptions
-                {
-                    Region = "us-east-1"
-                }
+                Region = "us-east-1"
             }
         };
 
@@ -68,7 +60,7 @@ public class AWSTextractServiceIntegrationTests
         
         // Act
         var service = new AWSTextractService(
-            Options.Create(cloudProviderOptions),
+            Options.Create(awsOptions),
             loggerMock.Object);
 
         // Assert - Service should be configured

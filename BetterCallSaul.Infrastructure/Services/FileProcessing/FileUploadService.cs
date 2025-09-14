@@ -75,7 +75,7 @@ public class FileUploadService : IFileUploadService, IStorageService
             // Generate unique filename
             var uniqueFileName = await GenerateUniqueFileNameAsync(file.FileName);
             
-            // Store file (for now using local storage, will integrate Azure Blob Storage later)
+            // Store file using configured storage service (Local or AWS S3)
             var storagePath = await StoreFileAsync(file, uniqueFileName);
 
             // Create document record
@@ -173,7 +173,7 @@ public class FileUploadService : IFileUploadService, IStorageService
     public async Task<string> StoreFileAsync(IFormFile file, string fileName)
     {
         // For development: store in local temp directory
-        // In production, this will be replaced with Azure Blob Storage integration
+        // In production, this uses AWS S3 integration
         var uploadsDirectory = Path.Combine(Directory.GetCurrentDirectory(), "uploads", "temp");
         
         if (!Directory.Exists(uploadsDirectory))

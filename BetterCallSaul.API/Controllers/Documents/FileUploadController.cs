@@ -148,9 +148,9 @@ public class FileUploadController : ControllerBase
     {
         try
         {
-            // SAS tokens are only available when using Azure Blob Storage
-            // Since we're removing Azure services, this endpoint is no longer supported
-            return BadRequest(new { error = "SAS tokens are only available when using Azure Blob Storage. This feature is not available in the current configuration." });
+            // SAS tokens were only available with Azure Blob Storage
+            // This feature is not available in the current AWS/Local configuration
+            return BadRequest(new { error = "SAS tokens are not available in the current storage configuration." });
         }
         catch (Exception ex)
         {
