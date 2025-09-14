@@ -82,19 +82,22 @@ Better Call Saul is an AI-powered legal assistance platform designed specificall
 - **Dependency Injection** for clean architecture and testability
 
 ### AI & External Services
-- **Azure OpenAI** for natural language processing and analysis
-- **Azure Form Recognizer** for document processing and text extraction
+- **AWS Bedrock** for natural language processing and analysis (production)
+- **Mock AI Service** for development and testing
+- **AWS Textract** for document processing and text extraction (production)
+- **Mock Text Extraction** for development
 - **CourtListener API** for legal case research and data
 - **Justia API** for additional legal research resources
 - **ClamAV** for virus scanning and security
 
 ### Infrastructure
-- **Azure App Service** for backend hosting
-- **Azure Static Web Apps** for frontend deployment
-- **Azure SQL Database** for production data storage
-- **Azure Blob Storage** for document storage
-- **Azure Key Vault** for secrets management
-- **Application Insights** for monitoring and analytics
+- **Cloud-agnostic hosting** for backend (App Service, EC2, etc.)
+- **Static web hosting** for frontend (S3 + CloudFront, etc.)
+- **SQL Server** for production data storage (cloud-agnostic)
+- **AWS S3** for document storage (production)
+- **Local File Storage** for development
+- **Environment-based secrets management**
+- **Application monitoring** with cloud-agnostic solutions
 
 ## Security & Compliance
 
@@ -119,7 +122,7 @@ Better Call Saul is an AI-powered legal assistance platform designed specificall
 ## Deployment Options
 
 ### Cloud Deployment (Recommended)
-- **Azure Hosting**: Fully managed cloud infrastructure
+- **Cloud-agnostic hosting**: Fully managed cloud infrastructure
 - **Automatic Scaling**: Handles variable workloads and user demand
 - **High Availability**: Redundant systems for maximum uptime
 - **Managed Updates**: Automatic security and feature updates

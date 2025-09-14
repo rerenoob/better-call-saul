@@ -30,6 +30,27 @@ Log.Logger = new LoggerConfiguration()
 
 builder.Host.UseSerilog();
 
+// Validate AWS configuration for production environment
+if (!builder.Environment.IsDevelopment())
+{
+    // Validate AWS credentials are present
+    if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("AWS_ACCESS_KEY_ID")) ||
+        string.IsNullOrEmpty(Environment.GetEnvironmentVariable("AWS_SECRET_ACCESS_KEY")))
+    {
+        throw new InvalidOperationException("AWS credentials are required for production environment. " +
+            "Set AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY environment variables.");
+    }
+    
+    // Validate AWS region is configured
+    var awsRegion = Environment.GetEnvironmentVariable("AWS_REGION");
+    if (string.IsNullOrEmpty(awsRegion))
+    {
+        Log.Warning("AWS_REGION environment variable not set. Defaulting to us-east-1");
+    }
+    
+    Log.Information("AWS configuration validated successfully for production environment");
+}
+
 // Add services to the container.
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();

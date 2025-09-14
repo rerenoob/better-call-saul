@@ -51,11 +51,6 @@ npm install
     "Audience": "BetterCallSaulUsers",
     "ExpiryMinutes": 60,
     "RefreshExpiryDays": 7
-  },
-  "AzureOpenAI": {
-    "Endpoint": "https://your-openai-endpoint.openai.azure.com/",
-    "ApiKey": "your-api-key",
-    "DeploymentName": "gpt-4"
   }
 }
 ```

@@ -12,8 +12,8 @@
         │                       │                       │
         ▼                       ▼                       ▼
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   User Browser  │    │ Azure Services  │    │  Legal APIs     │
-│   (Tailwind CSS)│    │ (OpenAI, etc.)  │    │ (CourtListener) │
+│   User Browser  │    │  Cloud Services │    │  Legal APIs     │
+│   (Tailwind CSS)│    │ (AWS/Mock)      │    │ (CourtListener) │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
 ```
 
@@ -40,8 +40,10 @@
 - Legal research integration
 
 #### 3. AI Services
-- Azure OpenAI integration for case analysis
-- Document processing with Form Recognizer
+- AWS Bedrock integration for case analysis (production)
+- Mock AI service for development and testing
+- Document processing with AWS Textract (production)
+- Mock text extraction for development
 - Success prediction algorithms
 - Legal precedent matching
 
@@ -94,7 +96,7 @@
 
 ### Database
 - **Development**: SQLite with Entity Framework Core
-- **Production**: Azure SQL Database
+- **Production**: SQL Server (cloud-agnostic)
 - **Migrations**: Code-first migrations with EF Core
 - **Relationships**: Proper foreign keys and navigation properties
 
@@ -121,8 +123,10 @@
 ## Integration Points
 
 ### External APIs
-- **Azure OpenAI** - Case analysis and predictions
-- **Azure Form Recognizer** - Document processing
+- **AWS Bedrock** - Case analysis and predictions (production)
+- **AWS Textract** - Document processing (production)
+- **AWS S3** - File storage (production)
+- **Local File Storage** - Development file storage
 - **CourtListener** - Legal case research
 - **Justia** - Legal database access
 - **ClamAV** - Virus scanning
@@ -141,11 +145,11 @@
 - Development-specific configuration
 
 ### Production Environment
-- **Backend**: Azure App Service
-- **Frontend**: Azure Static Web Apps
-- **Database**: Azure SQL Database
-- **Storage**: Azure Blob Storage
-- **CDN**: Azure CDN for static assets
+- **Backend**: Cloud-agnostic hosting (App Service, EC2, etc.)
+- **Frontend**: Static web hosting (S3 + CloudFront, etc.)
+- **Database**: SQL Server (cloud-agnostic)
+- **Storage**: AWS S3 or compatible object storage
+- **CDN**: Cloud-agnostic CDN solution
 
 ### CI/CD Pipeline
 - GitHub Actions for automated deployment
