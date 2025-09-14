@@ -162,7 +162,7 @@ builder.Services.Configure<CloudProviderOptions>(options =>
     
     // Override Active provider from environment variable
     var cloudProvider = Environment.GetEnvironmentVariable("CLOUD_PROVIDER");
-    if (!string.IsNullOrEmpty(cloudProvider) && (cloudProvider == "Azure" || cloudProvider == "AWS"))
+    if (!string.IsNullOrEmpty(cloudProvider) && cloudProvider == "AWS")
     {
         options.Active = cloudProvider;
     }

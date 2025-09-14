@@ -49,7 +49,7 @@ public class AWSS3ServiceIntegrationTests
     }
 
     [Fact]
-    public void ServiceRegistration_AzureConfigured_ResolvesAzureService()
+    public void ServiceRegistration_AzureConfigured_ResolvesAWSService()
     {
         // Arrange
         var services = new ServiceCollection();
@@ -58,10 +58,10 @@ public class AWSS3ServiceIntegrationTests
         var loggerMock = new Mock<ILogger<AWSS3StorageService>>();
         services.AddSingleton(loggerMock.Object);
         
-        // Configure Azure options (default)
+        // Configure with invalid provider (Azure is no longer supported)
         var cloudProviderOptions = new CloudProviderOptions
         {
-            Active = "Azure",
+            Active = "InvalidProvider",
             AWS = new AWSOptions
             {
                 S3 = new S3Options

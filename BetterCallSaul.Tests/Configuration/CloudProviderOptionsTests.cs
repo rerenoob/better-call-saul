@@ -45,7 +45,7 @@ public class CloudProviderOptionsTests
         var configuration = new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?>
             {
-                ["CloudProvider:Active"] = "Azure" // This should be overridden
+                ["CloudProvider:Active"] = "InvalidProvider" // This should be overridden
             })
             .Build();
 
@@ -55,7 +55,7 @@ public class CloudProviderOptionsTests
         
         // Override from environment variable (simulating Program.cs logic)
         var cloudProvider = Environment.GetEnvironmentVariable("CLOUD_PROVIDER");
-        if (!string.IsNullOrEmpty(cloudProvider) && (cloudProvider == "Azure" || cloudProvider == "AWS"))
+        if (!string.IsNullOrEmpty(cloudProvider) && cloudProvider == "AWS")
         {
             options.Active = cloudProvider;
         }
@@ -86,7 +86,7 @@ public class CloudProviderOptionsTests
         
         // Override from environment variable (simulating Program.cs logic)
         var cloudProvider = Environment.GetEnvironmentVariable("CLOUD_PROVIDER");
-        if (!string.IsNullOrEmpty(cloudProvider) && (cloudProvider == "Azure" || cloudProvider == "AWS"))
+        if (!string.IsNullOrEmpty(cloudProvider) && cloudProvider == "AWS")
         {
             options.Active = cloudProvider;
         }

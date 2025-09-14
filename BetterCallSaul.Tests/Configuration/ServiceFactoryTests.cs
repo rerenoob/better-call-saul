@@ -14,11 +14,11 @@ public class ServiceFactoryTests
         // Arrange
         var services = new ServiceCollection();
         
-        // Mock configuration with Azure as default
+        // Mock configuration with AWS as default
         var configuration = new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?>
             {
-                ["CloudProvider:Active"] = "Azure"
+                ["CloudProvider:Active"] = "AWS"
             })
             .Build();
         
@@ -30,7 +30,7 @@ public class ServiceFactoryTests
             
             // Simulate environment variable override from Program.cs
             var cloudProvider = "AWS"; // Simulating CLOUD_PROVIDER=AWS
-            if (!string.IsNullOrEmpty(cloudProvider) && (cloudProvider == "Azure" || cloudProvider == "AWS"))
+            if (!string.IsNullOrEmpty(cloudProvider) && cloudProvider == "AWS")
             {
                 options.Active = cloudProvider;
             }
@@ -51,11 +51,11 @@ public class ServiceFactoryTests
         // Arrange
         var services = new ServiceCollection();
         
-        // Mock configuration with Azure as default
+        // Mock configuration with AWS as default
         var configuration = new ConfigurationBuilder()
             .AddInMemoryCollection(new Dictionary<string, string?>
             {
-                ["CloudProvider:Active"] = "Azure"
+                ["CloudProvider:Active"] = "AWS"
             })
             .Build();
         
@@ -67,7 +67,7 @@ public class ServiceFactoryTests
             
             // Simulate invalid environment variable override from Program.cs
             var cloudProvider = "GCP"; // Simulating CLOUD_PROVIDER=GCP (invalid)
-            if (!string.IsNullOrEmpty(cloudProvider) && (cloudProvider == "Azure" || cloudProvider == "AWS"))
+            if (!string.IsNullOrEmpty(cloudProvider) && cloudProvider == "AWS")
             {
                 options.Active = cloudProvider;
             }
@@ -78,7 +78,7 @@ public class ServiceFactoryTests
         // Act
         var options = serviceProvider.GetRequiredService<IOptions<CloudProviderOptions>>().Value;
 
-        // Assert - should remain Azure since GCP is invalid
-        Assert.Equal("Azure", options.Active);
+        // Assert - should remain AWS since GCP is invalid
+        Assert.Equal("AWS", options.Active);
     }
 }
