@@ -176,8 +176,10 @@ builder.Services.AddScoped<ITextExtractionService>(serviceProvider =>
     if (cloudProviderOptions.Active == "AWS")
     {
         logger.LogInformation("Using AWS Textract service");
-        // TODO: Implement AWS Textract service
-        throw new NotImplementedException("AWS Textract service not yet implemented");
+        var awsLogger = serviceProvider.GetRequiredService<ILogger<AWSTextractService>>();
+        return new AWSTextractService(
+            serviceProvider.GetRequiredService<IOptions<CloudProviderOptions>>(),
+            awsLogger);
     }
     else
     {
