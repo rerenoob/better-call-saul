@@ -7,7 +7,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Azure.Storage.Blobs" Version="12.25.0" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.0.8" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="9.0.8" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.8">
@@ -22,8 +21,6 @@
     <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="8.0.19" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="9.0.8" />
     <PackageReference Include="Microsoft.AspNetCore.Identity" Version="2.2.0" />
-    <PackageReference Include="Azure.AI.OpenAI" Version="1.0.0-beta.17" />
-    <PackageReference Include="Azure.AI.FormRecognizer" Version="4.1.0" />
     <PackageReference Include="AWSSDK.BedrockRuntime" Version="3.7.500.2" />
     <PackageReference Include="AWSSDK.S3" Version="3.7.500.2" />
     <PackageReference Include="AWSSDK.Textract" Version="3.7.500.2" />
