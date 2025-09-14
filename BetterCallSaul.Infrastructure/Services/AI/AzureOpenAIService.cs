@@ -10,7 +10,7 @@ using System.Text.Json;
 
 namespace BetterCallSaul.Infrastructure.Services.AI;
 
-public class AzureOpenAIService : IAzureOpenAIService
+public class AzureOpenAIService : IAzureOpenAIService, IAIService
 {
     private readonly OpenAIClient? _openAIClient;
     private readonly OpenAIOptions _options;
