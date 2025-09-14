@@ -24,6 +24,10 @@
     <PackageReference Include="Microsoft.AspNetCore.Identity" Version="2.2.0" />
     <PackageReference Include="Azure.AI.OpenAI" Version="1.0.0-beta.17" />
     <PackageReference Include="Azure.AI.FormRecognizer" Version="4.1.0" />
+    <PackageReference Include="AWSSDK.BedrockRuntime" Version="3.7.500.2" />
+    <PackageReference Include="AWSSDK.S3" Version="3.7.500.2" />
+    <PackageReference Include="AWSSDK.Textract" Version="3.7.500.2" />
+    <PackageReference Include="AWSSDK.Extensions.NETCore.Setup" Version="3.7.300" />
   </ItemGroup>
 
   <ItemGroup>

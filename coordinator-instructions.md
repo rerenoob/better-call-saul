@@ -10,8 +10,8 @@ Pass the prompt in as the command.
 
 Use the AI to complete the following:
 
-1. Task Execution
-2. Task Verification
+1. Task Execution (read the task-execution prompt first)
+2. Task Verification (read the task-verification prompt first)
 
 For task execution, call the crush AI tool for each task. Don't perform more
 than one task at a time.

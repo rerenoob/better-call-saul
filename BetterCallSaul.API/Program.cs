@@ -128,52 +128,75 @@ builder.Services.AddScoped<IFileUploadService>(serviceProvider =>
     }
 });
 
-// Configure storage service (same logic as file upload service)
+// Configure storage service with cloud provider selection
 builder.Services.AddScoped<IStorageService>(serviceProvider =>
 {
-    var azureOptions = serviceProvider.GetRequiredService<IOptions<AzureBlobStorageOptions>>().Value;
+    var cloudProviderOptions = serviceProvider.GetRequiredService<IOptions<CloudProviderOptions>>().Value;
     var logger = serviceProvider.GetRequiredService<ILogger<IStorageService>>();
     
-    if (azureOptions.UseAzureStorage && !string.IsNullOrEmpty(azureOptions.ConnectionString))
+    if (cloudProviderOptions.Active == "AWS")
     {
-        var azureLogger = serviceProvider.GetRequiredService<ILogger<AzureBlobStorageService>>();
-        return new AzureBlobStorageService(
-            serviceProvider.GetRequiredService<IOptions<AzureBlobStorageOptions>>(),
-            azureLogger);
+        logger.LogInformation("Using AWS S3 storage service");
+        // TODO: Implement AWS S3 service
+        throw new NotImplementedException("AWS S3 service not yet implemented");
     }
     else
     {
-        logger.LogWarning("Azure Blob Storage not configured or disabled, falling back to local file storage");
-        var context = serviceProvider.GetRequiredService<BetterCallSaulContext>();
-        var fileValidationService = serviceProvider.GetRequiredService<IFileValidationService>();
-        var textExtractionService = serviceProvider.GetRequiredService<ITextExtractionService>();
-        var fileUploadLogger = serviceProvider.GetRequiredService<ILogger<FileUploadService>>();
-        return new FileUploadService(context, fileValidationService, textExtractionService, fileUploadLogger);
+        var azureOptions = serviceProvider.GetRequiredService<IOptions<AzureBlobStorageOptions>>().Value;
+        
+        if (azureOptions.UseAzureStorage && !string.IsNullOrEmpty(azureOptions.ConnectionString))
+        {
+            var azureLogger = serviceProvider.GetRequiredService<ILogger<AzureBlobStorageService>>();
+            return new AzureBlobStorageService(
+                serviceProvider.GetRequiredService<IOptions<AzureBlobStorageOptions>>(),
+                azureLogger);
+        }
+        else
+        {
+            logger.LogWarning("Azure Blob Storage not configured or disabled, falling back to local file storage");
+            var context = serviceProvider.GetRequiredService<BetterCallSaulContext>();
+            var fileValidationService = serviceProvider.GetRequiredService<IFileValidationService>();
+            var textExtractionService = serviceProvider.GetRequiredService<ITextExtractionService>();
+            var fileUploadLogger = serviceProvider.GetRequiredService<ILogger<FileUploadService>>();
+            return new FileUploadService(context, fileValidationService, textExtractionService, fileUploadLogger);
+        }
     }
 });
 builder.Services.AddScoped<IVirusScanningService, ClamAvService>();
 builder.Services.AddScoped<IFileValidationService, FileValidationService>();
 
-// Configure text extraction service - use Azure Form Recognizer in production, mock in development
+// Configure text extraction service with cloud provider selection
 builder.Services.AddScoped<ITextExtractionService>(serviceProvider =>
 {
-    var env = serviceProvider.GetRequiredService<IWebHostEnvironment>();
-    var formRecognizerOptions = serviceProvider.GetRequiredService<IOptions<FormRecognizerOptions>>().Value;
+    var cloudProviderOptions = serviceProvider.GetRequiredService<IOptions<CloudProviderOptions>>().Value;
+    var logger = serviceProvider.GetRequiredService<ILogger<ITextExtractionService>>();
     
-    // Use Azure Form Recognizer if configured and not in development, otherwise use mock
-    if (!env.IsDevelopment() && 
-        !string.IsNullOrEmpty(formRecognizerOptions.Endpoint) && 
-        !string.IsNullOrEmpty(formRecognizerOptions.ApiKey))
+    if (cloudProviderOptions.Active == "AWS")
     {
-        var logger = serviceProvider.GetRequiredService<ILogger<AzureFormRecognizerService>>();
-        return new AzureFormRecognizerService(
-            serviceProvider.GetRequiredService<IOptions<FormRecognizerOptions>>(),
-            logger);
+        logger.LogInformation("Using AWS Textract service");
+        // TODO: Implement AWS Textract service
+        throw new NotImplementedException("AWS Textract service not yet implemented");
     }
     else
     {
-        var logger = serviceProvider.GetRequiredService<ILogger<MockTextExtractionService>>();
-        return new MockTextExtractionService(logger);
+        var env = serviceProvider.GetRequiredService<IWebHostEnvironment>();
+        var formRecognizerOptions = serviceProvider.GetRequiredService<IOptions<FormRecognizerOptions>>().Value;
+        
+        // Use Azure Form Recognizer if configured and not in development, otherwise use mock
+        if (!env.IsDevelopment() && 
+            !string.IsNullOrEmpty(formRecognizerOptions.Endpoint) && 
+            !string.IsNullOrEmpty(formRecognizerOptions.ApiKey))
+        {
+            var azureLogger = serviceProvider.GetRequiredService<ILogger<AzureFormRecognizerService>>();
+            return new AzureFormRecognizerService(
+                serviceProvider.GetRequiredService<IOptions<FormRecognizerOptions>>(),
+                azureLogger);
+        }
+        else
+        {
+            var mockLogger = serviceProvider.GetRequiredService<ILogger<MockTextExtractionService>>();
+            return new MockTextExtractionService(mockLogger);
+        }
     }
 });
 builder.Services.AddScoped<DatabaseSeedingService>();
@@ -200,6 +223,27 @@ builder.Services.Configure<OpenAIOptions>(options =>
     options.EndpointFromConfig = section["Endpoint"];
     options.ApiKeyFromConfig = section["ApiKey"];
 });
+
+// Register AI Service with provider selection
+builder.Services.AddScoped<IAIService>(serviceProvider =>
+{
+    var cloudProviderOptions = serviceProvider.GetRequiredService<IOptions<CloudProviderOptions>>().Value;
+    var logger = serviceProvider.GetRequiredService<ILogger<IAIService>>();
+    
+    if (cloudProviderOptions.Active == "AWS")
+    {
+        logger.LogInformation("Using AWS Bedrock AI service");
+        // TODO: Implement AWS Bedrock service
+        throw new NotImplementedException("AWS Bedrock service not yet implemented");
+    }
+    else
+    {
+        logger.LogInformation("Using Azure OpenAI service");
+        var azureOpenAIService = serviceProvider.GetRequiredService<IAzureOpenAIService>();
+        return (IAIService)azureOpenAIService;
+    }
+});
+
 builder.Services.AddScoped<IAzureOpenAIService, AzureOpenAIService>();
 builder.Services.AddScoped<ICaseAnalysisService, CaseAnalysisService>();
 
@@ -238,6 +282,20 @@ builder.Services.Configure<FormRecognizerOptions>(options =>
         options.EndpointFromConfig = endpoint;
     if (!string.IsNullOrEmpty(apiKey))
         options.ApiKeyFromConfig = apiKey;
+});
+
+// Configure Cloud Provider Options
+builder.Services.Configure<CloudProviderOptions>(options =>
+{
+    var section = builder.Configuration.GetSection(CloudProviderOptions.SectionName);
+    section.Bind(options);
+    
+    // Override Active provider from environment variable
+    var cloudProvider = Environment.GetEnvironmentVariable("CLOUD_PROVIDER");
+    if (!string.IsNullOrEmpty(cloudProvider) && (cloudProvider == "Azure" || cloudProvider == "AWS"))
+    {
+        options.Active = cloudProvider;
+    }
 });
 
 // Configure CORS
