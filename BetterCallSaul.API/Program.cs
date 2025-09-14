@@ -137,8 +137,10 @@ builder.Services.AddScoped<IStorageService>(serviceProvider =>
     if (cloudProviderOptions.Active == "AWS")
     {
         logger.LogInformation("Using AWS S3 storage service");
-        // TODO: Implement AWS S3 service
-        throw new NotImplementedException("AWS S3 service not yet implemented");
+        var awsLogger = serviceProvider.GetRequiredService<ILogger<AWSS3StorageService>>();
+        return new AWSS3StorageService(
+            serviceProvider.GetRequiredService<IOptions<CloudProviderOptions>>(),
+            awsLogger);
     }
     else
     {
