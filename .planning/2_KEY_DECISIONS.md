@@ -1,4 +1,4 @@
-# Key Architecture Decisions: Cloud-Agnostic Migration
+# Key Architecture Decisions: AWS Migration
 *Created: 2025-09-14*
 
 ## Decision 1: Service Abstraction Pattern
@@ -23,14 +23,14 @@ The application currently uses Azure-specific services directly in the infrastru
 - Create equivalent adapters for other cloud providers
 - Translate between generic calls and provider-specific APIs
 
-### Chosen Solution: Strategy Pattern with Unified Interfaces (Option B)
+### Chosen Solution: Simplified Strategy Pattern (Modified Option B)
 
 ### Rationale
-- **Clean Architecture**: Provides the clearest separation between business logic and infrastructure concerns
-- **Testability**: Easy to mock and test individual provider implementations
-- **Extensibility**: New providers can be added without modifying existing code
+- **Clean Architecture**: Provides separation between business logic and infrastructure concerns
+- **Testability**: Easy to mock and test Azure/AWS implementations
+- **Simplicity**: Focus on Azure-to-AWS migration without over-engineering
 - **Performance**: Direct provider implementations without wrapper overhead
-- **Type Safety**: Strong typing through interfaces ensures compile-time validation
+- **Future-Ready**: Can be extended later if other providers are needed
 
 ### Implementation Details
 ```csharp
@@ -42,14 +42,13 @@ public interface IDocumentProcessingService { ... }
 // Provider implementations
 public class AzureOpenAIService : IAIService { ... }
 public class AWSBedrockService : IAIService { ... }
-public class GoogleVertexAIService : IAIService { ... }
 
 // Configuration-driven selection
 services.AddScoped<IAIService>(provider =>
     CloudProvider switch {
         "Azure" => new AzureOpenAIService(...),
         "AWS" => new AWSBedrockService(...),
-        _ => throw new NotSupportedException()
+        _ => throw new NotSupportedException($"Unsupported provider: {CloudProvider}")
     });
 ```
 
@@ -75,7 +74,7 @@ Different cloud providers require different configuration parameters, authentica
 - Provider-agnostic variable naming with provider-specific values
 - Maximum deployment flexibility but potentially verbose
 
-### Chosen Solution: Hybrid Approach (Options B + C)
+### Chosen Solution: Simplified Hybrid Approach (Options B + C)
 
 ### Rationale
 - **Flexibility**: Environment variables override config file values for deployment-specific needs
@@ -90,11 +89,13 @@ Different cloud providers require different configuration parameters, authentica
     "Active": "Azure", // Can be overridden by CLOUD_PROVIDER env var
     "Azure": {
       "OpenAI": { "Endpoint": "...", "DeploymentName": "..." },
-      "BlobStorage": { "ConnectionString": "...", "ContainerName": "..." }
+      "BlobStorage": { "ConnectionString": "...", "ContainerName": "..." },
+      "FormRecognizer": { "Endpoint": "...", "ApiKey": "..." }
     },
     "AWS": {
       "Bedrock": { "Region": "us-east-1", "Model": "anthropic.claude-v2" },
-      "S3": { "BucketName": "...", "Region": "..." }
+      "S3": { "BucketName": "...", "Region": "..." },
+      "Textract": { "Region": "us-east-1" }
     }
   }
 }
@@ -164,24 +165,20 @@ public class AIResponse
 | Provider | Service | .NET SDK | Notes |
 |----------|---------|----------|-------|
 | Azure | OpenAI Service | Azure.AI.OpenAI | Current implementation |
-| AWS | Amazon Bedrock | AWS.BedrockRuntime | Claude, Jurassic models |
-| Google | Vertex AI | Google.Cloud.AIPlatform.V1 | PaLM, Gemini models |
-| OpenAI | Direct API | OpenAI.NET | Fallback option |
+| AWS | Amazon Bedrock | AWS.BedrockRuntime | Claude, Titan models |
 
 #### Storage Services
 | Provider | Service | .NET SDK | Notes |
 |----------|---------|----------|-------|
 | Azure | Blob Storage | Azure.Storage.Blobs | Current implementation |
-| AWS | Amazon S3 | AWS.S3 | Standard object storage |
-| Google | Cloud Storage | Google.Cloud.Storage.V1 | Standard object storage |
+| AWS | Amazon S3 | AWSSDK.S3 | Standard object storage |
 | Local | File System | System.IO | Development/testing |
 
 #### Document Processing
 | Provider | Service | .NET SDK | Notes |
 |----------|---------|----------|-------|
 | Azure | Form Recognizer | Azure.AI.FormRecognizer | Current implementation |
-| AWS | Amazon Textract | AWS.Textract | Advanced OCR capabilities |
-| Google | Document AI | Google.Cloud.DocumentAI.V1 | ML-powered extraction |
+| AWS | Amazon Textract | AWSSDK.Textract | Advanced OCR capabilities |
 | Local | Mock/Tesseract | Custom | Development/testing |
 
 ### Dependency Injection Strategy

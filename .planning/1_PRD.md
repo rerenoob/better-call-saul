@@ -1,61 +1,61 @@
-# Product Requirements Document: Cloud-Agnostic Migration
+# Product Requirements Document: AWS Migration
 *Created: 2025-09-14*
 
 ## Overview
 
 ### Problem Statement
-The Better Call Saul application is currently tightly coupled to Azure services (OpenAI, Blob Storage, Form Recognizer), creating vendor lock-in and limiting deployment flexibility. Organizations need the ability to deploy to AWS, Google Cloud, or on-premises environments while maintaining the same functionality.
+The Better Call Saul application is currently tightly coupled to Azure services (OpenAI, Blob Storage, Form Recognizer), creating vendor lock-in and limiting deployment flexibility. The application needs AWS compatibility to provide deployment flexibility and potentially reduce costs.
 
 ### Feature Summary
-Migrate the Better Call Saul AI Lawyer application from Azure-specific services to a cloud-agnostic architecture that supports multiple cloud providers through configurable service abstractions.
+Migrate the Better Call Saul AI Lawyer application from Azure-specific services to AWS-compatible services while maintaining all existing functionality and performance characteristics.
 
 ### Goals
-1. **Provider Flexibility**: Enable deployment on AWS, Azure, Google Cloud, or hybrid environments
-2. **Service Abstraction**: Create unified interfaces for AI, storage, and document processing services
-3. **Configuration-Driven**: Switch between providers using environment variables only
-4. **Feature Parity**: Maintain all existing functionality across different cloud providers
-5. **AWS-Ready**: Specifically ensure production-ready deployment on AWS
+1. **AWS Compatibility**: Enable production deployment on AWS infrastructure
+2. **Service Migration**: Replace Azure services with AWS equivalents
+3. **Configuration-Driven**: Switch between Azure and AWS using environment variables
+4. **Feature Parity**: Maintain all existing functionality with AWS services
+5. **Cost Optimization**: Leverage AWS pricing advantages where applicable
 
 ### Success Metrics
 - ✅ Application deploys successfully on AWS with full functionality
-- ✅ Zero code changes required to switch between cloud providers
-- ✅ All existing features work identically across providers
+- ✅ Minimal code changes required to switch between Azure and AWS
+- ✅ All existing features work identically on AWS
 - ✅ Performance remains within 10% of current Azure implementation
-- ✅ Deployment time reduced by 20% through provider choice flexibility
+- ✅ AWS deployment provides cost advantages over Azure
 
 ## Requirements
 
 ### Core Functional Requirements
 
-#### Service Abstraction Layer
-- **FR-1**: Create generic interfaces for AI, storage, and document processing services
-- **FR-2**: Implement provider-specific adapters (Azure, AWS, Google Cloud, local/mock)
-- **FR-3**: Runtime service selection based on configuration
-- **FR-4**: Consistent error handling and retry policies across providers
+#### Service Migration Layer
+- **FR-1**: Create interfaces for AI, storage, and document processing services
+- **FR-2**: Implement Azure and AWS service adapters
+- **FR-3**: Configuration-based service selection (Azure/AWS)
+- **FR-4**: Consistent error handling and retry policies
 
 #### AI Services
-- **FR-5**: Support Azure OpenAI, AWS Bedrock, Google Vertex AI, and OpenAI API
-- **FR-6**: Unified prompting interface across different LLM providers
-- **FR-7**: Streaming analysis support for all AI providers
-- **FR-8**: Token counting and usage tracking standardization
+- **FR-5**: Support Azure OpenAI and AWS Bedrock
+- **FR-6**: Compatible prompting interface between Azure OpenAI and Bedrock
+- **FR-7**: Streaming analysis support for both providers
+- **FR-8**: Token counting and usage tracking for both services
 
 #### File Storage
-- **FR-9**: Support Azure Blob, AWS S3, Google Cloud Storage, and local filesystem
-- **FR-10**: Consistent file operations (upload, download, delete, SAS tokens)
-- **FR-11**: Cross-provider file migration capabilities
-- **FR-12**: Secure access token generation for all providers
+- **FR-9**: Support Azure Blob Storage and AWS S3
+- **FR-10**: Consistent file operations (upload, download, delete, presigned URLs)
+- **FR-11**: Azure to AWS file migration capabilities
+- **FR-12**: Secure access token generation for both providers
 
 #### Document Processing
-- **FR-13**: Support Azure Form Recognizer, AWS Textract, Google Document AI, and local OCR
+- **FR-13**: Support Azure Form Recognizer and AWS Textract
 - **FR-14**: Unified text extraction results format
-- **FR-15**: Confidence scoring normalization across providers
-- **FR-16**: Multi-language document support
+- **FR-15**: Confidence scoring normalization between services
+- **FR-16**: Multi-language document support for both services
 
 #### Configuration Management
-- **FR-17**: Environment variable-driven provider selection
+- **FR-17**: Environment variable-driven provider selection (Azure/AWS)
 - **FR-18**: Provider-specific settings validation on startup
 - **FR-19**: Fallback mechanisms for service unavailability
-- **FR-20**: Secrets management integration for all cloud providers
+- **FR-20**: Secrets management integration for Azure Key Vault and AWS Secrets Manager
 
 ### Non-Functional Requirements
 
@@ -75,7 +75,7 @@ Migrate the Better Call Saul AI Lawyer application from Azure-specific services 
 - **NFR-9**: Audit logging for compliance requirements
 
 #### Scalability
-- **NFR-10**: Auto-scaling support on AWS, Azure, and Google Cloud
+- **NFR-10**: Auto-scaling support on AWS and Azure
 - **NFR-11**: Load balancing and distributed deployment capabilities
 
 ## User Experience
@@ -97,9 +97,8 @@ Migrate the Better Call Saul AI Lawyer application from Azure-specific services 
 ### Provider Support
 - [ ] AWS deployment with Bedrock, S3, and Textract
 - [ ] Azure deployment (current functionality maintained)
-- [ ] Google Cloud deployment with Vertex AI, Cloud Storage, Document AI
 - [ ] Local/development deployment with mock services
-- [ ] Hybrid deployments (e.g., AWS compute + Azure AI)
+- [ ] Provider switching between Azure and AWS via configuration
 
 ### Feature Compatibility
 - [ ] All existing API endpoints function identically
@@ -123,24 +122,24 @@ Migrate the Better Call Saul AI Lawyer application from Azure-specific services 
 - **Q4**: What's the approach for handling provider-specific features not available elsewhere?
 
 ### Business Decisions
-- **Q5**: Which cloud providers should be prioritized for initial implementation?
-- **Q6**: Should we maintain separate deployment templates for each provider?
-- **Q7**: How do we handle cost optimization recommendations across providers?
-- **Q8**: What's the strategy for provider-specific performance optimizations?
+- **Q5**: Should AWS be the primary deployment target going forward?
+- **Q6**: Should we maintain separate deployment templates for Azure and AWS?
+- **Q7**: How do we handle cost optimization between Azure and AWS?
+- **Q8**: What's the strategy for AWS-specific performance optimizations?
 
 ### Operational Concerns
-- **Q9**: How do we manage secrets across multiple cloud providers?
+- **Q9**: How do we manage secrets across Azure and AWS?
 - **Q10**: Should monitoring and logging be provider-specific or unified?
-- **Q11**: What's the disaster recovery strategy for provider outages?
+- **Q11**: What's the disaster recovery strategy between Azure and AWS?
 - **Q12**: How do we handle data residency requirements across regions?
 
 ## Dependencies
 
 ### External Dependencies
-- Cloud provider SDKs (AWS SDK, Azure SDK, Google Cloud SDK)
+- Cloud provider SDKs (AWS SDK, Azure SDK)
 - Provider-specific AI service access (API keys, service accounts)
 - Container orchestration platform (Kubernetes, Docker, cloud-native)
-- Secrets management system (AWS Secrets Manager, Azure Key Vault, etc.)
+- Secrets management system (AWS Secrets Manager, Azure Key Vault)
 
 ### Internal Dependencies
 - Database migration strategy for provider-specific metadata
@@ -157,9 +156,9 @@ Migrate the Better Call Saul AI Lawyer application from Azure-specific services 
 - All providers must support the same core functionality set
 
 ### Business Constraints
-- Migration must be completed within 8 weeks for AWS deployment readiness
+- Migration must be completed within 4-5 weeks for AWS deployment readiness
 - Zero disruption to current Azure production environment
-- Implementation must support future provider additions without architectural changes
+- Implementation should allow future provider additions with minimal changes
 - Cost optimization must not compromise functionality or security
 
 ## Next Steps

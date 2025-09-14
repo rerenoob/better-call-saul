@@ -1,9 +1,9 @@
-# Task: Create IStorageService Interface and Response Models
+# Task: Create IStorageService Interface for Azure/AWS Switching
 
 ## Overview
-- **Parent Feature**: Phase 1 Foundation - Task 1.1 Create Service Abstraction Interfaces
-- **Complexity**: Medium
-- **Estimated Time**: 5 hours
+- **Parent Feature**: AWS Migration - Foundation Layer
+- **Complexity**: Low-Medium
+- **Estimated Time**: 3 hours
 - **Status**: Not Started
 
 ## Dependencies
@@ -11,7 +11,7 @@
 - None (foundation task, can run parallel with 001)
 
 ### External Dependencies
-- Access to existing AzureBlobStorageService.cs and FileUploadService.cs for interface extraction
+- Existing file upload services for interface extraction
 
 ## Implementation Details
 ### Files to Create/Modify
@@ -26,12 +26,12 @@
 - Implement proper disposal patterns for stream handling
 
 ## Acceptance Criteria
-- [ ] `IStorageService` interface includes UploadFileAsync, DeleteFileAsync, GenerateSecureUrlAsync methods
-- [ ] `StorageResult` model includes Success, Message, StoragePath, FileSize, and Metadata properties
-- [ ] Both AzureBlobStorageService and FileUploadService implement IStorageService
-- [ ] Interface supports file upload with progress tracking capability
-- [ ] Secure URL generation with configurable expiry time
-- [ ] File validation and virus scanning integration points defined
+- [ ] `IStorageService` interface covers essential file operations
+- [ ] `StorageResult` model includes Success, StoragePath, and basic metadata
+- [ ] Existing Azure storage services implement IStorageService
+- [ ] Interface supports file upload and secure URL generation
+- [ ] Ready for AWS S3 implementation
+- [ ] No breaking changes to existing functionality
 
 ## Testing Strategy
 - Unit tests: Interface implementation validation, result model serialization
@@ -39,9 +39,9 @@
 - Manual validation: Existing file upload functionality works unchanged
 
 ## System Stability
-- Current file upload and storage functionality remains operational
-- No disruption to existing document storage workflows
-- Gradual migration path from IFileUploadService to IStorageService
+- Existing file upload functionality continues to work
+- No disruption to document storage workflows
+- Simple interface layer for Azure/AWS switching
 
 ### Interface Structure
 ```csharp

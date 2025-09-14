@@ -1,9 +1,9 @@
-# Task: Create IAIService Interface and Standard Response Models
+# Task: Create IAIService Interface for Azure/AWS Switching
 
 ## Overview
-- **Parent Feature**: Phase 1 Foundation - Task 1.1 Create Service Abstraction Interfaces
-- **Complexity**: Medium
-- **Estimated Time**: 6 hours
+- **Parent Feature**: AWS Migration - Foundation Layer
+- **Complexity**: Low-Medium
+- **Estimated Time**: 4 hours
 - **Status**: Not Started
 
 ## Dependencies
@@ -11,14 +11,14 @@
 - None (foundation task)
 
 ### External Dependencies
-- Access to existing AzureOpenAIService.cs for interface extraction
+- Existing AzureOpenAIService.cs for interface extraction
 
 ## Implementation Details
 ### Files to Create/Modify
-- `BetterCallSaul.Core/Interfaces/Services/IAIService.cs`: New generic AI service interface
-- `BetterCallSaul.Core/Models/ServiceResponses/AIResponse.cs`: Standardized AI response model
-- `BetterCallSaul.Core/Models/ServiceResponses/AIRequest.cs`: Standardized AI request model
-- `BetterCallSaul.Infrastructure/Services/AI/AzureOpenAIService.cs`: Modify to implement new interface
+- `BetterCallSaul.Core/Interfaces/Services/IAIService.cs`: Simple AI service interface
+- `BetterCallSaul.Core/Models/ServiceResponses/AIResponse.cs`: Basic AI response model
+- `BetterCallSaul.Core/Models/ServiceResponses/AIRequest.cs`: Basic AI request model
+- `BetterCallSaul.Infrastructure/Services/AI/AzureOpenAIService.cs`: Update to implement interface
 
 ### Code Patterns
 - Follow existing interface patterns in `BetterCallSaul.Core/Interfaces/Services/`
@@ -26,26 +26,26 @@
 - Implement async/await patterns consistently
 
 ## Acceptance Criteria
-- [ ] `IAIService` interface defines all methods currently in AzureOpenAIService
-- [ ] `AIResponse` model includes Success, GeneratedText, ConfidenceScore, ProcessingTime, and Metadata properties
-- [ ] `AIRequest` model supports DocumentText, CaseContext, MaxTokens, and Temperature parameters
-- [ ] AzureOpenAIService successfully implements IAIService without functionality loss
-- [ ] All methods include comprehensive XML documentation
-- [ ] Interface supports both sync and async streaming operations
+- [ ] `IAIService` interface covers key methods from AzureOpenAIService
+- [ ] `AIResponse` model includes Success, GeneratedText, and basic metadata
+- [ ] `AIRequest` model supports essential parameters (text, context, tokens)
+- [ ] AzureOpenAIService implements IAIService without breaking changes
+- [ ] Interface supports async operations and streaming
+- [ ] Ready for AWS Bedrock implementation
 
 ## Testing Strategy
-- Unit tests: Interface contract validation, response model serialization
-- Integration tests: AzureOpenAIService implementation verification
-- Manual validation: Existing case analysis functionality works unchanged
+- Unit tests: Interface contract validation
+- Integration tests: Azure service still works
+- Manual validation: No functionality loss
 
 ## System Stability
 - Existing Azure functionality remains operational throughout implementation
 - No breaking changes to current API endpoints
 - Backwards compatible with existing database models
 
-### Files to Create
+### Interface Structure
 ```csharp
-// IAIService.cs interface structure
+// Simplified IAIService for Azure/AWS switching
 public interface IAIService
 {
     Task<AIResponse> AnalyzeCaseAsync(AIRequest request, CancellationToken cancellationToken = default);
