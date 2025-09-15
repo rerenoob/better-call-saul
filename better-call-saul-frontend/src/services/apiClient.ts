@@ -1,10 +1,10 @@
 import axios from 'axios';
 import { tokenStorage } from '../utils/tokenStorage';
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5022';
+const GATEWAY_BASE_URL = import.meta.env.VITE_GATEWAY_BASE_URL || 'http://localhost:5022';
 
 export const apiClient = axios.create({
-  baseURL: `${API_BASE_URL}/api`,
+  baseURL: `${GATEWAY_BASE_URL}`,
   headers: {
     'Content-Type': 'application/json',
   },
@@ -36,7 +36,7 @@ apiClient.interceptors.response.use(
       try {
         const refreshToken = tokenStorage.getRefreshToken();
         if (refreshToken) {
-          const response = await axios.post(`${API_BASE_URL}/api/auth/refresh`, {
+          const response = await axios.post(`${GATEWAY_BASE_URL}/auth/refresh`, {
             refreshToken,
           });
 

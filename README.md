@@ -19,6 +19,14 @@ Better Call Saul leverages artificial intelligence to help public defense attorn
 - **Azure OpenAI Service** integration for AI analysis
 - **JWT Authentication** with role-based access control
 - **Swagger/OpenAPI** documentation
+- **Microservices Architecture** with API Gateway routing
+
+### Microservices Structure
+- **API Gateway** (`BetterCallSaul.Gateway`) - Centralized request routing and authentication
+- **User Management Service** (`BetterCallSaul.UserService`) - Authentication, user profiles, registration codes
+- **Case Management Service** (`BetterCallSaul.CaseService`) - Case lifecycle, document management, AI analysis
+- **Core Library** (`BetterCallSaul.Core`) - Shared models and interfaces
+- **Infrastructure** (`BetterCallSaul.Infrastructure`) - Shared infrastructure components
 
 ### Frontend (React + TypeScript)
 - **React 18** with TypeScript for type safety
@@ -40,10 +48,35 @@ Better Call Saul leverages artificial intelligence to help public defense attorn
 - Git
 
 ### Backend Setup
+
+#### Monolithic Mode (Original)
 ```bash
 # Clone repository
 git clone https://github.com/rerenoob/better-call-saul.git
 cd better-call-saul
+
+# Run the main API
+dotnet run --project BetterCallSaul.API
+```
+
+#### Microservices Mode (New)
+```bash
+# Terminal 1 - API Gateway (routes to all services)
+cd better-call-saul/BetterCallSaul.Gateway
+dotnet run
+
+# Terminal 2 - User Management Service
+cd better-call-saul/BetterCallSaul.UserService
+dotnet run
+
+# Terminal 3 - Case Management Service  
+cd better-call-saul/BetterCallSaul.CaseService
+dotnet run
+
+# Terminal 4 - Frontend
+cd better-call-saul/better-call-saul-frontend
+npm run dev
+```
 
 # 🔒 Configure environment variables (REQUIRED)
 cp .env.example .env

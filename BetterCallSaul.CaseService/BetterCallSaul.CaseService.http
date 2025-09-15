@@ -1,0 +1,6 @@
+@BetterCallSaul.CaseService_HostAddress = http://localhost:5150
+
+GET {{BetterCallSaul.CaseService_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

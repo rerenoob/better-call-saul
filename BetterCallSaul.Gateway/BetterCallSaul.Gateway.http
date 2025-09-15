@@ -1,0 +1,56 @@
+@Gateway_HostAddress = https://localhost:5001
+
+### Health Check
+GET {{Gateway_HostAddress}}/health
+Accept: application/json
+
+### Readiness Check
+GET {{Gateway_HostAddress}}/health/ready
+Accept: application/json
+
+### Test User Service Routing - Login (should work without auth)
+POST {{Gateway_HostAddress}}/api/auth/login
+Content-Type: application/json
+
+{
+  "email": "test@example.com",
+  "password": "Password123!"
+}
+
+### Test User Service Routing - Get Users (requires auth)
+GET {{Gateway_HostAddress}}/api/users
+Authorization: Bearer your_jwt_token_here
+
+### Test Case Service Routing - Get Cases (requires auth)
+GET {{Gateway_HostAddress}}/api/cases
+Authorization: Bearer your_jwt_token_here
+
+### Test Case Service Routing - Create Case (requires auth)
+POST {{Gateway_HostAddress}}/api/cases
+Authorization: Bearer your_jwt_token_here
+Content-Type: application/json
+
+{
+  "caseNumber": "TEST-2024-001",
+  "title": "Test Case",
+  "description": "Test case description"
+}
+
+### Test Document Service Routing - Upload Document (requires auth)
+POST {{Gateway_HostAddress}}/api/documents
+Authorization: Bearer your_jwt_token_here
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
+
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="file"; filename="test.pdf"
+Content-Type: application/pdf
+
+< ./test.pdf
+------WebKitFormBoundary7MA4YWxkTrZu0gW--
+
+### Test Unauthorized Access (should return 401)
+GET {{Gateway_HostAddress}}/api/cases
+
+### Test Invalid Service Routing (should return 404)
+GET {{Gateway_HostAddress}}/api/unknown
+Authorization: Bearer your_jwt_token_here
