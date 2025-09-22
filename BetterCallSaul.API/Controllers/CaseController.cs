@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using BetterCallSaul.Core.Models.Entities;
 using BetterCallSaul.Core.Interfaces.Services;
+using BetterCallSaul.Core.Interfaces.Repositories;
 using BetterCallSaul.Core.Enums;
 using Microsoft.AspNetCore.Authorization;
 using BetterCallSaul.Infrastructure.Data;
@@ -17,6 +18,7 @@ public class CaseController : ControllerBase
     private readonly IAIService _aiService;
     private readonly ICaseAnalysisService _caseAnalysisService;
     private readonly ICaseManagementService _caseManagementService;
+    private readonly ICaseDocumentRepository _caseDocumentRepository;
     private readonly ILogger<CaseController> _logger;
     private readonly BetterCallSaulContext _context;
 
@@ -24,12 +26,14 @@ public class CaseController : ControllerBase
         IAIService aiService, 
         ICaseAnalysisService caseAnalysisService,
         ICaseManagementService caseManagementService,
+        ICaseDocumentRepository caseDocumentRepository,
         ILogger<CaseController> logger, 
         BetterCallSaulContext context)
     {
         _aiService = aiService;
         _caseAnalysisService = caseAnalysisService;
         _caseManagementService = caseManagementService;
+        _caseDocumentRepository = caseDocumentRepository;
         _logger = logger;
         _context = context;
     }
@@ -90,9 +94,28 @@ public class CaseController : ControllerBase
     [Authorize]
     public async Task<ActionResult<IEnumerable<Case>>> GetCases()
     {
-        var cases = await _context.Cases
-            .OrderByDescending(c => c.CreatedAt)
-            .ToListAsync();
+        var userId = GetCurrentUserId();
+        if (userId == Guid.Empty)
+        {
+            return Unauthorized();
+        }
+
+        var caseDocuments = await _caseDocumentRepository.GetByUserIdAsync(userId);
+        var cases = caseDocuments.Select(cd => new Case
+        {
+            Id = cd.CaseId,
+            Title = cd.Metadata.Tags.FirstOrDefault() ?? "Untitled Case",
+            Description = cd.Documents.FirstOrDefault()?.Description ?? "No description",
+            UserId = cd.UserId,
+            CaseNumber = $"CASE-{cd.CaseId.ToString()[..8].ToUpper()}",
+            Status = CaseStatus.New, // Default status
+            CreatedAt = cd.CreatedAt,
+            UpdatedAt = cd.UpdatedAt,
+            HearingDate = null, // Not available in NoSQL model
+            SuccessProbability = cd.Analyses.FirstOrDefault()?.ViabilityScore > 0 
+                ? (decimal)(cd.Analyses.First().ViabilityScore / 100.0) 
+                : 0
+        }).ToList();
 
         return Ok(cases);
     }
@@ -101,17 +124,28 @@ public class CaseController : ControllerBase
     [Authorize]
     public async Task<ActionResult> GetStatistics()
     {
-        var total = await _context.Cases.CountAsync();
-        var active = await _context.Cases.CountAsync(c => c.Status != CaseStatus.Closed && c.Status != CaseStatus.Dismissed && c.Status != CaseStatus.Settlement);
-        var completed = await _context.Cases.CountAsync(c => c.Status == CaseStatus.Closed || c.Status == CaseStatus.Settlement);
-        
-        // For overdue cases, you might want to check hearing dates or other deadlines
-        var overdue = await _context.Cases.CountAsync(c => c.HearingDate.HasValue && c.HearingDate < DateTime.UtcNow && c.Status != CaseStatus.Closed);
+        var userId = GetCurrentUserId();
+        if (userId == Guid.Empty)
+        {
+            return Unauthorized();
+        }
 
-        var byStatus = await _context.Cases
-            .GroupBy(c => c.Status)
-            .Select(g => new { Status = g.Key, Count = g.Count() })
-            .ToDictionaryAsync(x => x.Status.ToString(), x => x.Count);
+        var total = await _caseDocumentRepository.CountByUserAsync(userId);
+        var caseDocuments = await _caseDocumentRepository.GetByUserIdAsync(userId);
+        
+        // Since status is not directly available, we'll use analysis status as proxy
+        var active = caseDocuments.Count(c => c.Analyses.Any(a => a.Status == AnalysisStatus.Processing));
+        var completed = caseDocuments.Count(c => c.Analyses.Any(a => a.Status == AnalysisStatus.Completed));
+        var overdue = 0; // Hearing date not available in NoSQL model
+
+        // Group by analysis status as proxy for case status
+        var byStatus = new Dictionary<string, int>
+        {
+            ["New"] = caseDocuments.Count(c => !c.Analyses.Any()),
+            ["Processing"] = caseDocuments.Count(c => c.Analyses.Any(a => a.Status == AnalysisStatus.Processing)),
+            ["Completed"] = caseDocuments.Count(c => c.Analyses.Any(a => a.Status == AnalysisStatus.Completed)),
+            ["Failed"] = caseDocuments.Count(c => c.Analyses.Any(a => a.Status == AnalysisStatus.Failed))
+        };
 
         var statistics = new
         {
@@ -149,10 +183,32 @@ public class CaseController : ControllerBase
     [Authorize]
     public async Task<ActionResult<IEnumerable<Case>>> GetRecentCases([FromQuery] int limit = 10)
     {
-        var recentCases = await _context.Cases
+        var userId = GetCurrentUserId();
+        if (userId == Guid.Empty)
+        {
+            return Unauthorized();
+        }
+
+        var caseDocuments = await _caseDocumentRepository.GetByUserIdAsync(userId);
+        var recentCases = caseDocuments
             .OrderByDescending(c => c.CreatedAt)
             .Take(limit)
-            .ToListAsync();
+            .Select(cd => new Case
+            {
+                Id = cd.CaseId,
+                Title = cd.Metadata.Tags.FirstOrDefault() ?? "Untitled Case",
+                Description = cd.Documents.FirstOrDefault()?.Description ?? "No description",
+                UserId = cd.UserId,
+                CaseNumber = $"CASE-{cd.CaseId.ToString()[..8].ToUpper()}",
+                Status = CaseStatus.New, // Default status
+                CreatedAt = cd.CreatedAt,
+                UpdatedAt = cd.UpdatedAt,
+                HearingDate = null, // Not available in NoSQL model
+                SuccessProbability = cd.Analyses.FirstOrDefault()?.ViabilityScore > 0 
+                    ? (decimal)(cd.Analyses.First().ViabilityScore / 100.0) 
+                    : 0
+            })
+            .ToList();
 
         return Ok(recentCases);
     }

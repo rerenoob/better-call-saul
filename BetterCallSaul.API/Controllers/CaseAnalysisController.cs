@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
 using BetterCallSaul.Core.Models.Entities;
+using BetterCallSaul.Core.Models.NoSQL;
 using BetterCallSaul.Core.Interfaces.Services;
+using BetterCallSaul.Core.Interfaces.Repositories;
 using Microsoft.AspNetCore.Authorization;
 using BetterCallSaul.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
@@ -14,15 +16,18 @@ namespace BetterCallSaul.API.Controllers;
 public class CaseAnalysisController : ControllerBase
 {
     private readonly ICaseAnalysisService _caseAnalysisService;
+    private readonly ICaseDocumentRepository _caseDocumentRepository;
     private readonly BetterCallSaulContext _context;
     private readonly ILogger<CaseAnalysisController> _logger;
 
     public CaseAnalysisController(
         ICaseAnalysisService caseAnalysisService,
+        ICaseDocumentRepository caseDocumentRepository,
         BetterCallSaulContext context,
         ILogger<CaseAnalysisController> logger)
     {
         _caseAnalysisService = caseAnalysisService;
+        _caseDocumentRepository = caseDocumentRepository;
         _context = context;
         _logger = logger;
     }
@@ -86,29 +91,33 @@ public class CaseAnalysisController : ControllerBase
     {
         try
         {
-            var analysis = await _context.CaseAnalyses
-                .FirstOrDefaultAsync(a => a.Id == analysisId);
+            var caseDocument = await _caseDocumentRepository.GetByIdAsync(analysisId);
+            if (caseDocument == null)
+            {
+                return NotFound(new { error = "Case not found" });
+            }
 
-            if (analysis == null)
+            var latestAnalysis = caseDocument.Analyses?.OrderByDescending(a => a.CreatedAt).FirstOrDefault();
+            if (latestAnalysis == null)
             {
                 return NotFound(new { error = "Analysis not found" });
             }
 
             var response = new CaseAnalysisResponse
             {
-                AnalysisId = analysis.Id,
-                CaseId = analysis.CaseId,
-                Status = analysis.Status.ToString(),
-                ViabilityScore = analysis.ViabilityScore > 0 ? analysis.ViabilityScore : null,
-                ConfidenceScore = analysis.ConfidenceScore > 0 ? analysis.ConfidenceScore : null,
-                Summary = analysis.AnalysisText,
-                KeyIssues = analysis.KeyLegalIssues.ToArray(),
-                PotentialDefenses = analysis.PotentialDefenses.ToArray(),
-                EvidenceGaps = analysis.EvidenceEvaluation.EvidenceGaps.ToArray(),
-                RecommendedActions = analysis.Recommendations.Select(r => r.Action ?? "").Where(a => !string.IsNullOrEmpty(a)).ToArray(),
+                AnalysisId = latestAnalysis.Id,
+                CaseId = caseDocument.CaseId,
+                Status = latestAnalysis.Status.ToString(),
+                ViabilityScore = latestAnalysis.ViabilityScore > 0 ? latestAnalysis.ViabilityScore : null,
+                ConfidenceScore = latestAnalysis.ConfidenceScore > 0 ? latestAnalysis.ConfidenceScore : null,
+                Summary = latestAnalysis.AnalysisText,
+                KeyIssues = latestAnalysis.KeyLegalIssues?.ToArray() ?? Array.Empty<string>(),
+                PotentialDefenses = latestAnalysis.PotentialDefenses?.ToArray() ?? Array.Empty<string>(),
+                EvidenceGaps = latestAnalysis.EvidenceEvaluation?.EvidenceGaps?.ToArray() ?? Array.Empty<string>(),
+                RecommendedActions = latestAnalysis.Recommendations?.Select(r => r.Action ?? "").Where(a => !string.IsNullOrEmpty(a)).ToArray() ?? Array.Empty<string>(),
                 SimilarCases = new string[0], // Placeholder for similar cases
-                CreatedAt = analysis.CreatedAt,
-                CompletedAt = analysis.CompletedAt
+                CreatedAt = latestAnalysis.CreatedAt,
+                CompletedAt = latestAnalysis.CompletedAt
             };
 
             return Ok(response);
@@ -125,23 +134,25 @@ public class CaseAnalysisController : ControllerBase
     {
         try
         {
-            var analyses = await _context.CaseAnalyses
-                .Where(a => a.CaseId == caseId)
-                .OrderByDescending(a => a.CreatedAt)
-                .ToListAsync();
+            var caseDocument = await _caseDocumentRepository.GetByIdAsync(caseId);
+            if (caseDocument == null)
+            {
+                return NotFound(new { error = "Case not found" });
+            }
 
+            var analyses = caseDocument.Analyses;
             var responses = analyses.Select(a => new CaseAnalysisResponse
                 {
                     AnalysisId = a.Id,
-                    CaseId = a.CaseId,
+                    CaseId = caseId,
                     Status = a.Status.ToString(),
                     ViabilityScore = a.ViabilityScore > 0 ? a.ViabilityScore : null,
                     ConfidenceScore = a.ConfidenceScore > 0 ? a.ConfidenceScore : null,
                     Summary = a.AnalysisText,
-                    KeyIssues = a.KeyLegalIssues.ToArray(),
-                    PotentialDefenses = a.PotentialDefenses.ToArray(),
-                    EvidenceGaps = a.EvidenceEvaluation.EvidenceGaps.ToArray(),
-                    RecommendedActions = a.Recommendations.Select(r => r.Action ?? "").Where(action => !string.IsNullOrEmpty(action)).ToArray(),
+                    KeyIssues = a.KeyLegalIssues?.ToArray() ?? Array.Empty<string>(),
+                    PotentialDefenses = a.PotentialDefenses?.ToArray() ?? Array.Empty<string>(),
+                    EvidenceGaps = a.EvidenceEvaluation?.EvidenceGaps?.ToArray() ?? Array.Empty<string>(),
+                    RecommendedActions = (a.Recommendations?.Select(r => r.Action ?? "").Where(action => !string.IsNullOrEmpty(action)).ToArray()) ?? Array.Empty<string>(),
                     SimilarCases = new string[0], // Placeholder for similar cases
                     CreatedAt = a.CreatedAt,
                     CompletedAt = a.CompletedAt
@@ -203,21 +214,23 @@ public class CaseAnalysisController : ControllerBase
     {
         try
         {
-            var totalAnalyses = await _context.CaseAnalyses.CountAsync();
-            var completedAnalyses = await _context.CaseAnalyses
-                .CountAsync(a => a.Status == AnalysisStatus.Completed);
-            var processingAnalyses = await _context.CaseAnalyses
-                .CountAsync(a => a.Status == AnalysisStatus.Processing);
-            var failedAnalyses = await _context.CaseAnalyses
-                .CountAsync(a => a.Status == AnalysisStatus.Failed);
+            var userId = GetCurrentUserId();
+            if (userId == Guid.Empty)
+            {
+                return Unauthorized();
+            }
 
-            var averageViabilityScore = await _context.CaseAnalyses
-                .Where(a => a.Status == AnalysisStatus.Completed && a.ViabilityScore > 0)
-                .AverageAsync(a => a.ViabilityScore);
+            var caseDocuments = await _caseDocumentRepository.GetByUserIdAsync(userId);
+            var allAnalyses = caseDocuments.SelectMany(cd => cd.Analyses).ToList();
+            
+            var totalAnalyses = allAnalyses.Count;
+            var completedAnalyses = allAnalyses.Count(a => a.Status == AnalysisStatus.Completed);
+            var processingAnalyses = allAnalyses.Count(a => a.Status == AnalysisStatus.Processing);
+            var failedAnalyses = allAnalyses.Count(a => a.Status == AnalysisStatus.Failed);
 
-            var averageConfidenceScore = await _context.CaseAnalyses
-                .Where(a => a.Status == AnalysisStatus.Completed && a.ConfidenceScore > 0)
-                .AverageAsync(a => a.ConfidenceScore);
+            var completedAnalysesWithScores = allAnalyses.Where(a => a.Status == AnalysisStatus.Completed && a.ViabilityScore > 0).ToList();
+            var averageViabilityScore = completedAnalysesWithScores.Any() ? completedAnalysesWithScores.Average(a => a.ViabilityScore) : 0;
+            var averageConfidenceScore = completedAnalysesWithScores.Any() ? completedAnalysesWithScores.Average(a => a.ConfidenceScore) : 0;
 
             var response = new AnalysisMetricsResponse
             {
@@ -237,6 +250,16 @@ public class CaseAnalysisController : ControllerBase
             _logger.LogError(ex, "Error retrieving analysis metrics");
             return StatusCode(500, new { error = "Internal server error" });
         }
+    }
+
+    private Guid GetCurrentUserId()
+    {
+        var userIdClaim = User.FindFirst("http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier");
+        if (userIdClaim != null && Guid.TryParse(userIdClaim.Value, out var userId))
+        {
+            return userId;
+        }
+        return Guid.Empty;
     }
 }
 
