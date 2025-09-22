@@ -1,4 +1,5 @@
 using BetterCallSaul.Core.Models.Entities;
+using BetterCallSaul.Core.Enums;
 
 namespace BetterCallSaul.Core.Interfaces.Services;
 

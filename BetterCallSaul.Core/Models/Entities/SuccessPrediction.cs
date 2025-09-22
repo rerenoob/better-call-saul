@@ -1,3 +1,5 @@
+using BetterCallSaul.Core.Enums;
+
 namespace BetterCallSaul.Core.Models.Entities;
 
 public class SuccessPrediction

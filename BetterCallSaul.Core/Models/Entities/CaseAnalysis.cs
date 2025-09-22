@@ -1,3 +1,5 @@
+using BetterCallSaul.Core.Enums;
+
 namespace BetterCallSaul.Core.Models.Entities;
 
 public class CaseAnalysis
@@ -52,19 +54,3 @@ public class Recommendation
     public double ImpactScore { get; set; } // 0-1
 }
 
-public enum AnalysisStatus
-{
-    Pending,
-    Processing,
-    Completed,
-    Failed,
-    PartiallyCompleted
-}
-
-public enum PriorityLevel
-{
-    Critical,
-    High,
-    Medium,
-    Low
-}
