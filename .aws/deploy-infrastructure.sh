@@ -64,15 +64,20 @@ aws cloudformation $OPERATION \
     --template-body file://cloudformation-stack.yml \
     --parameters \
         ParameterKey=EnvironmentName,ParameterValue=$ENVIRONMENT \
-        ParameterKey=DomainName,ParameterValue=$DOMAIN_NAME \
     --capabilities CAPABILITY_NAMED_IAM \
     --region $REGION
 
 # Wait for stack to complete
 print_status "Waiting for stack operation to complete..."
-aws cloudformation wait stack-$OPERATION-complete \
-    --stack-name $STACK_NAME \
-    --region $REGION
+if [ "$OPERATION" = "create-stack" ]; then
+    aws cloudformation wait stack-create-complete \
+        --stack-name $STACK_NAME \
+        --region $REGION
+else
+    aws cloudformation wait stack-update-complete \
+        --stack-name $STACK_NAME \
+        --region $REGION
+fi
 
 # Get stack outputs
 print_status "Retrieving stack outputs..."
