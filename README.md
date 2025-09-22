@@ -16,7 +16,7 @@ Better Call Saul leverages artificial intelligence to help public defense attorn
 ### Backend (.NET 8 Web API)
 - **Clean Architecture** with separation of concerns
 - **Entity Framework Core** for data persistence
-- **Azure OpenAI Service** integration for AI analysis
+- **AWS Bedrock** integration for AI analysis
 - **JWT Authentication** with role-based access control
 - **Swagger/OpenAPI** documentation
 - **Microservices Architecture** with API Gateway routing
@@ -220,29 +220,29 @@ npm run lint                                 # Code quality checks
 
 ## 🌟 Production Deployment
 
-### Azure Configuration
+### AWS Infrastructure Setup
 ```bash
-# Set up Azure resources
-az group create --name better-call-saul-rg --location eastus
-az appservice plan create --name better-call-saul-plan --resource-group better-call-saul-rg --sku B1
-az webapp create --name better-call-saul-api --plan better-call-saul-plan --resource-group better-call-saul-rg
+# Deploy AWS infrastructure using CloudFormation
+cd .aws
+./deploy-infrastructure.sh
 ```
 
 ### Environment Variables
 Configure these in production:
-- `AzureOpenAI:Endpoint` - Azure OpenAI service endpoint
-- `AzureOpenAI:ApiKey` - Azure OpenAI API key
-- `AzureFormRecognizer:EndpointFromConfig` - Azure Form Recognizer endpoint
-- `AzureFormRecognizer:ApiKeyFromConfig` - Azure Form Recognizer API key
+- `AWS:AccessKey` - AWS access key ID
+- `AWS:SecretKey` - AWS secret access key
+- `AWS:Region` - AWS region (default: us-east-1)
+- `AWS:Bedrock:ModelId` - AWS Bedrock model ID (default: anthropic.claude-v2)
+- `AWS:S3:BucketName` - S3 bucket for document storage
 - `ConnectionStrings:DefaultConnection` - SQL Server connection string
 - `JwtSettings:SecretKey` - JWT signing key
 
 Or use environment variables:
-- `AZURE_OPENAI_ENDPOINT` - Azure OpenAI service endpoint
-- `AZURE_OPENAI_API_KEY` - Azure OpenAI API key
-- `AZURE_FORM_RECOGNIZER_ENDPOINT` - Azure Form Recognizer endpoint
-- `AZURE_FORM_RECOGNIZER_API_KEY` - Azure Form Recognizer API key
-- `AZURE_BLOB_STORAGE_CONNECTION_STRING` - Azure Blob Storage connection string
+- `AWS_ACCESS_KEY_ID` - AWS access key ID
+- `AWS_SECRET_ACCESS_KEY` - AWS secret access key
+- `AWS_REGION` - AWS region (default: us-east-1)
+- `AWS_BEDROCK_MODEL_ID` - AWS Bedrock model ID
+- `AWS_S3_BUCKET_NAME` - S3 bucket for document storage
 
 ## 🤝 Contributing
 
@@ -258,7 +258,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🙏 Acknowledgments
 
-- Built with Azure OpenAI Service for AI-powered legal analysis
+- Built with AWS Bedrock for AI-powered legal analysis
 - Legal research integration with CourtListener and Justia databases
 - Modern web technologies: .NET 8, React 18, TypeScript, Tailwind CSS
 

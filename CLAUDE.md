@@ -176,37 +176,38 @@ The solution follows clean architecture principles with clear separation between
 - Comprehensive audit logging
 
 ### Deployment
-- Backend: Azure App Service
-- Frontend: Azure Static Web Apps
-- CI/CD: Azure DevOps or GitHub Actions
-- Monitoring: Application Insights
+- Backend: AWS ECS Fargate
+- Frontend: AWS S3 + CloudFront
+- CI/CD: GitHub Actions with AWS deployment workflows
+- Monitoring: AWS CloudWatch
 
-#### Azure App Service Environment Variables
+#### AWS Environment Variables
 **Required for production deployment:**
 ```bash
-# Database Connection String
-ConnectionStrings__DefaultConnection="Data Source=BetterCallSaul.db"
-# Or for SQL Server: "Server=your-server;Database=BetterCallSaul;User Id=username;Password=password;TrustServerCertificate=true;"
+# AWS Credentials
+AWS_ACCESS_KEY_ID="your-access-key-id"
+AWS_SECRET_ACCESS_KEY="your-secret-access-key"
+AWS_REGION="us-east-1"
 
-# JWT Authentication
-JWT_SECRET_KEY="your-secure-secret-key-at-least-32-chars"
-
-# Environment
+# Application Configuration
 ASPNETCORE_ENVIRONMENT="Production"
+JWT_SECRET_KEY="your-secure-secret-key-at-least-32-chars"
 ```
 
-**Set via Azure CLI:**
+**Set via AWS CLI:**
 ```bash
-az webapp config appsettings set --name bettercallsaul-api --resource-group bettercallsaul-rg --settings \
-  "ConnectionStrings__DefaultConnection=Data Source=BetterCallSaul.db" \
-  "JWT_SECRET_KEY=your-secure-secret-key" \
-  "ASPNETCORE_ENVIRONMENT=Production"
+# For ECS task definition
+aws ecs register-task-definition --cli-input-json file://task-definition.json
+
+# For GitHub Actions secrets (set in repository settings)
+# AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, CLOUDFRONT_DISTRIBUTION_ID, API_BASE_URL
 ```
 
-**Set via Azure Portal:**
-- Navigate to: Azure Portal → App Service → Configuration → Application settings
-- Add each key-value pair above
-- Restart the App Service after configuration changes
+**Infrastructure Deployment:**
+```bash
+cd .aws
+./deploy-infrastructure.sh
+```
 
 ### Development Workflow
 1. Start backend API: `dotnet watch`
@@ -231,16 +232,16 @@ az webapp config appsettings set --name bettercallsaul-api --resource-group bett
 
 ### Common Issues Prevention
 - **Missing Serilog Sinks**: The build will fail in CI if configuration references missing sink packages
-- **Environment Variables**: All required secrets are validated during startup
-- **Azure Service Dependencies**: Mock endpoints used in CI to validate service integration points
+- **Environment Variables**: All required AWS credentials are validated during startup
+- **AWS Service Dependencies**: Mock endpoints used in CI to validate service integration points
 
 ### Troubleshooting Production Issues
-1. Check Azure App Service logs: `az webapp log download --name bettercallsaul-api --resource-group bettercallsaul-rg`
+1. Check ECS service logs: `aws logs describe-log-streams --log-group-name /ecs/bettercallsaul-api`
 2. Look for missing dependency errors in Docker logs
-3. **Verify all app settings are configured in Azure portal** - Most common cause of 503 errors
-   - Check `ConnectionStrings__DefaultConnection` is set
+3. **Verify all environment variables are configured in ECS task definition** - Most common cause of 503 errors
+   - Check `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` are set
    - Check `JWT_SECRET_KEY` is set (minimum 32 characters)
    - Check `ASPNETCORE_ENVIRONMENT` is set to "Production"
 4. Use GitHub Actions workflow to test configuration changes before deployment
-5. **If API returns 503 Service Unavailable**: Missing environment variables - verify steps in "Azure App Service Environment Variables" section above
+5. **If API returns 503 Service Unavailable**: Missing AWS credentials or IAM permissions - verify steps in "AWS Environment Variables" section above
 

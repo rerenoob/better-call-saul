@@ -98,12 +98,31 @@ Create an IAM user with the following policy:
 
 ## AWS Resource Setup
 
-### 1. Create S3 Bucket
+### 1. Automated Infrastructure Deployment
+Use the CloudFormation template to deploy all required resources:
+
 ```bash
-aws s3 mb s3://better-call-saul-prod --region us-east-1
+cd .aws
+./deploy-infrastructure.sh
 ```
 
-### 2. Configure CORS for S3 Bucket
+This will create:
+- S3 bucket for frontend hosting
+- CloudFront distribution for CDN
+- ECR repository for backend Docker images
+- ECS cluster and service for backend API
+- IAM roles and security groups
+- VPC and networking infrastructure
+
+### 2. Manual Resource Setup (Alternative)
+If you prefer manual setup:
+
+#### Create S3 Bucket
+```bash
+aws s3 mb s3://better-call-saul-frontend --region us-east-1
+```
+
+#### Configure CORS for S3 Bucket
 Create `cors.json`:
 ```json
 {
@@ -120,10 +139,15 @@ Create `cors.json`:
 
 Apply CORS configuration:
 ```bash
-aws s3api put-bucket-cors --bucket better-call-saul-prod --cors-configuration file://cors.json
+aws s3api put-bucket-cors --bucket better-call-saul-frontend --cors-configuration file://cors.json
 ```
 
-### 3. Enable Bedrock Model Access
+#### Create ECR Repository
+```bash
+aws ecr create-repository --repository-name bettercallsaul-api --region us-east-1
+```
+
+#### Enable Bedrock Model Access
 ```bash
 aws bedrock list-foundation-models --region us-east-1
 # Ensure anthropic.claude-v2 is available in your account
@@ -182,6 +206,24 @@ ASPNETCORE_ENVIRONMENT=Development
 # or
 Serilog:MinimumLevel:Default=Debug
 ```
+
+## GitHub Actions Setup
+
+### Required Secrets
+Add the following secrets to your GitHub repository:
+
+1. **AWS_ACCESS_KEY_ID** - AWS access key for deployment
+2. **AWS_SECRET_ACCESS_KEY** - AWS secret key for deployment
+3. **CLOUDFRONT_DISTRIBUTION_ID** - CloudFront distribution ID from stack outputs
+4. **API_BASE_URL** - ECS service URL (e.g., http://ecs-service-url)
+
+### Workflow Configuration
+The AWS deployment workflows are located in `.github/workflows/`:
+- `deploy-backend-aws.yml` - Backend API deployment to ECS
+- `deploy-frontend-aws.yml` - Frontend deployment to S3 + CloudFront
+
+### Triggering Deployments
+Deployments are automatically triggered on pushes to the main branch, or can be manually triggered via the GitHub Actions UI.
 
 ## Security Best Practices
 
