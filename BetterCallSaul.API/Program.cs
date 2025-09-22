@@ -1,4 +1,3 @@
-using BetterCallSaul.API.Controllers;
 using BetterCallSaul.API.Middleware;
 using BetterCallSaul.Core.Configuration;
 using BetterCallSaul.Core.Models.Entities;
@@ -167,7 +166,6 @@ builder.Services.AddHttpClient<CourtListenerClient>();
 builder.Services.AddHttpClient<JustiaClient>();
 builder.Services.AddScoped<ICourtListenerService, CourtListenerService>();
 builder.Services.AddScoped<IJustiaService, JustiaService>();
-builder.Services.AddScoped<UnifiedLegalSearchService>();
 builder.Services.AddScoped<ICaseMatchingService, IntelligentCaseMatchingService>();
 builder.Services.AddScoped<LegalTextSimilarity>();
 builder.Services.AddMemoryCache();
