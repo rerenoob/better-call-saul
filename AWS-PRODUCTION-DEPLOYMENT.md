@@ -9,7 +9,8 @@ This comprehensive guide covers the complete AWS infrastructure setup and deploy
 ### Core AWS Services
 - **Backend API**: AWS Elastic Beanstalk (.NET 8 Web API)
 - **Frontend**: AWS S3 + CloudFront (React TypeScript)
-- **Database**: Amazon RDS PostgreSQL
+- **SQL Database**: Amazon RDS PostgreSQL (Case metadata, users, audit logs)
+- **NoSQL Database**: Amazon DocumentDB (Case documents, analysis results, legal research)
 - **File Storage**: Amazon S3
 - **AI Services**: Amazon Bedrock (Claude AI)
 - **Document Processing**: Amazon Textract
@@ -17,8 +18,9 @@ This comprehensive guide covers the complete AWS infrastructure setup and deploy
 
 ### Network Architecture
 ```
-CloudFront (CDN) → S3 (Frontend) → ALB → Elastic Beanstalk → RDS PostgreSQL
+CloudFront (CDN) → S3 (Frontend) → ALB → Elastic Beanstalk → RDS PostgreSQL (SQL)
                                               ↓
+                                          DocumentDB (NoSQL)
                                           S3 (Documents)
                                           Bedrock (AI)
                                           Textract (OCR)
@@ -39,7 +41,7 @@ CloudFront (CDN) → S3 (Frontend) → ALB → Elastic Beanstalk → RDS Postgre
 
 ## Phase 1: Core Infrastructure Setup
 
-### 1.1 Create RDS PostgreSQL Database
+### 1.1 Create RDS PostgreSQL Database (SQL)
 
 ```bash
 # Create RDS PostgreSQL instance
@@ -68,7 +70,42 @@ DB_ENDPOINT=$(aws rds describe-db-instances --db-instance-identifier bettercalls
 echo "Database endpoint: $DB_ENDPOINT"
 ```
 
-### 1.2 Create S3 Buckets
+### 1.2 Create Amazon DocumentDB Cluster (NoSQL)
+
+```bash
+# Create DocumentDB cluster
+aws docdb create-db-cluster \
+  --db-cluster-identifier bettercallsaul-nosql \
+  --engine docdb \
+  --master-username docdbadmin \
+  --master-user-password 'BetterCallSaul2024!NoSQL' \
+  --vpc-security-group-ids default \
+  --backup-retention-period 7 \
+  --storage-encrypted
+
+# Create cluster instances
+aws docdb create-db-instance \
+  --db-instance-identifier bettercallsaul-nosql-1 \
+  --db-cluster-identifier bettercallsaul-nosql \
+  --db-instance-class db.t3.medium \
+  --engine docdb
+
+aws docdb create-db-instance \
+  --db-instance-identifier bettercallsaul-nosql-2 \
+  --db-cluster-identifier bettercallsaul-nosql \
+  --db-instance-class db.t3.medium \
+  --engine docdb
+
+# Wait for cluster to be available
+aws docdb wait db-cluster-available --db-cluster-identifier bettercallsaul-nosql
+
+# Get DocumentDB endpoint
+DOCDB_ENDPOINT=$(aws docdb describe-db-clusters --db-cluster-identifier bettercallsaul-nosql --query 'DBClusters[0].Endpoint' --output text)
+DOCDB_PORT=$(aws docdb describe-db-clusters --db-cluster-identifier bettercallsaul-nosql --query 'DBClusters[0].Port' --output text)
+echo "DocumentDB endpoint: $DOCDB_ENDPOINT:$DOCDB_PORT"
+```
+
+### 1.3 Create S3 Buckets
 
 ```bash
 # Create document storage bucket
@@ -94,7 +131,7 @@ aws s3api put-bucket-encryption \
   }'
 ```
 
-### 1.3 Verify AWS Service Access
+### 1.4 Verify AWS Service Access
 
 ```bash
 # Verify Bedrock access
@@ -130,6 +167,15 @@ aws ssm put-parameter \
   --value "$DB_CONNECTION" \
   --type "SecureString" \
   --description "Database connection string for Better Call Saul"
+
+# Store DocumentDB connection string
+DOCDB_CONNECTION="mongodb://docdbadmin:BetterCallSaul2024!NoSQL@$DOCDB_ENDPOINT:$DOCDB_PORT/bettercallsaul?tls=true&replicaSet=rs0&readPreference=secondaryPreferred&retryWrites=false"
+
+aws ssm put-parameter \
+  --name "/bettercallsaul/documentdb-connection" \
+  --value "$DOCDB_CONNECTION" \
+  --type "SecureString" \
+  --description "DocumentDB connection string for Better Call Saul NoSQL data"
 
 # Store application configuration
 aws ssm put-parameter \
@@ -171,7 +217,21 @@ aws s3api put-bucket-policy \
     }]
   }'
 
-### 2.3 Create IAM Policy for Application
+### 2.3 Configure DocumentDB Security Group
+
+```bash
+# Get VPC security group ID for DocumentDB
+DOCDB_SG_ID=$(aws docdb describe-db-clusters --db-cluster-identifier bettercallsaul-nosql --query 'DBClusters[0].VpcSecurityGroups[0].VpcSecurityGroupId' --output text)
+
+# Allow Elastic Beanstalk instances to access DocumentDB
+aws ec2 authorize-security-group-ingress \
+  --group-id $DOCDB_SG_ID \
+  --protocol tcp \
+  --port $DOCDB_PORT \
+  --source-group $(aws ec2 describe-security-groups --group-names aws-elasticbeanstalk-ec2-role --query 'SecurityGroups[0].GroupId' --output text)
+```
+
+### 2.4 Create IAM Policy for Application
 
 ```bash
 # Create IAM policy for Elastic Beanstalk EC2 instances
@@ -199,6 +259,17 @@ aws iam create-policy \
         ],
         "Resource": [
           "arn:aws:ssm:us-east-1:946591677346:parameter/bettercallsaul/*"
+        ]
+      },
+      {
+        "Effect": "Allow",
+        "Action": [
+          "docdb:DescribeDBClusters",
+          "docdb:DescribeDBInstances"
+        ],
+        "Resource": [
+          "arn:aws:docdb:us-east-1:946591677346:cluster:bettercallsaul-nosql",
+          "arn:aws:docdb:us-east-1:946591677346:db:bettercallsaul-nosql-*"
         ]
       },
       {
@@ -311,9 +382,9 @@ aws cloudfront create-distribution \
   }'
 ```
 
-## Phase 4: Database Migration
+## Phase 4: Database Migration & Initialization
 
-### 4.1 Apply Database Migrations
+### 4.1 Apply SQL Database Migrations
 
 ```bash
 # Get database connection string from Parameter Store
@@ -331,7 +402,47 @@ dotnet ef migrations list \
   --startup-project BetterCallSaul.API
 ```
 
-### 4.2 Seed Initial Data
+### 4.2 Initialize DocumentDB Collections
+
+```bash
+# Get DocumentDB connection string from Parameter Store
+DOCDB_CONNECTION=$(aws ssm get-parameter --name /bettercallsaul/documentdb-connection --with-decryption --query Parameter.Value --output text)
+
+# Initialize DocumentDB collections using MongoDB shell
+# Note: You'll need to install MongoDB shell locally or use AWS CloudShell
+mongo "$DOCDB_CONNECTION" --eval '
+  // Create collections with proper indexes
+  db.createCollection("casedocuments");
+  db.createCollection("legalresearch");
+  
+  // Create indexes for optimal query performance
+  db.casedocuments.createIndex({ "CaseId": 1 }, { unique: true });
+  db.casedocuments.createIndex({ "UserId": 1 });
+  db.casedocuments.createIndex({ "CreatedAt": -1 });
+  db.casedocuments.createIndex({ "Metadata.Status": 1 });
+  
+  db.legalresearch.createIndex({ "Citation": 1 }, { unique: true });
+  db.legalresearch.createIndex({ "Title": "text", "FullText": "text" });
+  db.legalresearch.createIndex({ "IndexedAt": -1 });
+  
+  print("DocumentDB collections initialized successfully");
+'
+
+# Verify collections were created
+mongo "$DOCDB_CONNECTION" --eval '
+  print("Collections in database:");
+  db.getCollectionNames().forEach(function(collection) {
+    print(" - " + collection);
+  });
+  
+  print("\nIndexes in casedocuments:");
+  db.casedocuments.getIndexes().forEach(function(index) {
+    print(" - " + JSON.stringify(index.key));
+  });
+'
+```
+
+### 4.3 Seed Initial Data
 
 ```bash
 # Generate registration codes
@@ -355,9 +466,35 @@ aws textract list-adapters --region us-east-1
 API_URL=$(eb status production --region us-east-1 | grep "CNAME" | awk '{print $2}')
 curl -s https://$API_URL/health | jq .
 curl -s https://$API_URL/api/cases | jq .
+
+# Test NoSQL connectivity through API
+curl -s https://$API_URL/api/cases/test-nosql | jq .
 ```
 
-### 5.2 Environment Variable Validation
+### 5.2 DocumentDB Connectivity Validation
+
+```bash
+# Test DocumentDB connectivity from application
+API_URL=$(eb status production --region us-east-1 | grep "CNAME" | awk '{print $2}')
+
+# Test NoSQL health endpoint
+curl -s https://$API_URL/health/nosql | jq .
+
+# Test case document operations
+curl -s https://$API_URL/api/cases/test-document | jq .
+
+# Verify DocumentDB metrics
+aws cloudwatch get-metric-statistics \
+  --namespace AWS/DocDB \
+  --metric-name CPUUtilization \
+  --dimensions Name=DBClusterIdentifier,Value=bettercallsaul-nosql \
+  --start-time $(date -u -d '5 minutes ago' +%Y-%m-%dT%H:%M:%SZ) \
+  --end-time $(date -u +%Y-%m-%dT%H:%M:%SZ) \
+  --period 300 \
+  --statistics Average
+```
+
+### 5.3 Environment Variable Validation
 
 ```bash
 # Verify all required environment variables are set
@@ -368,6 +505,7 @@ eb printenv production
 # - CLOUD_PROVIDER=AWS
 # - AWS_DEFAULT_REGION=us-east-1
 # - ConnectionStrings__DefaultConnection
+# - ConnectionStrings__DocumentDB
 # - JWT_SECRET_KEY
 ```
 
@@ -406,7 +544,8 @@ eb printenv production
     ]
   },
   "ConnectionStrings": {
-    "DefaultConnection": "{{from Parameter Store}}"
+    "DefaultConnection": "{{from Parameter Store}}",
+    "DocumentDB": "{{from Parameter Store}}"
   },
   "JwtSettings": {
     "SecretKey": "{{from Parameter Store}}",
@@ -417,7 +556,13 @@ eb printenv production
   "AWS": {
     "Bedrock": { "Region": "us-east-1", "ModelId": "anthropic.claude-v2" },
     "S3": { "BucketName": "better-call-saul-documents-946591677346", "Region": "us-east-1" },
-    "Textract": { "Region": "us-east-1" }
+    "Textract": { "Region": "us-east-1" },
+    "DocumentDB": { "ClusterId": "bettercallsaul-nosql", "Region": "us-east-1" }
+  },
+  "NoSqlSettings": {
+    "ConnectionString": "{{from Parameter Store}}",
+    "DatabaseName": "bettercallsaul",
+    "UseTls": true
   }
 }
 ```
@@ -467,27 +612,32 @@ eb config put production --cfg health-check-config \
 | Service | Usage Tier | Estimated Cost |
 |---------|------------|----------------|
 | **Amazon RDS** | db.t3.micro, 20GB storage | ~$13.00 |
+| **Amazon DocumentDB** | db.t3.medium x2, 20GB storage | ~$60.00 |
 | **Elastic Beanstalk** | t3.micro instance | ~$8.50 |
 | **Application Load Balancer** | Standard usage | ~$16.00 |
 | **Amazon S3** | 50GB storage + 10K requests | ~$1.50 |
 | **CloudFront** | 1TB data transfer | ~$85.00 |
 | **Amazon Bedrock** | 1,000 requests/month | ~$8.00 |
 | **Amazon Textract** | 1,000 pages/month | ~$15.00 |
-| **Total** | | **~$147.00** |
+| **Total** | | **~$207.00** |
 
 ## Security Best Practices
 
 ### 1. Network Security
 - RDS in private subnets with security groups
+- DocumentDB in private subnets with security groups
 - ALB with SSL certificates from AWS Certificate Manager
 - CloudFront with security headers
 - VPC with restricted access
+- DocumentDB TLS encryption enabled
 
 ### 2. Data Protection
 - RDS encryption at rest
+- DocumentDB encryption at rest
 - S3 bucket encryption (AES-256)
 - Parameter Store SecureString for sensitive data
 - HTTPS enforcement everywhere
+- DocumentDB TLS connections required
 
 ### 3. Access Control
 - IAM roles with least privilege
@@ -509,15 +659,21 @@ eb config put production --cfg health-check-config \
    - Check IAM role permissions
    - Validate CORS configuration
 
-3. **Bedrock Model Access**
+3. **DocumentDB Connectivity**
+   - Verify DocumentDB cluster is running
+   - Check security group rules
+   - Validate TLS certificate trust
+   - Test connection from application
+
+4. **Bedrock Model Access**
    - Ensure model access is enabled
    - Check region compatibility
    - Verify IAM permissions
 
-4. **Application Deployment**
+5. **Application Deployment**
    - Check Elastic Beanstalk logs
    - Verify environment variables
-   - Test health check endpoint
+   - Test health check endpoints (SQL + NoSQL)
 
 ### Debug Commands
 
@@ -528,19 +684,25 @@ eb logs production
 # Check RDS status
 aws rds describe-db-instances --db-instance-identifier bettercallsaul-db
 
+# Check DocumentDB status
+aws docdb describe-db-clusters --db-cluster-identifier bettercallsaul-nosql
+aws docdb describe-db-instances --filters Name=db-cluster-id,Values=bettercallsaul-nosql
+
 # Check S3 bucket contents
 aws s3 ls s3://better-call-saul-documents-946591677346/
 
 # Test application health
 curl https://your-api-endpoint/health
+curl https://your-api-endpoint/health/nosql
 ```
 
 ## Backup and Recovery
 
 ### Database Backups
 - RDS automated backups (7-day retention)
+- DocumentDB automated backups (7-day retention)
 - Manual snapshots before major updates
-- Point-in-time recovery capability
+- Point-in-time recovery capability for both databases
 
 ### Application Data
 - S3 versioning enabled
