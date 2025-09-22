@@ -11,12 +11,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BetterCallSaul.Infrastructu
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BetterCallSaul.Tests", "BetterCallSaul.Tests\BetterCallSaul.Tests.csproj", "{EC83BAAD-548B-4542-88FD-D408CB68FACE}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BetterCallSaul.CaseService", "BetterCallSaul.CaseService\BetterCallSaul.CaseService.csproj", "{B60E6071-FBB3-48F0-985F-A459562A3C8E}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BetterCallSaul.Gateway", "BetterCallSaul.Gateway\BetterCallSaul.Gateway.csproj", "{18F8E4C1-A7CB-4A72-BF38-40AB67C2C87B}"
-EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BetterCallSaul.Gateway.Tests", "BetterCallSaul.Gateway.Tests\BetterCallSaul.Gateway.Tests.csproj", "{6D6F3414-70F3-4160-8B28-F2812BF7ECA8}"
-EndProject
+
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -42,17 +37,6 @@ Global
 		{EC83BAAD-548B-4542-88FD-D408CB68FACE}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{EC83BAAD-548B-4542-88FD-D408CB68FACE}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{EC83BAAD-548B-4542-88FD-D408CB68FACE}.Release|Any CPU.Build.0 = Release|Any CPU
-		{B60E6071-FBB3-48F0-985F-A459562A3C8E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{B60E6071-FBB3-48F0-985F-A459562A3C8E}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{B60E6071-FBB3-48F0-985F-A459562A3C8E}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{B60E6071-FBB3-48F0-985F-A459562A3C8E}.Release|Any CPU.Build.0 = Release|Any CPU
-		{18F8E4C1-A7CB-4A72-BF38-40AB67C2C87B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{18F8E4C1-A7CB-4A72-BF38-40AB67C2C87B}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{18F8E4C1-A7CB-4A72-BF38-40AB67C2C87B}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{18F8E4C1-A7CB-4A72-BF38-40AB67C2C87B}.Release|Any CPU.Build.0 = Release|Any CPU
-		{6D6F3414-70F3-4160-8B28-F2812BF7ECA8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{6D6F3414-70F3-4160-8B28-F2812BF7ECA8}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{6D6F3414-70F3-4160-8B28-F2812BF7ECA8}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{6D6F3414-70F3-4160-8B28-F2812BF7ECA8}.Release|Any CPU.Build.0 = Release|Any CPU
+
 	EndGlobalSection
 EndGlobal
