@@ -100,6 +100,7 @@ else
 }
 
 // Configure NoSQL settings
+builder.Services.Configure<NoSqlOptions>(builder.Configuration.GetSection(NoSqlOptions.SectionName));
 builder.Services.Configure<NoSqlSettings>(options =>
 {
     options.DatabaseName = builder.Environment.IsDevelopment() ? "BetterCallSaulDev" : "BetterCallSaul";
