@@ -2,7 +2,10 @@ using BetterCallSaul.API.Middleware;
 using BetterCallSaul.Core.Configuration;
 using BetterCallSaul.Core.Models.Entities;
 using BetterCallSaul.Core.Interfaces.Services;
+using BetterCallSaul.Core.Interfaces.Repositories;
 using BetterCallSaul.Infrastructure.Data;
+using BetterCallSaul.Infrastructure.Data.NoSQL;
+using BetterCallSaul.Infrastructure.Repositories.NoSQL;
 using BetterCallSaul.Infrastructure.Http;
 using BetterCallSaul.Infrastructure.ML;
 using BetterCallSaul.Infrastructure.Services;
@@ -10,11 +13,13 @@ using BetterCallSaul.Infrastructure.Services.Authentication;
 using BetterCallSaul.Infrastructure.Services.AI;
 using BetterCallSaul.Infrastructure.Services.FileProcessing;
 using BetterCallSaul.Infrastructure.Services.LegalResearch;
+
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
+using MongoDB.Driver;
 using Serilog;
 using System.Text;
 
@@ -71,6 +76,37 @@ else
     builder.Services.AddDbContext<BetterCallSaulContext>(options =>
         options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 }
+
+// Add MongoDB configuration
+if (builder.Environment.IsDevelopment())
+{
+    // Use local MongoDB for development
+    builder.Services.AddSingleton<IMongoClient>(_ =>
+        new MongoClient("mongodb://localhost:27017"));
+}
+else
+{
+    // Use AWS DocumentDB for production
+    var documentDbConnectionString = builder.Configuration.GetConnectionString("DocumentDb") ??
+        Environment.GetEnvironmentVariable("DOCUMENTDB_CONNECTION_STRING");
+
+    if (string.IsNullOrEmpty(documentDbConnectionString))
+    {
+        throw new InvalidOperationException("DocumentDB connection string is not configured for production.");
+    }
+
+    builder.Services.AddSingleton<IMongoClient>(_ =>
+        new MongoClient(documentDbConnectionString));
+}
+
+// Configure NoSQL settings
+builder.Services.Configure<NoSqlSettings>(options =>
+{
+    options.DatabaseName = builder.Environment.IsDevelopment() ? "BetterCallSaulDev" : "BetterCallSaul";
+});
+
+// Register NoSQL context
+builder.Services.AddScoped<NoSqlContext>();
 
 // Database initialization will be handled after app.Build()
 
@@ -170,8 +206,16 @@ builder.Services.AddScoped<ICaseMatchingService, IntelligentCaseMatchingService>
 builder.Services.AddScoped<LegalTextSimilarity>();
 builder.Services.AddMemoryCache();
 
+// Register NoSQL repositories
+builder.Services.AddScoped<ICaseDocumentRepository, CaseDocumentRepository>();
+builder.Services.AddScoped<ILegalResearchRepository, LegalResearchRepository>();
+
+// Register case management services
+builder.Services.AddScoped<ICaseManagementService, CaseManagementService>();
 builder.Services.AddScoped<AWSBedrockService>();
 builder.Services.AddScoped<ICaseAnalysisService, CaseAnalysisService>();
+
+
 
 // Configure AWS Options
 builder.Services.Configure<AWSOptions>(options =>

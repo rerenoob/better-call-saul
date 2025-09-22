@@ -1,4 +1,6 @@
 using BetterCallSaul.Core.Models.Entities;
+using BetterCallSaul.Core.Enums;
+using BetterCallSaul.Core.Interfaces.Repositories;
 using BetterCallSaul.Infrastructure.Services.AI;
 using BetterCallSaul.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
@@ -11,6 +13,7 @@ namespace BetterCallSaul.Tests.Services.AI;
 public class CaseAnalysisServiceTests : IDisposable
 {
     private readonly BetterCallSaulContext _context;
+    private readonly Mock<ICaseDocumentRepository> _caseDocumentRepositoryMock;
     private readonly Mock<Core.Interfaces.Services.IAIService> _openAIServiceMock;
     private readonly Mock<ILogger<CaseAnalysisService>> _loggerMock;
     private readonly CaseAnalysisService _caseAnalysisService;
@@ -22,17 +25,19 @@ public class CaseAnalysisServiceTests : IDisposable
             .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
             .EnableSensitiveDataLogging()
             .Options;
-        
+
         _context = new BetterCallSaulContext(options);
-        
+
         // Ensure database is created and ready
         _context.Database.EnsureCreated();
-        
+
+        _caseDocumentRepositoryMock = new Mock<ICaseDocumentRepository>();
         _openAIServiceMock = new Mock<Core.Interfaces.Services.IAIService>();
         _loggerMock = new Mock<ILogger<CaseAnalysisService>>();
-        
+
         _caseAnalysisService = new CaseAnalysisService(
             _context,
+            _caseDocumentRepositoryMock.Object,
             _openAIServiceMock.Object,
             _loggerMock.Object);
     }

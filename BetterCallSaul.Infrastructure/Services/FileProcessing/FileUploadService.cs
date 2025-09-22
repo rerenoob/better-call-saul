@@ -1,5 +1,7 @@
 using BetterCallSaul.Core.Interfaces.Services;
+using BetterCallSaul.Core.Interfaces.Repositories;
 using BetterCallSaul.Core.Models.Entities;
+using BetterCallSaul.Core.Models.NoSQL;
 using BetterCallSaul.Core.Models.ServiceResponses;
 using BetterCallSaul.Infrastructure.Data;
 using BetterCallSaul.Infrastructure.Validators;
@@ -13,18 +15,21 @@ namespace BetterCallSaul.Infrastructure.Services.FileProcessing;
 public class FileUploadService : IFileUploadService, IStorageService
 {
     private readonly BetterCallSaulContext _context;
+    private readonly ICaseDocumentRepository _caseDocumentRepository;
     private readonly IFileValidationService _fileValidationService;
     private readonly ITextExtractionService _textExtractionService;
     private readonly ILogger<FileUploadService> _logger;
     private const long MaxUserUploadSizePerHour = 500 * 1024 * 1024; // 500MB per hour
 
     public FileUploadService(
-        BetterCallSaulContext context, 
+        BetterCallSaulContext context,
+        ICaseDocumentRepository caseDocumentRepository,
         IFileValidationService fileValidationService,
         ITextExtractionService textExtractionService,
         ILogger<FileUploadService> logger)
     {
         _context = context;
+        _caseDocumentRepository = caseDocumentRepository;
         _fileValidationService = fileValidationService;
         _textExtractionService = textExtractionService;
         _logger = logger;
@@ -78,7 +83,7 @@ public class FileUploadService : IFileUploadService, IStorageService
             // Store file using configured storage service (Local or AWS S3)
             var storagePath = await StoreFileAsync(file, uniqueFileName);
 
-            // Create document record
+            // Create document record in SQL (lightweight tracking)
             var document = new Document
             {
                 FileName = uniqueFileName,
@@ -94,6 +99,9 @@ public class FileUploadService : IFileUploadService, IStorageService
 
             _context.Documents.Add(document);
             await _context.SaveChangesAsync();
+
+            // Store document in NoSQL (dual-write pattern)
+            await StoreDocumentInNoSQLAsync(document, userId);
 
             // Perform text extraction after successful upload
             await ExtractTextFromDocumentAsync(document, storagePath);
@@ -285,6 +293,9 @@ public class FileUploadService : IFileUploadService, IStorageService
                 );
             }
 
+            // Update NoSQL with text extraction results
+            await UpdateDocumentTextInNoSQLAsync(document);
+
             await _context.SaveChangesAsync();
         }
         catch (Exception ex)
@@ -310,6 +321,138 @@ public class FileUploadService : IFileUploadService, IStorageService
             );
             
             await _context.SaveChangesAsync();
+        }
+    }
+
+    private async Task StoreDocumentInNoSQLAsync(Document document, Guid userId)
+    {
+        try
+        {
+            // Get or create case document
+            var caseDocument = await _caseDocumentRepository.GetByIdAsync(document.CaseId);
+            if (caseDocument == null)
+            {
+                caseDocument = new CaseDocument
+                {
+                    CaseId = document.CaseId,
+                    UserId = userId
+                };
+            }
+
+            // Create document info for NoSQL
+            var documentInfo = new DocumentInfo
+            {
+                Id = document.Id,
+                FileName = document.FileName,
+                OriginalFileName = document.OriginalFileName,
+                FileType = document.FileType,
+                FileSize = document.FileSize,
+                StoragePath = document.StoragePath,
+                Type = document.Type,
+                Status = document.Status,
+                Description = document.Description,
+                IsProcessed = false,
+                UploadedById = document.UploadedById,
+                CreatedAt = document.CreatedAt,
+                Metadata = document.Metadata
+            };
+
+            // Add or update document in the case document
+            var existingDocIndex = caseDocument.Documents.FindIndex(d => d.Id == document.Id);
+            if (existingDocIndex >= 0)
+            {
+                caseDocument.Documents[existingDocIndex] = documentInfo;
+            }
+            else
+            {
+                caseDocument.Documents.Add(documentInfo);
+            }
+
+            caseDocument.UpdatedAt = DateTime.UtcNow;
+            caseDocument.Metadata.TotalDocuments = caseDocument.Documents.Count;
+
+            // Save to NoSQL
+            if (caseDocument.Id == default)
+            {
+                await _caseDocumentRepository.CreateAsync(caseDocument);
+            }
+            else
+            {
+                await _caseDocumentRepository.UpdateAsync(caseDocument);
+            }
+
+            _logger.LogInformation("Stored document {DocumentId} in NoSQL for case {CaseId}", document.Id, document.CaseId);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to store document {DocumentId} in NoSQL", document.Id);
+            // Don't throw - this is a secondary storage operation
+        }
+    }
+
+    private async Task UpdateDocumentTextInNoSQLAsync(Document document)
+    {
+        try
+        {
+            var caseDocument = await _caseDocumentRepository.GetByIdAsync(document.CaseId);
+            if (caseDocument != null)
+            {
+                var documentInfo = caseDocument.Documents.FirstOrDefault(d => d.Id == document.Id);
+                if (documentInfo != null)
+                {
+                    // Update document status and processing flag
+                    documentInfo.Status = document.Status;
+                    documentInfo.IsProcessed = document.Status == DocumentStatus.Processed;
+                    documentInfo.ProcessedAt = document.Status == DocumentStatus.Processed ? DateTime.UtcNow : null;
+                    documentInfo.UpdatedAt = DateTime.UtcNow;
+
+                    // Update extracted text information
+                    if (document.ExtractedText != null)
+                    {
+                        documentInfo.ExtractedText = new DocumentTextInfo
+                        {
+                            Id = document.ExtractedText.Id,
+                            FullText = document.ExtractedText.FullText,
+                            ConfidenceScore = document.ExtractedText.ConfidenceScore,
+                            PageCount = document.ExtractedText.PageCount,
+                            CharacterCount = document.ExtractedText.CharacterCount,
+                            Language = document.ExtractedText.Language,
+                            ExtractionMetadata = document.ExtractedText.ExtractionMetadata,
+                            Pages = document.ExtractedText.Pages?.Select(p => new TextPageInfo
+                            {
+                                PageNumber = p.PageNumber,
+                                Text = p.Text,
+                                Confidence = p.Confidence,
+                                Blocks = p.TextBlocks?.Select(b => new TextBlockInfo
+                                {
+                                    BlockType = b.Type.ToString(),
+                                    Text = b.Text,
+                                    Confidence = b.Confidence,
+                                    BoundingBox = b.BoundingBox != null ? new BoundingBoxInfo
+                                    {
+                                        Left = b.BoundingBox.X,
+                                        Top = b.BoundingBox.Y,
+                                        Width = b.BoundingBox.Width,
+                                        Height = b.BoundingBox.Height
+                                    } : null
+                                }).ToList()
+                            }).ToList(),
+                            CreatedAt = document.ExtractedText.CreatedAt,
+                            UpdatedAt = DateTime.UtcNow
+                        };
+                    }
+
+                    caseDocument.UpdatedAt = DateTime.UtcNow;
+                    await _caseDocumentRepository.UpdateAsync(caseDocument);
+
+                    _logger.LogInformation("Updated document {DocumentId} text extraction in NoSQL", document.Id);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to update document {DocumentId} text extraction in NoSQL", document.Id);
+            // Don't throw - this is a secondary storage operation
         }
     }
 

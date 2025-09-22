@@ -1,4 +1,5 @@
 using BetterCallSaul.Core.Interfaces.Services;
+using BetterCallSaul.Core.Interfaces.Repositories;
 using BetterCallSaul.Core.Models.ServiceResponses;
 using BetterCallSaul.Infrastructure.Services.FileProcessing;
 using Microsoft.AspNetCore.Http;
@@ -19,11 +20,13 @@ public class StorageServiceTests
 
         // For FileUploadService, we need to mock the dependencies
         var contextMock = new Mock<BetterCallSaul.Infrastructure.Data.BetterCallSaulContext>();
+        var caseDocumentRepositoryMock = new Mock<ICaseDocumentRepository>();
         var fileValidationServiceMock = new Mock<BetterCallSaul.Infrastructure.Services.FileProcessing.IFileValidationService>();
         var textExtractionServiceMock = new Mock<BetterCallSaul.Infrastructure.Services.FileProcessing.ITextExtractionService>();
 
         _fileUploadService = new FileUploadService(
             contextMock.Object,
+            caseDocumentRepositoryMock.Object,
             fileValidationServiceMock.Object,
             textExtractionServiceMock.Object,
             _fileUploadLoggerMock.Object);

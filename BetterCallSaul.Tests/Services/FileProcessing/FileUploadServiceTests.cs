@@ -1,4 +1,5 @@
 using BetterCallSaul.Core.Models.Entities;
+using BetterCallSaul.Core.Interfaces.Repositories;
 using BetterCallSaul.Infrastructure.Services.FileProcessing;
 using BetterCallSaul.Infrastructure.Data;
 using Microsoft.AspNetCore.Http;
@@ -12,6 +13,7 @@ namespace BetterCallSaul.Tests.Services.FileProcessing;
 public class FileUploadServiceTests : IDisposable
 {
     private readonly BetterCallSaulContext _context;
+    private readonly Mock<ICaseDocumentRepository> _caseDocumentRepositoryMock;
     private readonly Mock<BetterCallSaul.Infrastructure.Services.FileProcessing.IFileValidationService> _fileValidationServiceMock;
     private readonly Mock<ITextExtractionService> _textExtractionServiceMock;
     private readonly Mock<ILogger<FileUploadService>> _loggerMock;
@@ -29,13 +31,15 @@ public class FileUploadServiceTests : IDisposable
         
         // Ensure database is created and ready
         _context.Database.EnsureCreated();
-        
+
+        _caseDocumentRepositoryMock = new Mock<ICaseDocumentRepository>();
         _fileValidationServiceMock = new Mock<BetterCallSaul.Infrastructure.Services.FileProcessing.IFileValidationService>();
         _textExtractionServiceMock = new Mock<ITextExtractionService>();
         _loggerMock = new Mock<ILogger<FileUploadService>>();
-        
+
         _fileUploadService = new FileUploadService(
             _context,
+            _caseDocumentRepositoryMock.Object,
             _fileValidationServiceMock.Object,
             _textExtractionServiceMock.Object,
             _loggerMock.Object);

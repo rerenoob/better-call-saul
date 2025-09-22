@@ -1,5 +1,7 @@
 using BetterCallSaul.Core.Models.Entities;
+using BetterCallSaul.Core.Models.NoSQL;
 using BetterCallSaul.Core.Interfaces.Services;
+using BetterCallSaul.Core.Interfaces.Repositories;
 using BetterCallSaul.Infrastructure.Http;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
@@ -10,20 +12,23 @@ public class CourtListenerService : ICourtListenerService
 {
     private readonly CourtListenerClient _client;
     private readonly IMemoryCache _cache;
+    private readonly ILegalResearchRepository _legalResearchRepository;
     private readonly ILogger<CourtListenerService> _logger;
     private const int CacheDurationMinutes = 60;
 
     public CourtListenerService(
         CourtListenerClient client,
         IMemoryCache cache,
+        ILegalResearchRepository legalResearchRepository,
         ILogger<CourtListenerService> logger)
     {
         _client = client;
         _cache = cache;
+        _legalResearchRepository = legalResearchRepository;
         _logger = logger;
     }
 
-    public Task<IEnumerable<LegalCase>> SearchCasesAsync(
+    public async Task<IEnumerable<LegalCase>> SearchCasesAsync(
         string query,
         string? jurisdiction = null,
         string? court = null,
@@ -36,7 +41,18 @@ public class CourtListenerService : ICourtListenerService
 
         if (_cache.TryGetValue(cacheKey, out IEnumerable<LegalCase>? cachedResults) && cachedResults != null)
         {
-            return Task.FromResult(cachedResults);
+            return cachedResults;
+        }
+
+        // Check NoSQL first for persistent storage using existing search methods
+        var searchResults = await _legalResearchRepository.SearchTextAsync(query, limit);
+        
+        if (searchResults.Any())
+        {
+            // Use cached NoSQL results if available
+            var legalCases = ConvertToLegalCases(searchResults);
+            _cache.Set(cacheKey, legalCases, TimeSpan.FromMinutes(CacheDurationMinutes));
+            return legalCases;
         }
 
         try
@@ -70,8 +86,11 @@ public class CourtListenerService : ICourtListenerService
             // For now, we'll return mock data
             var results = GenerateMockSearchResults(query, limit);
 
+            // Store results in NoSQL for future reference
+            await StoreSearchResultsInNoSQLAsync(query, results);
+
             _cache.Set(cacheKey, results, TimeSpan.FromMinutes(CacheDurationMinutes));
-            return Task.FromResult(results);
+            return results;
         }
         catch (Exception ex)
         {
@@ -299,5 +318,106 @@ public class CourtListenerService : ICourtListenerService
         }
 
         return results;
+    }
+
+
+
+    private async Task StoreSearchResultsInNoSQLAsync(string query, IEnumerable<LegalCase> results)
+    {
+        try
+        {
+            foreach (var legalCase in results)
+            {
+                var researchDocument = new LegalResearchDocument
+                {
+                    Citation = legalCase.Citation,
+                    Title = legalCase.Title,
+                    Summary = legalCase.Summary,
+                    Court = legalCase.Court,
+                    Jurisdiction = legalCase.Jurisdiction,
+                    DecisionDate = legalCase.DecisionDate,
+                    DocketNumber = legalCase.DocketNumber,
+                    Judge = legalCase.Judge,
+                    FullText = legalCase.FullText,
+                    RelevanceScore = legalCase.RelevanceScore,
+                    Type = LegalDocumentType.CaseOpinion,
+                    Source = "CourtListener",
+                    RetrievedAt = DateTime.UtcNow,
+                    LastUpdated = DateTime.UtcNow
+                };
+
+                // Add search query to metadata
+                researchDocument.Metadata.SearchQueries.Add(query);
+                researchDocument.Metadata.Keywords.AddRange(ExtractKeyTopics(legalCase.Summary));
+
+                await _legalResearchRepository.CreateAsync(researchDocument);
+            }
+            
+            _logger.LogInformation("Stored {Count} legal research results in NoSQL for query: {Query}", results.Count(), query);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to store legal research results in NoSQL for query: {Query}", query);
+            // Don't throw - this is a secondary storage operation
+        }
+    }
+
+    private IEnumerable<LegalCase> ConvertToLegalCases(List<LegalResearchDocument> researchDocuments)
+    {
+        return researchDocuments.Select(doc => new LegalCase
+        {
+            Citation = doc.Citation,
+            Title = doc.Title,
+            Summary = doc.Summary,
+            Court = doc.Court,
+            Jurisdiction = doc.Jurisdiction,
+            DecisionDate = doc.DecisionDate,
+            DocketNumber = doc.DocketNumber,
+            Judge = doc.Judge,
+            FullText = doc.FullText,
+            RelevanceScore = doc.RelevanceScore,
+            RetrievedAt = doc.RetrievedAt
+        });
+    }
+
+    private List<string> ExtractKeyTopics(string? text)
+    {
+        if (string.IsNullOrEmpty(text))
+            return new List<string>();
+
+        // Simple keyword extraction - in a real implementation, this would use NLP
+        var commonLegalTerms = new[] { "contract", "tort", "criminal", "constitutional", "civil", "property", "criminal", "evidence", "procedure" };
+        var topics = new List<string>();
+
+        foreach (var term in commonLegalTerms)
+        {
+            if (text.Contains(term, StringComparison.OrdinalIgnoreCase))
+            {
+                topics.Add(term);
+            }
+        }
+
+        return topics;
+    }
+
+    private List<string> ExtractCitations(string? text)
+    {
+        if (string.IsNullOrEmpty(text))
+            return new List<string>();
+
+        // Simple citation extraction - in a real implementation, this would use regex patterns for legal citations
+        var citations = new List<string>();
+
+        // This is a simplified example
+        var words = text.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        for (int i = 0; i < words.Length - 2; i++)
+        {
+            if (int.TryParse(words[i], out _) && words[i + 1].Contains("U.S.") && int.TryParse(words[i + 2], out _))
+            {
+                citations.Add($"{words[i]} {words[i + 1]} {words[i + 2]}");
+            }
+        }
+
+        return citations;
     }
 }

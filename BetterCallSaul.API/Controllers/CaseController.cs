@@ -16,13 +16,20 @@ public class CaseController : ControllerBase
 {
     private readonly IAIService _aiService;
     private readonly ICaseAnalysisService _caseAnalysisService;
+    private readonly ICaseManagementService _caseManagementService;
     private readonly ILogger<CaseController> _logger;
     private readonly BetterCallSaulContext _context;
 
-    public CaseController(IAIService aiService, ICaseAnalysisService caseAnalysisService, ILogger<CaseController> logger, BetterCallSaulContext context)
+    public CaseController(
+        IAIService aiService, 
+        ICaseAnalysisService caseAnalysisService,
+        ICaseManagementService caseManagementService,
+        ILogger<CaseController> logger, 
+        BetterCallSaulContext context)
     {
         _aiService = aiService;
         _caseAnalysisService = caseAnalysisService;
+        _caseManagementService = caseManagementService;
         _logger = logger;
         _context = context;
     }
@@ -31,18 +38,20 @@ public class CaseController : ControllerBase
     [Authorize]
     public async Task<ActionResult<Case>> GetCase(Guid id)
     {
-        var caseItem = await _context.Cases
-            .Include(c => c.Documents)
-                .ThenInclude(d => d.ExtractedText)  // Include OCR text results
-            .Include(c => c.CaseAnalyses)           // Include AI case analyses
-            .FirstOrDefaultAsync(c => c.Id == id);
-
-        if (caseItem == null)
+        try
+        {
+            var caseItem = await _caseManagementService.GetCaseAsync(id);
+            return Ok(caseItem);
+        }
+        catch (KeyNotFoundException)
         {
             return NotFound();
         }
-
-        return Ok(caseItem);
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting case {CaseId}", id);
+            return StatusCode(500, new { error = "Internal server error" });
+        }
     }
 
     [HttpPost("{id}/chat")]
@@ -114,6 +123,26 @@ public class CaseController : ControllerBase
         };
 
         return Ok(statistics);
+    }
+
+    [HttpGet("{id}/detailed")]
+    [Authorize]
+    public async Task<ActionResult<CaseWithDocuments>> GetCaseDetailed(Guid id)
+    {
+        try
+        {
+            var caseWithDocuments = await _caseManagementService.GetCaseWithDocumentsAsync(id);
+            return Ok(caseWithDocuments);
+        }
+        catch (KeyNotFoundException)
+        {
+            return NotFound();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error getting detailed case {CaseId}", id);
+            return StatusCode(500, new { error = "Internal server error" });
+        }
     }
 
     [HttpGet("recent")]

@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using BetterCallSaul.Core.Models.Entities;
+using BetterCallSaul.Core.Enums;
 using BetterCallSaul.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authorization;

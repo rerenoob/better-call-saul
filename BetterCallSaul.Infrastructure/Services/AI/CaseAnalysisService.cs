@@ -1,5 +1,7 @@
 using BetterCallSaul.Core.Models.Entities;
+using BetterCallSaul.Core.Models.NoSQL;
 using BetterCallSaul.Core.Interfaces.Services;
+using BetterCallSaul.Core.Interfaces.Repositories;
 using BetterCallSaul.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -10,20 +12,27 @@ namespace BetterCallSaul.Infrastructure.Services.AI;
 public class CaseAnalysisService : ICaseAnalysisService
 {
     private readonly BetterCallSaulContext _context;
+    private readonly ICaseDocumentRepository _caseDocumentRepository;
     private readonly IAIService _openAIService;
     private readonly ILogger<CaseAnalysisService> _logger;
 
     public event EventHandler<AnalysisProgressEventArgs>? AnalysisProgress;
 
-    public CaseAnalysisService(BetterCallSaulContext context, IAIService openAIService, ILogger<CaseAnalysisService> logger)
+    public CaseAnalysisService(
+        BetterCallSaulContext context,
+        ICaseDocumentRepository caseDocumentRepository,
+        IAIService openAIService,
+        ILogger<CaseAnalysisService> logger)
     {
         _context = context;
+        _caseDocumentRepository = caseDocumentRepository;
         _openAIService = openAIService;
         _logger = logger;
     }
 
     public async Task<CaseAnalysis> AnalyzeCaseAsync(Guid caseId, Guid documentId, string documentText, CancellationToken cancellationToken = default)
     {
+        // Create SQL record for tracking
         var analysis = new CaseAnalysis
         {
             CaseId = caseId,
@@ -45,11 +54,12 @@ public class CaseAnalysisService : ICaseAnalysisService
                 Message = "Starting AI analysis"
             });
 
-            // Call OpenAI service for legal analysis
+            // Call AI service for legal analysis
             var aiResponse = await _openAIService.GenerateLegalAnalysisAsync(documentText, "Case analysis", cancellationToken);
-            
+
             if (aiResponse.Success && !string.IsNullOrEmpty(aiResponse.GeneratedText))
             {
+                // Update SQL record with basic info
                 analysis.AnalysisText = aiResponse.GeneratedText;
                 analysis.ConfidenceScore = aiResponse.ConfidenceScore;
                 analysis.Status = AnalysisStatus.Completed;
@@ -58,6 +68,9 @@ public class CaseAnalysisService : ICaseAnalysisService
 
                 // Parse AI response to extract structured data
                 ParseAnalysisResults(analysis, aiResponse.GeneratedText);
+
+                // Store detailed results in NoSQL
+                await StoreAnalysisInNoSQLAsync(analysis, aiResponse.GeneratedText, cancellationToken);
 
                 OnAnalysisProgress(new AnalysisProgressEventArgs
                 {
@@ -72,7 +85,10 @@ public class CaseAnalysisService : ICaseAnalysisService
             {
                 analysis.Status = AnalysisStatus.Failed;
                 analysis.AnalysisText = aiResponse.ErrorMessage;
-                
+
+                // Store failed analysis in NoSQL
+                await StoreFailedAnalysisInNoSQLAsync(analysis, aiResponse.ErrorMessage, cancellationToken);
+
                 OnAnalysisProgress(new AnalysisProgressEventArgs
                 {
                     AnalysisId = analysis.Id,
@@ -85,34 +101,21 @@ public class CaseAnalysisService : ICaseAnalysisService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Critical error analyzing case {CaseId} with document {DocumentId}. Exception type: {ExceptionType}", 
-                caseId, documentId, ex.GetType().Name);
+            _logger.LogError(ex, "Error analyzing case {CaseId} with document {DocumentId}", caseId, documentId);
             analysis.Status = AnalysisStatus.Failed;
             analysis.AnalysisText = $"Analysis failed: {ex.Message}";
-            analysis.Metadata = new Dictionary<string, object>
-            {
-                ["error_type"] = ex.GetType().Name,
-                ["error_stack_trace"] = ex.StackTrace ?? "No stack trace",
-                ["failed_at"] = DateTime.UtcNow
-            };
-            
+
+            // Store failed analysis in NoSQL
+            await StoreFailedAnalysisInNoSQLAsync(analysis, ex.Message, cancellationToken);
+
             OnAnalysisProgress(new AnalysisProgressEventArgs
             {
                 AnalysisId = analysis.Id,
                 CaseId = caseId,
                 Status = AnalysisStatus.Failed,
                 ProgressPercentage = 0,
-                Message = $"Critical analysis failure: {ex.Message}"
+                Message = $"Analysis failure: {ex.Message}"
             });
-
-            // Create audit log for case analysis failure
-            await CreateAuditLogAsync(
-                "CASE_ANALYSIS_FAILURE",
-                $"Case analysis failed for case {caseId} with document {documentId}: {ex.Message}",
-                "CaseAnalysis",
-                analysis.Id,
-                AuditLogLevel.Error
-            );
         }
 
         await _context.SaveChangesAsync(cancellationToken);
@@ -126,7 +129,11 @@ public class CaseAnalysisService : ICaseAnalysisService
 
     public async Task<List<CaseAnalysis>> GetCaseAnalysesAsync(Guid caseId, CancellationToken cancellationToken = default)
     {
-        return await _context.CaseAnalyses.Where(a => a.CaseId == caseId).OrderByDescending(a => a.CreatedAt).ToListAsync(cancellationToken);
+        // Get basic analysis records from SQL
+        return await _context.CaseAnalyses
+            .Where(a => a.CaseId == caseId)
+            .OrderByDescending(a => a.CreatedAt)
+            .ToListAsync(cancellationToken);
     }
 
     public async Task UpdateAnalysisStatusAsync(Guid analysisId, AnalysisStatus status, string? message = null, CancellationToken cancellationToken = default)
@@ -370,6 +377,132 @@ Focus on legal precedents, evidence quality, procedural issues, and potential de
         catch (Exception ex)
         {
             _logger.LogWarning(ex, "Failed to parse viability assessment results");
+        }
+    }
+
+    private async Task StoreAnalysisInNoSQLAsync(CaseAnalysis analysis, string analysisText, CancellationToken cancellationToken)
+    {
+        try
+        {
+            // Get or create case document
+            var caseDocument = await _caseDocumentRepository.GetByIdAsync(analysis.CaseId);
+            if (caseDocument == null)
+            {
+                // Get user ID from case (cross-database query)
+                var caseEntity = await _context.Cases.FirstOrDefaultAsync(c => c.Id == analysis.CaseId, cancellationToken);
+                var userId = caseEntity?.UserId ?? Guid.Empty;
+
+                caseDocument = new CaseDocument
+                {
+                    CaseId = analysis.CaseId,
+                    UserId = userId
+                };
+            }
+
+            // Create detailed analysis result for NoSQL
+            var analysisResult = new CaseAnalysisResult
+            {
+                Id = analysis.Id,
+                DocumentId = analysis.DocumentId,
+                AnalysisText = analysisText,
+                ViabilityScore = analysis.ViabilityScore,
+                ConfidenceScore = analysis.ConfidenceScore,
+                KeyLegalIssues = analysis.KeyLegalIssues,
+                PotentialDefenses = analysis.PotentialDefenses,
+                EvidenceEvaluation = new EvidenceEvaluationInfo
+                {
+                    StrengthScore = analysis.EvidenceEvaluation.StrengthScore,
+                    StrongEvidence = analysis.EvidenceEvaluation.StrongEvidence,
+                    WeakEvidence = analysis.EvidenceEvaluation.WeakEvidence,
+                    EvidenceGaps = analysis.EvidenceEvaluation.EvidenceGaps,
+                    AdditionalEvidenceNeeded = analysis.EvidenceEvaluation.AdditionalEvidenceNeeded
+                },
+                TimelineAnalysis = new TimelineAnalysisInfo
+                {
+                    Events = analysis.TimelineAnalysis.Events.Select(e => new TimelineEventInfo
+                    {
+                        Date = e.Date,
+                        Description = e.Description,
+                        Significance = e.Significance,
+                        Confidence = e.Confidence
+                    }).ToList(),
+                    ChronologicalIssues = analysis.TimelineAnalysis.ChronologicalIssues,
+                    CriticalTimePoints = analysis.TimelineAnalysis.CriticalTimePoints
+                },
+                Recommendations = analysis.Recommendations.Select(r => new RecommendationInfo
+                {
+                    Action = r.Action,
+                    Rationale = r.Rationale,
+                    Priority = r.Priority,
+                    ImpactScore = r.ImpactScore
+                }).ToList(),
+                Status = analysis.Status,
+                CreatedAt = analysis.CreatedAt,
+                CompletedAt = analysis.CompletedAt,
+                ProcessingTime = analysis.ProcessingTime,
+                Metadata = analysis.Metadata
+            };
+
+            // Add or update analysis in the case document
+            var existingAnalysisIndex = caseDocument.Analyses.FindIndex(a => a.Id == analysis.Id);
+            if (existingAnalysisIndex >= 0)
+            {
+                caseDocument.Analyses[existingAnalysisIndex] = analysisResult;
+            }
+            else
+            {
+                caseDocument.Analyses.Add(analysisResult);
+            }
+
+            caseDocument.UpdatedAt = DateTime.UtcNow;
+            caseDocument.Metadata.LastAnalyzedAt = DateTime.UtcNow;
+            caseDocument.Metadata.TotalAnalyses = caseDocument.Analyses.Count;
+
+            // Save to NoSQL
+            if (caseDocument.Id == default)
+            {
+                await _caseDocumentRepository.CreateAsync(caseDocument);
+            }
+            else
+            {
+                await _caseDocumentRepository.UpdateAsync(caseDocument);
+            }
+
+            _logger.LogInformation("Stored analysis {AnalysisId} in NoSQL for case {CaseId}", analysis.Id, analysis.CaseId);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to store analysis {AnalysisId} in NoSQL", analysis.Id);
+            // Don't throw - this is a secondary storage operation
+        }
+    }
+
+    private async Task StoreFailedAnalysisInNoSQLAsync(CaseAnalysis analysis, string? errorMessage, CancellationToken cancellationToken)
+    {
+        try
+        {
+            // Store minimal failed analysis record in NoSQL for consistency
+            var caseDocument = await _caseDocumentRepository.GetByIdAsync(analysis.CaseId);
+            if (caseDocument != null)
+            {
+                var failedAnalysis = new CaseAnalysisResult
+                {
+                    Id = analysis.Id,
+                    DocumentId = analysis.DocumentId,
+                    AnalysisText = errorMessage ?? "Analysis failed",
+                    Status = AnalysisStatus.Failed,
+                    CreatedAt = analysis.CreatedAt,
+                    Metadata = analysis.Metadata
+                };
+
+                caseDocument.Analyses.Add(failedAnalysis);
+                caseDocument.UpdatedAt = DateTime.UtcNow;
+                await _caseDocumentRepository.UpdateAsync(caseDocument);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Failed to store failed analysis {AnalysisId} in NoSQL", analysis.Id);
         }
     }
 
