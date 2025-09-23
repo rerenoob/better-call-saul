@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { tokenStorage } from '../utils/tokenStorage';
 
-const GATEWAY_BASE_URL = import.meta.env.VITE_GATEWAY_BASE_URL || 'http://localhost:5022';
+const GATEWAY_BASE_URL = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_GATEWAY_BASE_URL || 'http://localhost:7191';
 
 export const apiClient = axios.create({
   baseURL: `${GATEWAY_BASE_URL}`,
