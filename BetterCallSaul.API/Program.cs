@@ -37,22 +37,15 @@ builder.Host.UseSerilog();
 // Validate AWS configuration for production environment
 if (!builder.Environment.IsDevelopment())
 {
-    // Validate AWS credentials are present
-    if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("AWS_ACCESS_KEY_ID")) ||
-        string.IsNullOrEmpty(Environment.GetEnvironmentVariable("AWS_SECRET_ACCESS_KEY")))
-    {
-        throw new InvalidOperationException("AWS credentials are required for production environment. " +
-            "Set AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY environment variables.");
-    }
-    
-    // Validate AWS region is configured
+    // In ECS, AWS credentials are provided via IAM roles, not environment variables
+    // Only validate that AWS_REGION is configured
     var awsRegion = Environment.GetEnvironmentVariable("AWS_REGION");
     if (string.IsNullOrEmpty(awsRegion))
     {
         Log.Warning("AWS_REGION environment variable not set. Defaulting to us-east-1");
     }
-    
-    Log.Information("AWS configuration validated successfully for production environment");
+
+    Log.Information("AWS configuration validated for production environment (using ECS IAM role)");
 }
 
 // Add services to the container.
@@ -238,11 +231,11 @@ builder.Services.AddCors(options =>
     options.AddPolicy("ReactFrontend", policy =>
     {
         policy.WithOrigins(
-                "http://localhost:5173", 
+                "http://localhost:5173",
                 "https://localhost:5173",
-                "http://localhost:5174", 
+                "http://localhost:5174",
                 "https://localhost:5174",
-                "https://orange-island-0a659d210.1.azurestaticapps.net")
+                "https://d1c0215ar7cs56.cloudfront.net")
               .AllowAnyHeader()
               .AllowAnyMethod()
               .AllowCredentials();
