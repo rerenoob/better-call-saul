@@ -15,18 +15,17 @@ Better Call Saul leverages artificial intelligence to help public defense attorn
 
 ### Backend (.NET 8 Web API)
 - **Clean Architecture** with separation of concerns
-- **Entity Framework Core** for data persistence
-- **AWS Bedrock** integration for AI analysis
+- **Entity Framework Core** with PostgreSQL (production) / SQLite (development)
+- **AWS Services Integration** - Bedrock (AI), S3 (storage), Textract (OCR)
 - **JWT Authentication** with role-based access control
 - **Swagger/OpenAPI** documentation
-- **Microservices Architecture** with API Gateway routing
+- **NoSQL Support** with MongoDB/DocumentDB for case documents
 
-### Microservices Structure
-- **API Gateway** (`BetterCallSaul.Gateway`) - Centralized request routing and authentication
-- **User Management Service** (`BetterCallSaul.UserService`) - Authentication, user profiles, registration codes
-- **Case Management Service** (`BetterCallSaul.CaseService`) - Case lifecycle, document management, AI analysis
-- **Core Library** (`BetterCallSaul.Core`) - Shared models and interfaces
-- **Infrastructure** (`BetterCallSaul.Infrastructure`) - Shared infrastructure components
+### Project Structure
+- **BetterCallSaul.API** - Web API controllers and configuration
+- **BetterCallSaul.Core** - Domain entities, interfaces, and business logic
+- **BetterCallSaul.Infrastructure** - Data access, external services, and implementations
+- **BetterCallSaul.Tests** - Unit and integration tests
 
 ### Frontend (React + TypeScript)
 - **React 18** with TypeScript for type safety
@@ -78,35 +77,24 @@ cd better-call-saul/better-call-saul-frontend
 npm run dev
 ```
 
-# 🔒 Configure environment variables (REQUIRED)
-cp .env.example .env
-# Edit .env with your actual values:
-# - Generate a secure JWT secret key (32+ characters)
-# - Add your Azure OpenAI endpoint and API key
-nano .env
-
-# Load environment variables
-source .env  # or export them manually
-
-# Restore dependencies and build
+# Local development - no additional environment setup needed
 dotnet restore
 dotnet build
 
-# Run database migrations
+# Run database migrations (creates local SQLite database)
 dotnet ef database update --project BetterCallSaul.Infrastructure --startup-project BetterCallSaul.API
 
 # Start the API (https://localhost:7191)
 dotnet run --project BetterCallSaul.API
 ```
 
-### 🔐 Security Configuration
-**IMPORTANT:** This application requires proper environment variable configuration for security:
+### 🔐 Environment Configuration
+The application automatically configures itself based on the environment:
 
-1. **JWT Secret Key:** Must be 32+ characters, cryptographically secure
-2. **Azure OpenAI Credentials:** Your actual Azure OpenAI service endpoint and API key
-3. **Never commit secrets:** Secrets should never be committed to version control
+- **Development**: Uses SQLite database and mock AI services (no setup required)
+- **Production**: Uses PostgreSQL, DocumentDB, and AWS services (configured via ECS)
 
-See `SECURITY_FIXES.md` for detailed security information.
+For production deployment, see the deployment section below.
 
 ### Frontend Setup
 ```bash
@@ -181,12 +169,46 @@ npm run lint                                 # Code quality checks
 ./test-case-analysis.sh                      # Test case analysis endpoints
 ```
 
+## 🚀 Production Deployment
+
+### Automated AWS Deployment
+
+The application uses **GitHub Actions** for fully automated deployment to AWS:
+
+#### Infrastructure
+- **Backend**: ECS Fargate with Application Load Balancer
+- **Frontend**: S3 + CloudFront CDN
+- **Database**: PostgreSQL RDS + DocumentDB
+- **Storage**: S3 for file uploads
+- **AI Services**: AWS Bedrock (Claude), Textract (OCR)
+
+#### Deployment Process
+1. **Set GitHub Secrets** (in repository Settings → Secrets):
+   ```
+   AWS_ACCESS_KEY_ID = your-aws-access-key-id
+   AWS_SECRET_ACCESS_KEY = your-aws-secret-access-key
+   ```
+
+2. **Push to Deploy**:
+   ```bash
+   git push origin main
+   ```
+
+3. **Access Application**:
+   - Frontend: https://d1c0215ar7cs56.cloudfront.net
+   - Backend API: http://bettercallsaul-alb-production-1289827668.us-east-1.elb.amazonaws.com
+
+#### Deployment Documentation
+- **[GitHub Secrets Setup](GITHUB-SECRETS-SETUP.md)** - Complete deployment setup guide
+- **[AWS Deployment Status](AWS-DEPLOYMENT-STATUS.md)** - Current infrastructure status
+
+### Cost Estimation
+Monthly AWS costs: ~$45-65 (PostgreSQL: $18-24, DocumentDB: $17-28, ECS: $8-12, ALB: $16, S3/CloudFront: $3-5)
+
 ## 📖 Documentation
 
 - **[Development Guide](CLAUDE.md)** - Comprehensive development setup and guidelines
-- **[Implementation Summary](IMPLEMENTATION_SUMMARY.md)** - Detailed feature documentation
-- **[Deployment Guide](DEPLOYMENT.md)** - Production deployment instructions
-- **[Planning Archive](PLANNING_ARCHIVE.md)** - Original planning documentation
+- **[NoSQL Implementation](NOSQL-IMPLEMENTATION-STATUS.md)** - MongoDB/DocumentDB implementation status
 
 ## 🔧 API Endpoints
 

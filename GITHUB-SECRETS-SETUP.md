@@ -1,22 +1,21 @@
-# GitHub Secrets Configuration for Automated AWS Deployment
+# 🚀 Automated AWS Deployment Setup
 
-## ✅ **Good News!**
-You already have complete GitHub Actions workflows set up for **automatic deployment on every push to main**. No manual ECR login required!
+## ✅ Complete CI/CD Pipeline Ready!
 
-## Required GitHub Repository Secrets
+Your repository has **fully automated deployment** via GitHub Actions. No manual Docker commands needed!
 
-Go to your repository → Settings → Secrets and variables → Actions, and add these secrets:
+## 🔐 Required Setup (One-Time)
 
-### 1. AWS Credentials
+### GitHub Repository Secrets
+Go to your repository → **Settings** → **Secrets and variables** → **Actions**
+
+Add these 2 secrets:
 ```
 AWS_ACCESS_KEY_ID = your-aws-access-key-id
 AWS_SECRET_ACCESS_KEY = your-aws-secret-access-key
 ```
 
-### 2. ~~API_BASE_URL~~ ✅ FIXED
-~~`API_BASE_URL = http://bettercallsaul-alb-production-1289827668.us-east-1.elb.amazonaws.com`~~
-
-**Update**: I've hardcoded this in the workflow file since it's not sensitive and is environment-specific.
+That's it! 🎯
 
 ## What Happens Automatically on Push to Main
 
