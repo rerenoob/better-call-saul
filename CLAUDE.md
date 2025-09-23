@@ -181,6 +181,10 @@ The solution follows clean architecture principles with clear separation between
 - CI/CD: GitHub Actions with AWS deployment workflows
 - Monitoring: AWS CloudWatch
 
+### Available CLI tools
+- AWS CLI and GH CLI are installed and configured. Use them when troubleshooting.
+- Playwright MCP server is installed and configured. Use it when troubleshooting.
+
 #### AWS Environment Variables
 **Required for production deployment:**
 ```bash
