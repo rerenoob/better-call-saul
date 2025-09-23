@@ -280,6 +280,10 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseMiddleware<SecurityHeadersMiddleware>();
 app.UseCors("ReactFrontend");
+
+// Add health check endpoint for ALB
+app.MapGet("/health", () => Results.Ok(new { status = "Healthy", timestamp = DateTime.UtcNow }));
+
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
