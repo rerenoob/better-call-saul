@@ -33,11 +33,10 @@ jobs:
       env:
         ASPNETCORE_ENVIRONMENT: ${{ matrix.environment }}
         JWT_SECRET_KEY: "TestSecretKeyForCI32CharsMinimumLength!"
-        # Mock Azure services for CI
-        AZURE_OPENAI_ENDPOINT: "https://mock-openai.example.com/"
-        AZURE_OPENAI_API_KEY: "mock-key-for-ci-testing"
-        AZURE_FORM_RECOGNIZER_ENDPOINT: "https://mock-form.example.com/"
-        AZURE_FORM_RECOGNIZER_API_KEY: "mock-key-for-ci-testing"
+        # Mock AWS services for CI
+        AWS_REGION: "us-east-1"
+        AWS_ACCESS_KEY_ID: "mock-access-key-for-ci"
+        AWS_SECRET_ACCESS_KEY: "mock-secret-key-for-ci-testing"
       run: |
         cd BetterCallSaul.API
         set +e  # Disable exit on error to capture timeout exit code
@@ -61,12 +60,12 @@ jobs:
       if: matrix.configuration == 'Release'
       run: |
         cd BetterCallSaul.API/bin/Release/net8.0
-        # Verify the Serilog.Sinks.ApplicationInsights.dll is present
-        if [ ! -f "Serilog.Sinks.ApplicationInsights.dll" ]; then
-          echo "❌ Missing Serilog.Sinks.ApplicationInsights.dll in Release build"
+        # Verify core dependencies are present
+        if [ ! -f "Serilog.dll" ]; then
+          echo "❌ Missing Serilog.dll in Release build"
           exit 1
         else
-          echo "✅ All dependencies present in Release build"
+          echo "✅ All core dependencies present in Release build"
         fi
 
   dependency-check:
@@ -83,30 +82,14 @@ jobs:
       run: |
         echo "Checking for Serilog sink dependencies in configuration..."
 
-        # Check if ApplicationInsights sink is configured but package is missing
-        if grep -q "Serilog.Sinks.ApplicationInsights" BetterCallSaul.API/appsettings.Production.json; then
-          if ! grep -q "Serilog.Sinks.ApplicationInsights" BetterCallSaul.API/BetterCallSaul.API.csproj; then
-            echo "❌ ERROR: ApplicationInsights sink configured but package not referenced!"
+        # Check for Console sink dependency
+        if grep -q "Console" BetterCallSaul.API/appsettings.Production.json; then
+          if ! grep -q "Serilog.Sinks.Console" BetterCallSaul.API/BetterCallSaul.API.csproj; then
+            echo "❌ ERROR: Console sink configured but package not referenced!"
             exit 1
           else
-            echo "✅ ApplicationInsights sink properly configured and referenced"
+            echo "✅ Console sink properly configured and referenced"
           fi
         fi
 
-        # Check for other potential missing sinks
-        grep -E "\"Name\":\s*\"[^\"]*\"" BetterCallSaul.API/appsettings.Production.json | while read -r line; do
-          sink_name=$(echo "$line" | sed -n 's/.*"Name":\s*"\([^"]*\)".*/\1/p')
-          echo "Checking sink: $sink_name"
-
-          case "$sink_name" in
-            "ApplicationInsights")
-              # Already checked above
-              ;;
-            "Console")
-              grep -q "Serilog.Sinks.Console" BetterCallSaul.API/BetterCallSaul.API.csproj || (echo "❌ Missing Serilog.Sinks.Console package" && exit 1)
-              ;;
-            *)
-              echo "⚠️  Warning: Unknown sink '$sink_name' - verify package is referenced"
-              ;;
-          esac
-        done
+        echo "✅ Serilog configuration verified"
