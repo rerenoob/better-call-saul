@@ -16,7 +16,7 @@ on:
 env:
   AWS_REGION: us-east-1
   S3_BUCKET: better-call-saul-frontend-production
-  CLOUDFRONT_DISTRIBUTION_ID: d1c0215ar7cs56
+  CLOUDFRONT_DISTRIBUTION_ID: E31UK0DRGK6P2Y
 
 jobs:
   build_and_deploy_job:
