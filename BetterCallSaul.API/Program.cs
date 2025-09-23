@@ -72,9 +72,9 @@ if (builder.Environment.IsDevelopment())
 }
 else
 {
-    // Use SQL Server for production
+    // Use PostgreSQL for production
     builder.Services.AddDbContext<BetterCallSaulContext>(options =>
-        options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+        options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 }
 
 // Add MongoDB configuration

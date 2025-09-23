@@ -62,6 +62,12 @@ if [ -z "$DATABASE_PASSWORD" ]; then
     print_status "Generated secure database password"
 fi
 
+# Generate secure JWT secret key if not provided
+if [ -z "$JWT_SECRET_KEY" ]; then
+    JWT_SECRET_KEY=$(openssl rand -base64 48)
+    print_status "Generated secure JWT secret key"
+fi
+
 # Deploy CloudFormation stack
 print_status "Deploying CloudFormation stack: $STACK_NAME"
 
@@ -72,6 +78,7 @@ aws cloudformation $OPERATION \
         ParameterKey=EnvironmentName,ParameterValue=$ENVIRONMENT \
         ParameterKey=DatabaseUsername,ParameterValue=bettercallsaul \
         ParameterKey=DatabasePassword,ParameterValue=$DATABASE_PASSWORD \
+        ParameterKey=JwtSecretKey,ParameterValue=$JWT_SECRET_KEY \
     --capabilities CAPABILITY_NAMED_IAM \
     --region $REGION
 
