@@ -56,15 +56,15 @@ else
     OPERATION="create-stack"
 fi
 
-# Generate secure database password if not provided
+# Generate secure database password if not provided (8-32 characters)
 if [ -z "$DATABASE_PASSWORD" ]; then
-    DATABASE_PASSWORD=$(openssl rand -base64 32)
+    DATABASE_PASSWORD=$(openssl rand -base64 18 | tr -d "=+/" | cut -c1-20)
     print_status "Generated secure database password"
 fi
 
-# Generate secure JWT secret key if not provided
+# Generate secure JWT secret key if not provided (32-64 characters)
 if [ -z "$JWT_SECRET_KEY" ]; then
-    JWT_SECRET_KEY=$(openssl rand -base64 48)
+    JWT_SECRET_KEY=$(openssl rand -base64 32 | tr -d "=+/" | cut -c1-40)
     print_status "Generated secure JWT secret key"
 fi
 
