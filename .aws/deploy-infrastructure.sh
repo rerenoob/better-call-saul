@@ -56,6 +56,12 @@ else
     OPERATION="create-stack"
 fi
 
+# Generate secure database password if not provided
+if [ -z "$DATABASE_PASSWORD" ]; then
+    DATABASE_PASSWORD=$(openssl rand -base64 32)
+    print_status "Generated secure database password"
+fi
+
 # Deploy CloudFormation stack
 print_status "Deploying CloudFormation stack: $STACK_NAME"
 
@@ -64,6 +70,8 @@ aws cloudformation $OPERATION \
     --template-body file://cloudformation-stack.yml \
     --parameters \
         ParameterKey=EnvironmentName,ParameterValue=$ENVIRONMENT \
+        ParameterKey=DatabaseUsername,ParameterValue=bettercallsaul \
+        ParameterKey=DatabasePassword,ParameterValue=$DATABASE_PASSWORD \
     --capabilities CAPABILITY_NAMED_IAM \
     --region $REGION
 
