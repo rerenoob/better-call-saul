@@ -16,7 +16,7 @@ on:
 env:
   AWS_REGION: us-east-1
   S3_BUCKET: better-call-saul-frontend-production
-  CLOUDFRONT_DISTRIBUTION_ID: E31UK0DRGK6P2Y
+  CLOUDFRONT_DISTRIBUTION_ID: d1c0215ar7cs56
 
 jobs:
   build_and_deploy_job:
@@ -53,7 +53,7 @@ jobs:
           cd better-call-saul-frontend
           npm run build
         env:
-          VITE_API_BASE_URL: ${{ secrets.API_BASE_URL }}
+          VITE_API_BASE_URL: http://bettercallsaul-alb-production-1289827668.us-east-1.elb.amazonaws.com
 
       - name: Deploy to S3
         run: |
