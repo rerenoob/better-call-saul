@@ -51,8 +51,7 @@ jobs:
       - name: Build application
         run: |
           cd better-call-saul-frontend
-          # Force cache bust
-          npm run build -- --force
+          npm run build
         env:
           VITE_API_BASE_URL: https://d2by2olohivk43.cloudfront.net
           VITE_BUILD_TIME: ${{ github.run_id }}
