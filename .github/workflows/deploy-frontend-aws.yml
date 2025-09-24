@@ -51,9 +51,11 @@ jobs:
       - name: Build application
         run: |
           cd better-call-saul-frontend
-          npm run build
+          # Force cache bust
+          npm run build -- --force
         env:
-          VITE_API_BASE_URL: https://bettercallsaul-alb-production-1289827668.us-east-1.elb.amazonaws.com
+          VITE_API_BASE_URL: https://d2by2olohivk43.cloudfront.net
+          VITE_BUILD_TIME: ${{ github.run_id }}
 
       - name: Deploy to S3
         run: |
