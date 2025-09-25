@@ -59,12 +59,12 @@ public class FileUploadService : IFileUploadService, IStorageService
                 result.Success = false;
                 result.Message = validationResult.ErrorMessage ?? "File validation failed";
                 result.ErrorCode = validationResult.Status.ToString();
-                
+
                 if (validationResult.ValidationErrors != null)
                 {
                     result.ValidationErrors = validationResult.ValidationErrors;
                 }
-                
+
                 return result;
             }
 
@@ -79,42 +79,68 @@ public class FileUploadService : IFileUploadService, IStorageService
 
             // Generate unique filename
             var uniqueFileName = await GenerateUniqueFileNameAsync(file.FileName);
-            
+
             // Store file using configured storage service (Local or AWS S3)
             var storagePath = await StoreFileAsync(file, uniqueFileName);
 
-            // Create document record in SQL (lightweight tracking)
-            var document = new Document
+            // Use database transaction to ensure atomicity between document creation and text extraction
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            Document document;
+
+            try
             {
-                FileName = uniqueFileName,
-                OriginalFileName = file.FileName,
-                FileType = Path.GetExtension(file.FileName).ToLowerInvariant(),
-                FileSize = file.Length,
-                StoragePath = storagePath,
-                CaseId = caseId,
-                UploadedById = userId,
-                Status = Core.Enums.DocumentStatus.Uploaded,
-                Type = Core.Enums.DocumentType.Other
-            };
+                // Create document record in SQL (lightweight tracking)
+                document = new Document
+                {
+                    FileName = uniqueFileName,
+                    OriginalFileName = file.FileName,
+                    FileType = Path.GetExtension(file.FileName).ToLowerInvariant(),
+                    FileSize = file.Length,
+                    StoragePath = storagePath,
+                    CaseId = caseId,
+                    UploadedById = userId,
+                    Status = Core.Enums.DocumentStatus.Uploaded,
+                    Type = Core.Enums.DocumentType.Other
+                };
 
-            _context.Documents.Add(document);
-            await _context.SaveChangesAsync();
+                _context.Documents.Add(document);
+                await _context.SaveChangesAsync();
 
-            // Store document in NoSQL (dual-write pattern)
+                // Perform text extraction within the same transaction
+                await ExtractTextFromDocumentInTransactionAsync(document, storagePath);
+
+                // Commit transaction only if both document creation and text extraction succeed
+                await transaction.CommitAsync();
+
+                _logger.LogInformation("Document {DocumentId} and text extraction completed atomically", document.Id);
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                _logger.LogError(ex, "Transaction rolled back due to error during document processing: {FileName}", file.FileName);
+
+                // Clean up uploaded file if transaction failed
+                await DeleteFileAsync(storagePath);
+
+                throw;
+            }
+
+            // Store document in NoSQL after successful transaction (dual-write pattern)
             await StoreDocumentInNoSQLAsync(document, userId);
 
-            // Perform text extraction after successful upload
-            await ExtractTextFromDocumentAsync(document, storagePath);
+            // Update NoSQL with text extraction results after transaction commit
+            await UpdateDocumentTextInNoSQLAsync(document);
 
             result.Success = true;
             result.FileName = document.FileName;
             result.FileSize = document.FileSize;
             result.FileType = document.FileType;
             result.Message = "File uploaded and text extracted successfully";
-            
+
             // Add FileId to metadata for database reference
             result.Metadata ??= new Dictionary<string, string>();
             result.Metadata["FileId"] = document.Id.ToString();
+            result.Metadata["TextExtractionComplete"] = "true"; // Flag for AI analysis
 
             _logger.LogInformation("File uploaded and processed successfully: {FileName} (ID: {FileId})", file.FileName, document.Id);
         }
@@ -150,7 +176,8 @@ public class FileUploadService : IFileUploadService, IStorageService
             UploadSessionId = storageResult.UploadSessionId,
             UploadedAt = storageResult.UploadedAt,
             ErrorCode = storageResult.ErrorCode,
-            ValidationErrors = storageResult.ValidationErrors
+            ValidationErrors = storageResult.ValidationErrors,
+            Metadata = storageResult.Metadata
         };
 
         // Extract FileId from metadata if available
@@ -226,7 +253,7 @@ public class FileUploadService : IFileUploadService, IStorageService
             .SumAsync(d => d.FileSize);
     }
 
-    private async Task ExtractTextFromDocumentAsync(Document document, string storagePath)
+    private async Task ExtractTextFromDocumentInTransactionAsync(Document document, string storagePath)
     {
         try
         {
@@ -293,9 +320,7 @@ public class FileUploadService : IFileUploadService, IStorageService
                 );
             }
 
-            // Update NoSQL with text extraction results
-            await UpdateDocumentTextInNoSQLAsync(document);
-
+            // Save changes within the transaction - NoSQL update will happen after transaction commits
             await _context.SaveChangesAsync();
         }
         catch (Exception ex)

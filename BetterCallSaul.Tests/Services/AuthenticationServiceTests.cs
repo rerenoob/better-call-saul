@@ -52,7 +52,8 @@ public class AuthenticationServiceTests
             Mock.Of<BetterCallSaul.Infrastructure.Data.BetterCallSaulContext>(),
             _userManagerMock.Object,
             _signInManagerMock.Object,
-            _configurationMock.Object);
+            _configurationMock.Object,
+            Mock.Of<Microsoft.AspNetCore.Http.IHttpContextAccessor>());
     }
 
     [Fact]

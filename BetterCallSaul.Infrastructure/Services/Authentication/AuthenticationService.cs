@@ -9,6 +9,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
+using Microsoft.AspNetCore.Http;
 
 namespace BetterCallSaul.Infrastructure.Services.Authentication;
 
@@ -18,17 +19,20 @@ public class AuthenticationService : IAuthenticationService
     private readonly UserManager<User> _userManager;
     private readonly SignInManager<User> _signInManager;
     private readonly IConfiguration _configuration;
+    private readonly IHttpContextAccessor _httpContextAccessor;
 
     public AuthenticationService(
         BetterCallSaulContext context,
         UserManager<User> userManager,
         SignInManager<User> signInManager,
-        IConfiguration configuration)
+        IConfiguration configuration,
+        IHttpContextAccessor httpContextAccessor)
     {
         _context = context;
         _userManager = userManager;
         _signInManager = signInManager;
         _configuration = configuration;
+        _httpContextAccessor = httpContextAccessor;
     }
 
     public async Task<string> GenerateJwtToken(User user)
@@ -120,10 +124,16 @@ public class AuthenticationService : IAuthenticationService
         throw new NotImplementedException("Refresh token functionality not implemented yet");
     }
 
-    public Task<User?> GetCurrentUserAsync()
+    public async Task<User?> GetCurrentUserAsync()
     {
-        // This method should get the current authenticated user from the HTTP context
-        // For now, return null as this would typically require HttpContext access
-        return Task.FromResult<User?>(null);
+        var httpContext = _httpContextAccessor.HttpContext;
+        if (httpContext?.User?.Identity?.IsAuthenticated != true)
+            return null;
+
+        var userIdClaim = httpContext.User.FindFirst(ClaimTypes.NameIdentifier);
+        if (userIdClaim == null || !Guid.TryParse(userIdClaim.Value, out var userId))
+            return null;
+
+        return await _userManager.FindByIdAsync(userId.ToString());
     }
 }

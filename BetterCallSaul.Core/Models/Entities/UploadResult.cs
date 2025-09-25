@@ -15,4 +15,7 @@ public class UploadResult
     // For error cases
     public string? ErrorCode { get; set; }
     public Dictionary<string, string>? ValidationErrors { get; set; }
+
+    // Additional metadata for processing status
+    public Dictionary<string, string>? Metadata { get; set; }
 }
