@@ -15,6 +15,13 @@ public class AWSBedrockService : IAIService
     private readonly AmazonBedrockRuntimeClient? _bedrockClient;
     private readonly BedrockOptions _options;
     private readonly ILogger<AWSBedrockService> _logger;
+    private readonly List<string> _fallbackModelIds = new()
+    {
+        "anthropic.claude-3-5-sonnet-20241022-v2:0",
+        "anthropic.claude-3-5-sonnet-20240620-v1:0",
+        "anthropic.claude-3-sonnet-20240229-v1:0",
+        "anthropic.claude-3-haiku-20240307-v1:0"
+    };
 
     public AWSBedrockService(IOptions<AWSOptions> awsOptions, ILogger<AWSBedrockService> logger)
     {
@@ -55,34 +62,66 @@ public class AWSBedrockService : IAIService
             };
         }
 
-        try
+        var startTime = DateTime.UtcNow;
+
+        // Try primary model first
+        var modelsToTry = new List<string> { _options.ModelId };
+        modelsToTry.AddRange(_fallbackModelIds.Where(id => id != _options.ModelId));
+
+        foreach (var modelId in modelsToTry)
         {
-            var startTime = DateTime.UtcNow;
-            
-            var bedrockRequest = CreateBedrockRequest(request);
-            var response = await _bedrockClient.InvokeModelAsync(bedrockRequest, cancellationToken);
-            
-            var result = ProcessBedrockResponse(response);
-            result.ProcessingTime = DateTime.UtcNow - startTime;
-            result.Model = _options.ModelId;
-            
-            return result;
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error analyzing case with AWS Bedrock. Exception type: {ExceptionType}", ex.GetType().Name);
-            return new AIResponse
+            try
             {
-                Success = false,
-                ErrorMessage = $"AWS Bedrock service error: {ex.Message}",
-                ProcessingTime = TimeSpan.Zero,
-                Metadata = new Dictionary<string, object>
+                _logger.LogDebug("Attempting to use model: {ModelId}", modelId);
+
+                var bedrockRequest = CreateBedrockRequest(request, modelId);
+                var response = await _bedrockClient.InvokeModelAsync(bedrockRequest, cancellationToken);
+
+                var result = ProcessBedrockResponse(response);
+                result.ProcessingTime = DateTime.UtcNow - startTime;
+                result.Model = modelId;
+
+                if (modelId != _options.ModelId)
                 {
-                    ["error_type"] = ex.GetType().Name,
-                    ["aws_bedrock_failed"] = true
+                    _logger.LogWarning("Primary model {PrimaryModel} failed, successfully used fallback model {FallbackModel}",
+                        _options.ModelId, modelId);
                 }
-            };
+
+                return result;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Model {ModelId} failed with error: {ErrorMessage}", modelId, ex.Message);
+
+                if (modelId == modelsToTry.Last())
+                {
+                    // This was the last model to try
+                    _logger.LogError(ex, "All models failed. Last error from {ModelId}: {ErrorMessage}", modelId, ex.Message);
+                    return new AIResponse
+                    {
+                        Success = false,
+                        ErrorMessage = $"AWS Bedrock service error: All models failed. Last error: {ex.Message}",
+                        ProcessingTime = DateTime.UtcNow - startTime,
+                        Metadata = new Dictionary<string, object>
+                        {
+                            ["error_type"] = ex.GetType().Name,
+                            ["aws_bedrock_failed"] = true,
+                            ["attempted_models"] = modelsToTry
+                        }
+                    };
+                }
+
+                // Continue to next model
+            }
         }
+
+        // Fallback return (shouldn't reach here)
+        return new AIResponse
+        {
+            Success = false,
+            ErrorMessage = "AWS Bedrock service error: No models could be accessed",
+            ProcessingTime = DateTime.UtcNow - startTime
+        };
     }
 
     public async Task<AIResponse> GenerateLegalAnalysisAsync(string documentText, string caseContext, CancellationToken cancellationToken = default)
@@ -238,7 +277,7 @@ public class AWSBedrockService : IAIService
         }
     }
 
-    private InvokeModelRequest CreateBedrockRequest(AIRequest request)
+    private InvokeModelRequest CreateBedrockRequest(AIRequest request, string? modelId = null)
     {
         var prompt = !string.IsNullOrEmpty(request.Prompt)
             ? request.Prompt
@@ -262,7 +301,7 @@ public class AWSBedrockService : IAIService
 
         return new InvokeModelRequest
         {
-            ModelId = _options.ModelId,
+            ModelId = modelId ?? _options.ModelId,
             ContentType = "application/json",
             Body = new System.IO.MemoryStream(System.Text.Encoding.UTF8.GetBytes(JsonSerializer.Serialize(bedrockPayload)))
         };

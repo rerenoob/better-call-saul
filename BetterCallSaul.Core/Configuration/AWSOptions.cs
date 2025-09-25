@@ -11,8 +11,8 @@ public class AWSOptions
 
 public class BedrockOptions
 {
-    public string Region { get; set; } = "us-east-1";
-    public string ModelId { get; set; } = "anthropic.claude-3-sonnet-20240229-v1:0";
+    public string Region { get; set; } = "us-west-2";
+    public string ModelId { get; set; } = "anthropic.claude-3-5-sonnet-20241022-v2:0";
 }
 
 public class S3Options
