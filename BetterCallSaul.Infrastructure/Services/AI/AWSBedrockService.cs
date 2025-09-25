@@ -240,16 +240,24 @@ public class AWSBedrockService : IAIService
 
     private InvokeModelRequest CreateBedrockRequest(AIRequest request)
     {
-        var prompt = !string.IsNullOrEmpty(request.Prompt) 
-            ? request.Prompt 
+        var prompt = !string.IsNullOrEmpty(request.Prompt)
+            ? request.Prompt
             : BuildCaseAnalysisPrompt(request.DocumentText, request.CaseContext);
 
+        // Use Claude 3 message format
         var bedrockPayload = new
         {
-            prompt = $"\n\nHuman: {prompt}\n\nAssistant:",
-            max_tokens_to_sample = request.MaxTokens,
+            anthropic_version = "bedrock-2023-05-31",
+            max_tokens = request.MaxTokens,
             temperature = request.Temperature,
-            stop_sequences = new[] { "\n\nHuman:" }
+            messages = new[]
+            {
+                new
+                {
+                    role = "user",
+                    content = prompt
+                }
+            }
         };
 
         return new InvokeModelRequest
@@ -264,11 +272,25 @@ public class AWSBedrockService : IAIService
     {
         using var streamReader = new System.IO.StreamReader(response.Body);
         var responseText = streamReader.ReadToEnd();
-        
+
         try
         {
+            // Try Claude 3 format first
+            var claude3Response = JsonSerializer.Deserialize<Claude3Response>(responseText);
+            if (claude3Response?.Content != null && claude3Response.Content.Length > 0)
+            {
+                return new AIResponse
+                {
+                    Success = true,
+                    GeneratedText = claude3Response.Content[0].Text?.Trim(),
+                    TokensUsed = claude3Response.Usage?.OutputTokens ?? 0,
+                    ConfidenceScore = 0.85
+                };
+            }
+
+            // Fallback to Claude 2 format
             var bedrockResponse = JsonSerializer.Deserialize<BedrockCompletionResponse>(responseText);
-            
+
             return new AIResponse
             {
                 Success = true,
@@ -369,5 +391,23 @@ public class AWSBedrockService : IAIService
     {
         public string? Completion { get; set; }
         public string? StopReason { get; set; }
+    }
+
+    private class Claude3Response
+    {
+        public Claude3Content[]? Content { get; set; }
+        public Claude3Usage? Usage { get; set; }
+    }
+
+    private class Claude3Content
+    {
+        public string? Text { get; set; }
+        public string? Type { get; set; }
+    }
+
+    private class Claude3Usage
+    {
+        public int InputTokens { get; set; }
+        public int OutputTokens { get; set; }
     }
 }
