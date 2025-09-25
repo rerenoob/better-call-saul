@@ -76,12 +76,12 @@ public class CaseController : ControllerBase
 
     [HttpGet("{id}")]
     [Authorize]
-    public async Task<ActionResult<Case>> GetCase(Guid id)
+    public async Task<ActionResult<CaseWithDocuments>> GetCase(Guid id)
     {
         try
         {
-            var caseItem = await _caseManagementService.GetCaseAsync(id);
-            return Ok(caseItem);
+            var caseWithDocuments = await _caseManagementService.GetCaseWithDocumentsAsync(id);
+            return Ok(caseWithDocuments);
         }
         catch (KeyNotFoundException)
         {
