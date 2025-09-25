@@ -3,6 +3,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from './contexts/AuthContext';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { LoginForm } from './components/auth/LoginForm';
+import { AdminLoginForm } from './components/auth/AdminLoginForm';
 import { RegisterForm } from './components/auth/RegisterForm';
 import { CaseDetail } from './components/CaseDetail';
 import { Dashboard } from './components/Dashboard';
@@ -35,12 +36,17 @@ function LoginPage() {
     navigate('/register');
   };
 
+  const handleSwitchToAdminLogin = () => {
+    navigate('/admin-login');
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-gray-100 p-4 sm:p-6 lg:p-8">
       <div className="w-full max-w-sm sm:max-w-md transform transition-all duration-300 hover:scale-[1.01]">
         <LoginForm 
           onSuccess={handleLoginSuccess} 
           onSwitchToRegister={handleSwitchToRegister}
+          onSwitchToAdminLogin={handleSwitchToAdminLogin}
         />
       </div>
     </div>
@@ -70,6 +76,29 @@ function RegisterPage() {
   );
 }
 
+function AdminLoginPage() {
+  const navigate = useNavigate();
+
+  const handleLoginSuccess = () => {
+    navigate('/admin/dashboard');
+  };
+
+  const handleSwitchToUserLogin = () => {
+    navigate('/login');
+  };
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-red-50 to-gray-100 p-4 sm:p-6 lg:p-8">
+      <div className="w-full max-w-sm sm:max-w-md transform transition-all duration-300 hover:scale-[1.01]">
+        <AdminLoginForm 
+          onSuccess={handleLoginSuccess} 
+          onSwitchToUserLogin={handleSwitchToUserLogin}
+        />
+      </div>
+    </div>
+  );
+}
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
@@ -84,6 +113,11 @@ function App() {
             <Route path="/register" element={
               <ProtectedRoute requireAuth={false}>
                 <RegisterPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin-login" element={
+              <ProtectedRoute requireAuth={false}>
+                <AdminLoginPage />
               </ProtectedRoute>
             } />
             <Route path="/dashboard" element={

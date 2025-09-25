@@ -142,6 +142,7 @@ cd better-call-saul-frontend && npm run dev
 
 ### 🔐 Security & Authentication
 - JWT-based authentication with automatic token refresh
+- Separate admin login page for system administration
 - Role-based access control (Admin/User)
 - Registration code system for controlled access
 - Comprehensive audit logging

@@ -13,6 +13,7 @@ Modern React TypeScript frontend for the Better Call Saul AI legal assistant pla
 
 ## Features
 - 🔐 JWT-based authentication with automatic token refresh
+- 👑 Separate admin login for system administration
 - 📊 Interactive dashboard with case metrics and analytics
 - 📄 Document viewer with annotation support
 - 🔍 AI-powered case analysis interface
@@ -65,3 +66,18 @@ The frontend communicates with the .NET Web API backend via:
 - TypeScript-generated client types for type safety
 
 For backend API documentation, visit `/swagger` when the API is running.
+
+## Admin Access
+
+### Admin Login
+Access the admin panel by visiting `/admin-login` or clicking the "Admin login here" link on the regular login page.
+
+### Default Admin Credentials
+- **Email**: `admin@bettercallsaul.com`
+- **Password**: `Admin123!`
+
+### Admin Features
+- User management and registration code generation
+- System health monitoring and audit logs
+- Case analytics and performance metrics
+- System configuration and maintenance

@@ -5,9 +5,10 @@ import { LoginRequest } from '../../types/auth';
 interface LoginFormProps {
   onSuccess?: () => void;
   onSwitchToRegister?: () => void;
+  onSwitchToAdminLogin?: () => void;
 }
 
-export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onSwitchToRegister }) => {
+export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onSwitchToRegister, onSwitchToAdminLogin }) => {
   const [credentials, setCredentials] = useState<LoginRequest>({
     email: '',
     password: '',
@@ -94,8 +95,8 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onSwitchToRegis
         </button>
       </form>
 
-      {onSwitchToRegister && (
-        <div className="mt-3 sm:mt-4 text-center">
+      <div className="mt-3 sm:mt-4 text-center space-y-2">
+        {onSwitchToRegister && (
           <p className="text-xs sm:text-sm text-gray-600">
             Don't have an account?{' '}
             <button
@@ -106,8 +107,20 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onSwitchToRegis
               Register here
             </button>
           </p>
-        </div>
-      )}
+        )}
+        {onSwitchToAdminLogin && (
+          <p className="text-xs sm:text-sm text-gray-600">
+            Admin user?{' '}
+            <button
+              type="button"
+              onClick={onSwitchToAdminLogin}
+              className="text-red-600 hover:text-red-800 font-medium text-xs sm:text-sm"
+            >
+              Admin login here
+            </button>
+          </p>
+        )}
+      </div>
     </div>
   );
 };
