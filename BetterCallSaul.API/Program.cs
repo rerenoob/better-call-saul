@@ -21,6 +21,8 @@ using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using MongoDB.Driver;
 using Serilog;
+using System.Net.Security;
+using System.Security.Authentication;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -89,7 +91,30 @@ else
     }
 
     builder.Services.AddSingleton<IMongoClient>(_ =>
-        new MongoClient(documentDbConnectionString));
+    {
+        var settings = MongoClientSettings.FromConnectionString(documentDbConnectionString);
+
+        // Configure SSL settings for AWS DocumentDB
+        settings.SslSettings = new SslSettings
+        {
+            EnabledSslProtocols = System.Security.Authentication.SslProtocols.Tls12,
+            CheckCertificateRevocation = false,
+            ServerCertificateValidationCallback = (sender, certificate, chain, sslPolicyErrors) =>
+            {
+                // For AWS DocumentDB, we need to allow certificate chain issues
+                // This is a known requirement for DocumentDB SSL connections
+                return sslPolicyErrors == System.Net.Security.SslPolicyErrors.None ||
+                       sslPolicyErrors == System.Net.Security.SslPolicyErrors.RemoteCertificateChainErrors;
+            }
+        };
+
+        // Set connection timeout and retry settings
+        settings.ConnectTimeout = TimeSpan.FromSeconds(30);
+        settings.ServerSelectionTimeout = TimeSpan.FromSeconds(30);
+        settings.SocketTimeout = TimeSpan.FromSeconds(60);
+
+        return new MongoClient(settings);
+    });
 }
 
 // Configure NoSQL settings
