@@ -5,6 +5,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Cryptography;
+using System.Text;
 
 namespace BetterCallSaul.API.Controllers;
 
@@ -208,4 +210,150 @@ public class AdminController : ControllerBase
             CasesByDay = casesByDay
         });
     }
+
+    [HttpGet("registration-codes")]
+    public async Task<IActionResult> GetRegistrationCodes([FromQuery] int page = 1, [FromQuery] int pageSize = 50)
+    {
+        var query = _context.RegistrationCodes
+            .Include(rc => rc.UsedByUser)
+            .OrderByDescending(rc => rc.CreatedAt);
+
+        var totalCount = await query.CountAsync();
+        var codes = await query
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .Select(rc => new
+            {
+                rc.Id,
+                rc.Code,
+                rc.CreatedBy,
+                rc.IsUsed,
+                rc.UsedByUserId,
+                rc.UsedAt,
+                rc.ExpiresAt,
+                rc.CreatedAt,
+                rc.UpdatedAt,
+                rc.Notes,
+                UsedByUserName = rc.UsedByUser != null ? rc.UsedByUser.FullName : null,
+                IsValid = !rc.IsUsed && rc.ExpiresAt > DateTime.UtcNow
+            })
+            .ToListAsync();
+
+        return Ok(new
+        {
+            Codes = codes,
+            TotalCount = totalCount,
+            Page = page,
+            PageSize = pageSize,
+            TotalPages = (int)Math.Ceiling(totalCount / (double)pageSize)
+        });
+    }
+
+    [HttpGet("registration-codes/stats")]
+    public async Task<IActionResult> GetRegistrationCodeStats()
+    {
+        var total = await _context.RegistrationCodes.CountAsync();
+        var used = await _context.RegistrationCodes.CountAsync(rc => rc.IsUsed);
+        var expired = await _context.RegistrationCodes.CountAsync(rc => !rc.IsUsed && rc.ExpiresAt < DateTime.UtcNow);
+        var active = total - used - expired;
+
+        return Ok(new
+        {
+            Total = total,
+            Active = active,
+            Used = used,
+            Expired = expired
+        });
+    }
+
+    [HttpPost("registration-codes/generate")]
+    public async Task<IActionResult> GenerateRegistrationCodes([FromBody] GenerateCodesRequest request)
+    {
+        var expirationDate = DateTime.UtcNow.AddDays(request.ExpireDays);
+        var codes = new List<RegistrationCode>();
+
+        for (int i = 0; i < request.Count; i++)
+        {
+            var code = GenerateUniqueCode();
+            
+            // Ensure code is unique in the database
+            while (await _context.RegistrationCodes.AnyAsync(rc => rc.Code == code) || codes.Any(c => c.Code == code))
+            {
+                code = GenerateUniqueCode();
+            }
+
+            codes.Add(new RegistrationCode
+            {
+                Code = code,
+                CreatedBy = request.CreatedBy ?? "System",
+                ExpiresAt = expirationDate,
+                Notes = request.Notes,
+                IsUsed = false,
+                CreatedAt = DateTime.UtcNow
+            });
+        }
+
+        await _context.RegistrationCodes.AddRangeAsync(codes);
+        await _context.SaveChangesAsync();
+
+        return Ok(new { message = $"Successfully generated {codes.Count} registration codes", codes = codes.Take(5).Select(c => c.Code) });
+    }
+
+    [HttpDelete("registration-codes/{id}")]
+    public async Task<IActionResult> DeleteRegistrationCode(Guid id)
+    {
+        var code = await _context.RegistrationCodes.FindAsync(id);
+        if (code == null)
+            return NotFound();
+
+        if (code.IsUsed)
+            return BadRequest(new { message = "Cannot delete a registration code that has already been used" });
+
+        _context.RegistrationCodes.Remove(code);
+        await _context.SaveChangesAsync();
+
+        return Ok(new { message = "Registration code deleted successfully" });
+    }
+
+    [HttpPost("registration-codes/cleanup")]
+    public async Task<IActionResult> CleanupExpiredCodes()
+    {
+        var expiredCodes = await _context.RegistrationCodes
+            .Where(rc => rc.ExpiresAt < DateTime.UtcNow && !rc.IsUsed)
+            .ToListAsync();
+
+        if (expiredCodes.Any())
+        {
+            _context.RegistrationCodes.RemoveRange(expiredCodes);
+            var removedCount = await _context.SaveChangesAsync();
+            return Ok(new { message = $"Cleaned up {removedCount} expired registration codes" });
+        }
+
+        return Ok(new { message = "No expired registration codes found to clean up" });
+    }
+
+    private static string GenerateUniqueCode(int length = 12)
+    {
+        const string chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+        using var rng = RandomNumberGenerator.Create();
+        var result = new StringBuilder(length);
+        
+        var bytes = new byte[4];
+        for (int i = 0; i < length; i++)
+        {
+            rng.GetBytes(bytes);
+            var randomIndex = Math.Abs(BitConverter.ToInt32(bytes, 0)) % chars.Length;
+            result.Append(chars[randomIndex]);
+        }
+        
+        return result.ToString();
+    }
+}
+
+public class GenerateCodesRequest
+{
+    public int Count { get; set; } = 10;
+    public int ExpireDays { get; set; } = 365;
+    public string? CreatedBy { get; set; }
+    public string? Notes { get; set; }
 }

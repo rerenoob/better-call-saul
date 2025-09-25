@@ -13,6 +13,7 @@ import { AdminDashboard } from './pages/admin/AdminDashboard';
 import { UserManagement } from './pages/admin/UserManagement';
 import { SystemHealth } from './pages/admin/SystemHealth';
 import { AuditLogs } from './pages/admin/AuditLogs';
+import { RegistrationCodes } from './pages/admin/RegistrationCodes';
 
 // Create a client
 const queryClient = new QueryClient({
@@ -149,6 +150,7 @@ function App() {
               <Route path="users" element={<UserManagement />} />
               <Route path="health" element={<SystemHealth />} />
               <Route path="audit-logs" element={<AuditLogs />} />
+              <Route path="registration-codes" element={<RegistrationCodes />} />
             </Route>
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
             <Route path="*" element={<Navigate to="/dashboard" replace />} />

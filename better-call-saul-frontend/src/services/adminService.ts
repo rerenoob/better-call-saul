@@ -70,6 +70,43 @@ export interface CaseStatistics {
   casesByDay: Array<{ date: string; count: number }>;
 }
 
+export interface RegistrationCode {
+  id: string;
+  code: string;
+  createdBy: string;
+  isUsed: boolean;
+  usedByUserId?: string;
+  usedAt?: string;
+  expiresAt: string;
+  createdAt: string;
+  updatedAt?: string;
+  notes?: string;
+  usedByUserName?: string;
+  isValid: boolean;
+}
+
+export interface RegistrationCodesResponse {
+  codes: RegistrationCode[];
+  totalCount: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+}
+
+export interface RegistrationCodeStats {
+  total: number;
+  active: number;
+  used: number;
+  expired: number;
+}
+
+export interface GenerateCodesRequest {
+  count: number;
+  expireDays: number;
+  createdBy?: string;
+  notes?: string;
+}
+
 export const adminService = {
   async getDashboardMetrics(): Promise<DashboardMetrics> {
     const response = await apiClient.get('/admin/dashboard/metrics');
@@ -106,6 +143,32 @@ export const adminService = {
 
   async getCaseStatistics(): Promise<CaseStatistics> {
     const response = await apiClient.get('/admin/cases/stats');
+    return response.data;
+  },
+
+  async getRegistrationCodes(page: number = 1, pageSize: number = 50): Promise<RegistrationCodesResponse> {
+    const response = await apiClient.get('/admin/registration-codes', {
+      params: { page, pageSize }
+    });
+    return response.data;
+  },
+
+  async getRegistrationCodeStats(): Promise<RegistrationCodeStats> {
+    const response = await apiClient.get('/admin/registration-codes/stats');
+    return response.data;
+  },
+
+  async generateRegistrationCodes(request: GenerateCodesRequest): Promise<{ message: string; codes: string[] }> {
+    const response = await apiClient.post('/admin/registration-codes/generate', request);
+    return response.data;
+  },
+
+  async deleteRegistrationCode(id: string): Promise<void> {
+    await apiClient.delete(`/admin/registration-codes/${id}`);
+  },
+
+  async cleanupExpiredCodes(): Promise<{ message: string }> {
+    const response = await apiClient.post('/admin/registration-codes/cleanup');
     return response.data;
   }
 };
