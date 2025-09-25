@@ -107,9 +107,9 @@ export const SystemHealth: React.FC = () => {
       </div>
 
       {/* Health Status Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
         {/* Database Status */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow">
+        <div className="bg-white dark:bg-gray-800 rounded-lg p-4 sm:p-6 shadow-sm">
           <div className="flex items-center">
             <div className="flex-shrink-0">
               <svg className="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -128,7 +128,7 @@ export const SystemHealth: React.FC = () => {
         </div>
 
         {/* Memory Usage */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow">
+        <div className="bg-white dark:bg-gray-800 rounded-lg p-4 sm:p-6 shadow-sm">
           <div className="flex items-center">
             <div className="flex-shrink-0">
               <svg className="h-6 w-6 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -147,7 +147,7 @@ export const SystemHealth: React.FC = () => {
         </div>
 
         {/* Uptime */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow">
+        <div className="bg-white dark:bg-gray-800 rounded-lg p-4 sm:p-6 shadow-sm">
           <div className="flex items-center">
             <div className="flex-shrink-0">
               <svg className="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -162,7 +162,7 @@ export const SystemHealth: React.FC = () => {
         </div>
 
         {/* Recent Errors */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow">
+        <div className="bg-white dark:bg-gray-800 rounded-lg p-4 sm:p-6 shadow-sm">
           <div className="flex items-center">
             <div className="flex-shrink-0">
               <svg className="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -182,12 +182,12 @@ export const SystemHealth: React.FC = () => {
       </div>
 
       {/* Detailed Information */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow">
-        <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
+        <div className="px-4 sm:px-6 py-4 border-b border-gray-200 dark:border-gray-700">
           <h2 className="text-lg font-medium text-gray-900 dark:text-white">System Information</h2>
         </div>
-        <div className="px-6 py-4">
-          <dl className="grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-2">
+        <div className="px-4 sm:px-6 py-4">
+          <dl className="grid grid-cols-1 gap-x-4 gap-y-4 sm:gap-y-6 sm:grid-cols-2">
             <div>
               <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">Database Status</dt>
               <dd className="mt-1 text-sm text-gray-900 dark:text-white">{healthData.database}</dd>

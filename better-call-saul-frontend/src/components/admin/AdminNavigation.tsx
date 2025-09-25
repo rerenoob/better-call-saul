@@ -65,9 +65,9 @@ export const AdminNavigation: React.FC<AdminNavigationProps> = ({ isOpen }) => {
 
   return (
     <div 
-      className={`fixed inset-y-0 left-0 z-50 bg-slate-800 text-white transition-transform duration-300 transform ${
+      className={`fixed inset-y-0 left-0 z-50 bg-slate-800 text-white transition-transform duration-300 ease-in-out transform ${
         isOpen ? 'translate-x-0' : '-translate-x-full'
-      } w-64 lg:translate-x-0`}
+      } w-64 lg:translate-x-0 lg:static lg:inset-y-0 lg:z-auto`}
     >
       {/* Header */}
       <div className="flex items-center justify-center h-16 px-4 bg-slate-900">
@@ -82,7 +82,7 @@ export const AdminNavigation: React.FC<AdminNavigationProps> = ({ isOpen }) => {
       </div>
 
       {/* Navigation Menu */}
-      <nav className="flex-1 px-2 py-4 space-y-1">
+      <nav className="flex-1 px-2 py-4 space-y-1 overflow-y-auto">
         {navigationItems.map((item) => {
           const isActive = location.pathname === item.path || 
                           (item.path === '/admin/dashboard' && location.pathname === '/admin');
@@ -105,7 +105,7 @@ export const AdminNavigation: React.FC<AdminNavigationProps> = ({ isOpen }) => {
       </nav>
 
       {/* User Info & Logout */}
-      <div className="p-4 border-t border-slate-700">
+      <div className="p-4 border-t border-slate-700 lg:mt-auto">
         <div className="flex items-center mb-4">
           <div className="flex items-center justify-center w-10 h-10 bg-slate-600 rounded-full mr-3">
             <span className="text-sm font-medium text-white">
