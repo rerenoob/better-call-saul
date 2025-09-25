@@ -1,5 +1,6 @@
 using BetterCallSaul.Core.Models.Entities;
 using BetterCallSaul.Core.Enums;
+using BetterCallSaul.Core.Interfaces.Services;
 using BetterCallSaul.Infrastructure.Data;
 using BetterCallSaul.Infrastructure.Services.FileProcessing;
 using BetterCallSaul.Infrastructure.Validators;
@@ -18,15 +19,18 @@ namespace BetterCallSaul.API.Controllers;
 public class FileUploadController : ControllerBase
 {
     private readonly IFileUploadService _fileUploadService;
+    private readonly ICaseAnalysisService _caseAnalysisService;
     private readonly ILogger<FileUploadController> _logger;
     private readonly BetterCallSaulContext _context;
 
     public FileUploadController(
         IFileUploadService fileUploadService,
+        ICaseAnalysisService caseAnalysisService,
         ILogger<FileUploadController> logger,
         BetterCallSaulContext context)
     {
         _fileUploadService = fileUploadService;
+        _caseAnalysisService = caseAnalysisService;
         _logger = logger;
         _context = context;
     }
@@ -83,6 +87,12 @@ public class FileUploadController : ControllerBase
 
             if (result.Success)
             {
+                // Trigger automatic case analysis if we have a document ID and it's not a temporary case
+                if (result.FileId != Guid.Empty && !IsTemporaryCase(caseId))
+                {
+                    _ = Task.Run(async () => await TriggerCaseAnalysisAsync(caseId, result.FileId, file.FileName));
+                }
+
                 return Ok(result);
             }
             else
@@ -218,6 +228,40 @@ public class FileUploadController : ControllerBase
         _logger.LogInformation("Created temporary case {CaseId} for user {UserId}", newTempCase.Id, userId);
 
         return newTempCase.Id;
+    }
+
+    private bool IsTemporaryCase(Guid caseId)
+    {
+        var caseItem = _context.Cases.FirstOrDefault(c => c.Id == caseId);
+        return caseItem?.Title == "TEMPORARY_UPLOAD_CASE";
+    }
+
+    private async Task TriggerCaseAnalysisAsync(Guid caseId, Guid documentId, string fileName)
+    {
+        try
+        {
+            _logger.LogInformation("Starting automatic case analysis for case {CaseId}, document {DocumentId}", caseId, documentId);
+
+            // Get the document with extracted text
+            var document = await _context.Documents
+                .Include(d => d.ExtractedText)
+                .FirstOrDefaultAsync(d => d.Id == documentId);
+
+            if (document?.ExtractedText?.FullText == null)
+            {
+                _logger.LogWarning("No extracted text available for document {DocumentId}, skipping analysis", documentId);
+                return;
+            }
+
+            // Trigger the case analysis
+            await _caseAnalysisService.AnalyzeCaseAsync(caseId, documentId, document.ExtractedText.FullText);
+
+            _logger.LogInformation("Successfully triggered automatic case analysis for case {CaseId}, document {DocumentId}", caseId, documentId);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error during automatic case analysis for case {CaseId}, document {DocumentId}", caseId, documentId);
+        }
     }
 
     [HttpOptions]
