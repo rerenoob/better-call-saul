@@ -9,6 +9,8 @@ public class BetterCallSaulContext : IdentityDbContext<User, Role, Guid>
 {
     public BetterCallSaulContext(DbContextOptions<BetterCallSaulContext> options) : base(options)
     {
+        // Disable lazy loading to prevent circular references
+        ChangeTracker.LazyLoadingEnabled = false;
     }
 
     // Parameterless constructor for testing

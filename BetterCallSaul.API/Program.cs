@@ -74,8 +74,6 @@ if (builder.Environment.IsDevelopment())
         options.UseSqlite("Data Source=BetterCallSaul.db");
         options.EnableSensitiveDataLogging(false);
         options.EnableDetailedErrors(false);
-        // Disable lazy loading to prevent circular references
-        options.UseLazyLoadingProxies(false);
     });
 }
 else
@@ -86,8 +84,6 @@ else
         options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"));
         options.EnableSensitiveDataLogging(false);
         options.EnableDetailedErrors(false);
-        // Disable lazy loading to prevent circular references
-        options.UseLazyLoadingProxies(false);
     });
 }
 
