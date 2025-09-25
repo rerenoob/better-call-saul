@@ -16,10 +16,9 @@ const TestWrapper = ({ children }: { children: React.ReactNode }) => (
 
 describe('LoginForm', () => {
   const mockOnSuccess = vi.fn();
-  const mockOnError = vi.fn();
 
   it('renders login form with basic elements', () => {
-    render(<LoginForm onSuccess={mockOnSuccess} onError={mockOnError} />, { wrapper: TestWrapper });
+    render(<LoginForm onSuccess={mockOnSuccess} />, { wrapper: TestWrapper });
 
     expect(screen.getByLabelText(/email/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/password/i)).toBeInTheDocument();
