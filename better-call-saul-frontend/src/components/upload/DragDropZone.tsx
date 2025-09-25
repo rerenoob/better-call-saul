@@ -8,32 +8,26 @@ interface DragDropZoneProps {
   maxFiles?: number;
 }
 
-export const DragDropZone: React.FC<DragDropZoneProps> = ({ 
-  onFilesSelected, 
+export const DragDropZone: React.FC<DragDropZoneProps> = ({
+  onFilesSelected,
   disabled = false,
-  maxFiles = 10
+  maxFiles = 10,
 }) => {
-  const {
-    getRootProps,
-    getInputProps,
-    isDragActive,
-    isDragReject,
-    fileRejections
-  } = useDropzone({
+  const { getRootProps, getInputProps, isDragActive, isDragReject, fileRejections } = useDropzone({
     accept: {
       'application/pdf': ['.pdf'],
       'application/msword': ['.doc'],
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
-      'text/plain': ['.txt']
+      'text/plain': ['.txt'],
     },
     maxSize: MAX_FILE_SIZE,
     maxFiles,
     disabled,
-    onDrop: (acceptedFiles) => {
+    onDrop: acceptedFiles => {
       if (acceptedFiles.length > 0) {
         onFilesSelected(acceptedFiles);
       }
-    }
+    },
   });
 
   const getBorderColor = () => {
@@ -60,10 +54,10 @@ export const DragDropZone: React.FC<DragDropZoneProps> = ({
         `}
       >
         <input {...getInputProps()} />
-        
+
         {/* Upload Icon */}
         <div className="mb-4">
-          <svg 
+          <svg
             className={`mx-auto h-12 w-12 ${isDragActive ? 'text-blue-500' : 'text-gray-400'}`}
             stroke="currentColor"
             fill="none"
@@ -103,9 +97,7 @@ export const DragDropZone: React.FC<DragDropZoneProps> = ({
       {/* Error Messages */}
       {fileRejections.length > 0 && (
         <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-md">
-          <h4 className="text-sm font-medium text-red-800 mb-1">
-            Some files were rejected:
-          </h4>
+          <h4 className="text-sm font-medium text-red-800 mb-1">Some files were rejected:</h4>
           <ul className="text-sm text-red-700 space-y-1">
             {fileRejections.map(({ file, errors }) => (
               <li key={file.name} className="flex items-start">
@@ -114,7 +106,8 @@ export const DragDropZone: React.FC<DragDropZoneProps> = ({
                   {errors.map(error => (
                     <div key={error.code}>
                       {error.code === 'file-too-large' && 'File is too large (max 50MB)'}
-                      {error.code === 'file-invalid-type' && 'Invalid file type (PDF, DOC, DOCX, TXT only)'}
+                      {error.code === 'file-invalid-type' &&
+                        'Invalid file type (PDF, DOC, DOCX, TXT only)'}
                       {error.code === 'too-many-files' && `Too many files (max ${maxFiles})`}
                     </div>
                   ))}

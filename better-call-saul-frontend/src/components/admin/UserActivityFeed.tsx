@@ -63,8 +63,7 @@ export const UserActivityFeed: React.FC<UserActivityFeedProps> = ({ activities }
                   <div className="flex-1 min-w-0">
                     <div>
                       <p className="text-sm text-gray-900 dark:text-white">
-                        <span className="font-medium">{activity.user.name}</span>{' '}
-                        {activity.action}
+                        <span className="font-medium">{activity.user.name}</span> {activity.action}
                       </p>
                       <p className="mt-0.5 text-sm text-gray-500 dark:text-gray-400">
                         {activity.time}

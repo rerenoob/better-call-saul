@@ -2,7 +2,6 @@ import { test, expect } from '@playwright/test';
 
 // Comprehensive test demonstrating MCP server capabilities for core user flow
 test.describe('MCP Core User Flow - Better Call Saul', () => {
-  
   test.beforeEach(async ({ page }) => {
     // Mock all API endpoints for comprehensive testing
     await page.route('**/api/auth/login', route => {
@@ -18,9 +17,9 @@ test.describe('MCP Core User Flow - Better Call Saul', () => {
             firstName: 'Sarah',
             lastName: 'Connor',
             barNumber: 'BAR2024',
-            role: 'Senior Attorney'
-          }
-        })
+            role: 'Senior Attorney',
+          },
+        }),
       });
     });
 
@@ -37,9 +36,9 @@ test.describe('MCP Core User Flow - Better Call Saul', () => {
             firstName: 'John',
             lastName: 'Doe',
             barNumber: 'BAR2025',
-            role: 'Junior Attorney'
-          }
-        })
+            role: 'Junior Attorney',
+          },
+        }),
       });
     });
 
@@ -56,7 +55,7 @@ test.describe('MCP Core User Flow - Better Call Saul', () => {
             priority: 'High',
             description: 'First-degree murder case with complex evidence',
             successProbability: 0.72,
-            nextCourtDate: '2024-03-20T09:00:00Z'
+            nextCourtDate: '2024-03-20T09:00:00Z',
           },
           {
             id: 'case-002',
@@ -66,9 +65,9 @@ test.describe('MCP Core User Flow - Better Call Saul', () => {
             priority: 'Medium',
             description: 'White collar crime with financial documents',
             successProbability: 0.58,
-            nextCourtDate: '2024-04-05T14:30:00Z'
-          }
-        ])
+            nextCourtDate: '2024-04-05T14:30:00Z',
+          },
+        ]),
       });
     });
 
@@ -82,8 +81,8 @@ test.describe('MCP Core User Flow - Better Call Saul', () => {
           firstName: 'Sarah',
           lastName: 'Connor',
           barNumber: 'BAR2024',
-          role: 'Senior Attorney'
-        })
+          role: 'Senior Attorney',
+        }),
       });
     });
 
@@ -91,7 +90,7 @@ test.describe('MCP Core User Flow - Better Call Saul', () => {
       route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({ message: 'Successfully logged out' })
+        body: JSON.stringify({ message: 'Successfully logged out' }),
       });
     });
   });
@@ -99,15 +98,15 @@ test.describe('MCP Core User Flow - Better Call Saul', () => {
   test('complete authentication to dashboard navigation flow', async ({ page }) => {
     // Test: Navigation to application root
     await page.goto('http://localhost:5173');
-    
+
     // Verification: Automatic redirect to login page
     await expect(page).toHaveURL(/.*login/);
     await expect(page.getByRole('heading', { name: /login/i })).toBeVisible();
-    
+
     // Action: Fill login form with valid credentials
     await page.getByLabel(/email/i).fill('sarah.connor@example.com');
     await page.getByLabel(/password/i).fill('SecurePassword123!');
-    
+
     // Action: Submit login form
     await page.getByRole('button', { name: /login/i }).click();
 
@@ -130,7 +129,7 @@ test.describe('MCP Core User Flow - Better Call Saul', () => {
 
     // Action: Navigate to case details
     await page.getByText('State v. Anderson').click();
-    
+
     // Verification: Case details page loads with correct URL
     await expect(page).toHaveURL(/.*cases\/case-001/);
     await expect(page.getByText('State v. Anderson')).toBeVisible();
@@ -142,7 +141,7 @@ test.describe('MCP Core User Flow - Better Call Saul', () => {
 
     // Action: Logout from application
     await page.getByRole('button', { name: /logout/i }).click();
-    
+
     // Verification: Redirected back to login page after logout
     await expect(page).toHaveURL(/.*login/);
   });
@@ -150,9 +149,11 @@ test.describe('MCP Core User Flow - Better Call Saul', () => {
   test('user registration with form validation', async ({ page }) => {
     // Test: Direct navigation to registration page
     await page.goto('http://localhost:5173/register');
-    
+
     // Verification: Registration page loads with correct heading
-    await expect(page.getByRole('heading', { name: /register for better call saul/i })).toBeVisible();
+    await expect(
+      page.getByRole('heading', { name: /register for better call saul/i })
+    ).toBeVisible();
 
     // Action: Fill registration form with complete information
     await page.getByLabel(/first name/i).fill('John');
@@ -177,10 +178,10 @@ test.describe('MCP Core User Flow - Better Call Saul', () => {
       route.fulfill({
         status: 401,
         contentType: 'application/json',
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           message: 'Authentication failed: Invalid email or password',
-          code: 'AUTH_FAILED'
-        })
+          code: 'AUTH_FAILED',
+        }),
       });
     });
 
@@ -193,7 +194,7 @@ test.describe('MCP Core User Flow - Better Call Saul', () => {
     // Verification: Should remain on login page with form preserved
     await expect(page).toHaveURL(/.*login/);
     await expect(page.getByRole('heading', { name: /login/i })).toBeVisible();
-    
+
     // Form should still be accessible for retry
     await expect(page.getByLabel(/email/i)).toBeVisible();
     await expect(page.getByLabel(/password/i)).toBeVisible();
@@ -205,10 +206,10 @@ test.describe('MCP Core User Flow - Better Call Saul', () => {
       route.fulfill({
         status: 401,
         contentType: 'application/json',
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           message: 'Unauthorized: Please login to access this resource',
-          code: 'UNAUTHORIZED'
-        })
+          code: 'UNAUTHORIZED',
+        }),
       });
     });
 
@@ -224,12 +225,14 @@ test.describe('MCP Core User Flow - Better Call Saul', () => {
     await expect(page.getByRole('heading', { name: /login/i })).toBeVisible();
 
     await page.goto('http://localhost:5173/register');
-    await expect(page.getByRole('heading', { name: /register for better call saul/i })).toBeVisible();
+    await expect(
+      page.getByRole('heading', { name: /register for better call saul/i })
+    ).toBeVisible();
   });
 
   test('session management with token refresh simulation', async ({ page }) => {
     // This test demonstrates MCP capabilities for testing token-based auth flows
-    
+
     // Setup: Mock token refresh endpoint
     await page.route('**/api/auth/refresh', route => {
       route.fulfill({
@@ -242,9 +245,9 @@ test.describe('MCP Core User Flow - Better Call Saul', () => {
             id: 'user-001',
             email: 'sarah.connor@example.com',
             firstName: 'Sarah',
-            lastName: 'Connor'
-          }
-        })
+            lastName: 'Connor',
+          },
+        }),
       });
     });
 
@@ -256,30 +259,34 @@ test.describe('MCP Core User Flow - Better Call Saul', () => {
 
     // Verification: Dashboard access with valid session
     await expect(page).toHaveURL(/.*dashboard/);
-    
+
     // Simulate token expiration by mocking 401 on subsequent requests
     await page.route('**/api/cases*', route => {
       route.fulfill({
         status: 401,
         contentType: 'application/json',
-        body: JSON.stringify({ message: 'Token expired, please refresh' })
+        body: JSON.stringify({ message: 'Token expired, please refresh' }),
       });
     });
 
     // The application should handle token refresh automatically via interceptors
     // This demonstrates MCP's ability to test complex authentication workflows
-    
+
     // Note: The actual token refresh logic is handled by the apiClient interceptors
     // This test verifies that the application remains functional during auth challenges
   });
 
-  test('comprehensive user journey: register → login → case management → logout', async ({ page }) => {
+  test('comprehensive user journey: register → login → case management → logout', async ({
+    page,
+  }) => {
     // Complete user journey demonstrating MCP testing capabilities
-    
+
     // Phase 1: Registration
     await page.goto('http://localhost:5173/register');
-    await expect(page.getByRole('heading', { name: /register for better call saul/i })).toBeVisible();
-    
+    await expect(
+      page.getByRole('heading', { name: /register for better call saul/i })
+    ).toBeVisible();
+
     await page.getByLabel(/first name/i).fill('Emma');
     await page.getByLabel(/last name/i).fill('Thompson');
     await page.getByLabel(/email/i).fill('emma.thompson@example.com');

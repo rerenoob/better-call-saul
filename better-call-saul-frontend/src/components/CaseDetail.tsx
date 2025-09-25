@@ -21,7 +21,9 @@ export const CaseDetail: React.FC = () => {
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [currentMessage, setCurrentMessage] = useState('');
   const [isAITyping, setIsAITyping] = useState(false);
-  const [relevantCaseLaw, setRelevantCaseLaw] = useState<{caseName: string; summary: string}[]>([]);
+  const [relevantCaseLaw, setRelevantCaseLaw] = useState<{ caseName: string; summary: string }[]>(
+    []
+  );
 
   useEffect(() => {
     if (id) {
@@ -35,10 +37,10 @@ export const CaseDetail: React.FC = () => {
       setError(null);
       const caseDetails = await caseService.getCase(caseId);
       setCaseData(caseDetails);
-      
+
       // Load case analysis data
       await loadCaseAnalysis();
-      
+
       // Load relevant case law
       await loadRelevantCaseLaw();
     } catch (error) {
@@ -78,7 +80,7 @@ export const CaseDetail: React.FC = () => {
       id: Date.now().toString(),
       message: messageToSend,
       isAI: false,
-      timestamp: new Date()
+      timestamp: new Date(),
     };
 
     setChatMessages(prev => [...prev, userMessage]);
@@ -87,28 +89,31 @@ export const CaseDetail: React.FC = () => {
 
     try {
       const response = await caseService.chatWithAI(id, messageToSend);
-      
+
       const aiMessage: ChatMessage = {
         id: (Date.now() + 1).toString(),
-        message: response.generatedText || 'I apologize, but I encountered an error processing your request.',
+        message:
+          response.generatedText ||
+          'I apologize, but I encountered an error processing your request.',
         isAI: true,
-        timestamp: new Date()
+        timestamp: new Date(),
       };
 
       setChatMessages(prev => [...prev, aiMessage]);
     } catch (error: unknown) {
-      let errorMessageText = 'I apologize, but I encountered an error processing your request. Please try again.';
-      
+      let errorMessageText =
+        'I apologize, but I encountered an error processing your request. Please try again.';
+
       if (typeof error === 'object' && error !== null && 'response' in error) {
         const responseError = error as { response?: { data?: { error?: string } } };
         errorMessageText = responseError.response?.data?.error || errorMessageText;
       }
-      
+
       const errorMessage: ChatMessage = {
         id: (Date.now() + 1).toString(),
         message: errorMessageText,
         isAI: true,
-        timestamp: new Date()
+        timestamp: new Date(),
       };
       setChatMessages(prev => [...prev, errorMessage]);
     } finally {
@@ -122,8 +127,6 @@ export const CaseDetail: React.FC = () => {
       handleSendMessage();
     }
   };
-
-
 
   const getRecommendationClass = (probability?: number) => {
     if (!probability) return 'bg-gray-50 border-gray-200 text-gray-800';
@@ -160,10 +163,8 @@ export const CaseDetail: React.FC = () => {
     return (
       <div className="min-h-screen bg-gray-100 flex items-center justify-center">
         <div className="text-center">
-          <p className="text-xl text-gray-600">
-            {error ? `Error: ${error}` : 'Case not found'}
-          </p>
-          <button 
+          <p className="text-xl text-gray-600">{error ? `Error: ${error}` : 'Case not found'}</p>
+          <button
             onClick={() => navigate('/dashboard')}
             className="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
           >
@@ -180,7 +181,12 @@ export const CaseDetail: React.FC = () => {
       <aside className="w-64 bg-slate-800 text-white flex flex-col">
         <div className="p-6 text-2xl font-bold border-b border-slate-700 flex items-center">
           <svg className="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3" />
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"
+            />
           </svg>
           <span>BCS AI</span>
         </div>
@@ -190,7 +196,12 @@ export const CaseDetail: React.FC = () => {
             className="flex items-center px-4 py-2 rounded-lg text-sm font-medium bg-slate-700 text-white w-full text-left"
           >
             <svg className="mr-3 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"
+              />
             </svg>
             Dashboard
           </button>
@@ -199,7 +210,12 @@ export const CaseDetail: React.FC = () => {
             className="flex items-center px-4 py-2 rounded-lg text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-700 w-full text-left"
           >
             <svg className="mr-3 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 13h6m-3-3v6m5 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+              />
             </svg>
             Add New Case
           </button>
@@ -214,11 +230,14 @@ export const CaseDetail: React.FC = () => {
               <p className="text-xs text-slate-400">{user?.roles?.[0] || 'Public Defender'}</p>
             </div>
           </div>
-          <button
-            className="w-full mt-4 flex items-center justify-center text-sm text-slate-300 hover:text-white bg-slate-700/50 hover:bg-slate-700 py-2 rounded-lg transition-colors"
-          >
+          <button className="w-full mt-4 flex items-center justify-center text-sm text-slate-300 hover:text-white bg-slate-700/50 hover:bg-slate-700 py-2 rounded-lg transition-colors">
             <svg className="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+              />
             </svg>
             Logout
           </button>
@@ -229,26 +248,33 @@ export const CaseDetail: React.FC = () => {
       <main className="flex-1">
         {/* Header */}
         <header className="bg-white border-b border-slate-200 p-6">
-          <button 
+          <button
             onClick={() => navigate('/dashboard')}
             className="flex items-center text-sm font-semibold text-slate-600 hover:text-slate-900 mb-2"
           >
             <svg className="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M15 19l-7-7 7-7"
+              />
             </svg>
             Back to Dashboard
           </button>
           <div className="flex justify-between items-center">
             <div>
               <h1 className="text-3xl font-bold text-slate-800">{caseData.title}</h1>
-              <p className="text-slate-500 mt-1">
-                Case Number: {caseData.caseNumber}
-              </p>
+              <p className="text-slate-500 mt-1">Case Number: {caseData.caseNumber}</p>
             </div>
             <div className="text-right">
               <p className="text-sm text-slate-500">AI Success Prediction</p>
-              <p className={`text-4xl font-bold ${getSuccessProbabilityColor(caseData.successProbability || 0)}`}>
-                {caseData.successProbability ? `${(caseData.successProbability * 100).toFixed(0)}%` : 'N/A'}
+              <p
+                className={`text-4xl font-bold ${getSuccessProbabilityColor(caseData.successProbability || 0)}`}
+              >
+                {caseData.successProbability
+                  ? `${(caseData.successProbability * 100).toFixed(0)}%`
+                  : 'N/A'}
               </p>
             </div>
           </div>
@@ -259,37 +285,60 @@ export const CaseDetail: React.FC = () => {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Left Column: Summary & Recommendation */}
             <div className="lg:col-span-2 space-y-6">
-
               {/* Case Summary */}
               <div>
                 <h3 className="text-xl font-semibold text-slate-700 mb-3 flex items-center">
-                  <svg className="mr-2 h-5 w-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                  <svg
+                    className="mr-2 h-5 w-5 text-blue-600"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                    />
                   </svg>
                   AI Case Summary
                 </h3>
                 <p className="text-slate-600 leading-relaxed">
-                  {caseData.description || 'No case summary available. Please analyze this case to generate an AI summary.'}
+                  {caseData.description ||
+                    'No case summary available. Please analyze this case to generate an AI summary.'}
                 </p>
               </div>
 
               {/* AI Recommendation */}
               <div>
                 <h3 className="text-xl font-semibold text-slate-700 mb-3 flex items-center">
-                  <svg className="mr-2 h-5 w-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3" />
+                  <svg
+                    className="mr-2 h-5 w-5 text-blue-600"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3"
+                    />
                   </svg>
                   AI Recommendation
                 </h3>
-                <div className={`p-6 rounded-lg border ${getRecommendationClass(caseData.successProbability)}`}>
-                  <p className="font-bold text-lg text-blue-800">{getRecommendationText(caseData.successProbability)}</p>
+                <div
+                  className={`p-6 rounded-lg border ${getRecommendationClass(caseData.successProbability)}`}
+                >
+                  <p className="font-bold text-lg text-blue-800">
+                    {getRecommendationText(caseData.successProbability)}
+                  </p>
                   <p className="text-blue-700 mt-2">
-                    {caseData.successProbability && caseData.successProbability >= 0.7 
-                      ? 'The case presents a strong potential for a successful defense. The weaknesses in the prosecution\'s evidence provide multiple avenues for reasonable doubt. A plea deal is not recommended at this stage as it undervalues the defensive position.'
+                    {caseData.successProbability && caseData.successProbability >= 0.7
+                      ? "The case presents a strong potential for a successful defense. The weaknesses in the prosecution's evidence provide multiple avenues for reasonable doubt. A plea deal is not recommended at this stage as it undervalues the defensive position."
                       : caseData.successProbability && caseData.successProbability >= 0.5
-                      ? 'The outcome of a trial is uncertain. Negotiating for a reduced charge from a position of strength, leveraging the procedural errors, is advised. A plea bargain could mitigate risk while securing a favorable outcome compared to a potential conviction at trial.'
-                      : 'Given the low probability of success at trial, the most advantageous strategy is to secure the best possible plea agreement. Focus should be on mitigating sentencing and avoiding the risks of a conviction on more severe charges.'
-                    }
+                        ? 'The outcome of a trial is uncertain. Negotiating for a reduced charge from a position of strength, leveraging the procedural errors, is advised. A plea bargain could mitigate risk while securing a favorable outcome compared to a potential conviction at trial.'
+                        : 'Given the low probability of success at trial, the most advantageous strategy is to secure the best possible plea agreement. Focus should be on mitigating sentencing and avoiding the risks of a conviction on more severe charges.'}
                   </p>
                 </div>
               </div>
@@ -305,13 +354,15 @@ export const CaseDetail: React.FC = () => {
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-sm font-medium text-gray-600">Success Probability</span>
                       <span className="text-lg font-bold text-green-600">
-                        {caseData.successProbability ? `${(caseData.successProbability * 100).toFixed(0)}%` : 'N/A'}
+                        {caseData.successProbability
+                          ? `${(caseData.successProbability * 100).toFixed(0)}%`
+                          : 'N/A'}
                       </span>
                     </div>
                     {caseData.successProbability && (
                       <div className="w-full bg-gray-200 rounded-full h-3">
-                        <div 
-                          className="bg-green-600 h-3 rounded-full transition-all duration-500" 
+                        <div
+                          className="bg-green-600 h-3 rounded-full transition-all duration-500"
                           style={{ width: `${caseData.successProbability * 100}%` }}
                         ></div>
                       </div>
@@ -340,85 +391,84 @@ export const CaseDetail: React.FC = () => {
                   Relevant Case Law
                 </h3>
                 <div className="space-y-4">
-                {relevantCaseLaw.length > 0 ? (
-                  relevantCaseLaw.map((caseLaw, index) => (
-                    <div key={index} className="bg-gray-50 p-4 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer">
-                      <p className="font-semibold text-gray-800">{caseLaw.caseName}</p>
-                      <p className="text-sm text-gray-500 mt-1">{caseLaw.summary}</p>
-                    </div>
-                  ))
-                ) : (
-                  <div className="text-center text-gray-500 text-sm py-8">
-                    No relevant case law found. Analyze this case to discover applicable precedents.
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Ask AI Chat */}
-            <div className="bg-white rounded-lg shadow p-6">
-              <h3 className="text-xl font-semibold text-gray-700 mb-4 flex items-center">
-                <span className="mr-2">🤖</span>
-                Ask the AI
-              </h3>
-              
-              {/* Chat Messages */}
-              <div className="h-64 overflow-y-auto border border-gray-200 rounded-lg p-3 mb-4">
-                {chatMessages.length === 0 ? (
-                  <div className="text-center text-gray-500 text-sm">
-                    Ask me anything about this case...
-                  </div>
-                ) : (
-                  chatMessages.map((msg) => (
-                    <div
-                      key={msg.id}
-                      className={`mb-3 ${msg.isAI ? 'text-left' : 'text-right'}`}
-                    >
+                  {relevantCaseLaw.length > 0 ? (
+                    relevantCaseLaw.map((caseLaw, index) => (
                       <div
-                        className={`inline-block p-2 rounded-lg max-w-xs ${
-                          msg.isAI
-                            ? 'bg-gray-100 text-gray-800'
-                            : 'bg-blue-500 text-white'
-                        }`}
+                        key={index}
+                        className="bg-gray-50 p-4 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
                       >
-                        <p className="text-sm">{msg.message}</p>
-                        <p className="text-xs mt-1 opacity-70">
-                          {msg.timestamp.toLocaleTimeString()}
-                        </p>
+                        <p className="font-semibold text-gray-800">{caseLaw.caseName}</p>
+                        <p className="text-sm text-gray-500 mt-1">{caseLaw.summary}</p>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-center text-gray-500 text-sm py-8">
+                      No relevant case law found. Analyze this case to discover applicable
+                      precedents.
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Ask AI Chat */}
+              <div className="bg-white rounded-lg shadow p-6">
+                <h3 className="text-xl font-semibold text-gray-700 mb-4 flex items-center">
+                  <span className="mr-2">🤖</span>
+                  Ask the AI
+                </h3>
+
+                {/* Chat Messages */}
+                <div className="h-64 overflow-y-auto border border-gray-200 rounded-lg p-3 mb-4">
+                  {chatMessages.length === 0 ? (
+                    <div className="text-center text-gray-500 text-sm">
+                      Ask me anything about this case...
+                    </div>
+                  ) : (
+                    chatMessages.map(msg => (
+                      <div key={msg.id} className={`mb-3 ${msg.isAI ? 'text-left' : 'text-right'}`}>
+                        <div
+                          className={`inline-block p-2 rounded-lg max-w-xs ${
+                            msg.isAI ? 'bg-gray-100 text-gray-800' : 'bg-blue-500 text-white'
+                          }`}
+                        >
+                          <p className="text-sm">{msg.message}</p>
+                          <p className="text-xs mt-1 opacity-70">
+                            {msg.timestamp.toLocaleTimeString()}
+                          </p>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                  {isAITyping && (
+                    <div className="text-left mb-3">
+                      <div className="inline-block p-2 rounded-lg bg-gray-100 text-gray-800">
+                        <p className="text-sm">AI is thinking...</p>
                       </div>
                     </div>
-                  ))
-                )}
-                {isAITyping && (
-                  <div className="text-left mb-3">
-                    <div className="inline-block p-2 rounded-lg bg-gray-100 text-gray-800">
-                      <p className="text-sm">AI is thinking...</p>
-                    </div>
-                  </div>
-                )}
-              </div>
+                  )}
+                </div>
 
-              {/* Chat Input */}
-              <div className="relative">
-                <textarea
-                  value={currentMessage}
-                  onChange={(e) => setCurrentMessage(e.target.value)}
-                  onKeyPress={handleKeyPress}
-                  placeholder="Ask a question about this case..."
-                  className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-                  rows={3}
-                  disabled={isAITyping}
-                />
-                <button
-                  onClick={handleSendMessage}
-                  disabled={!currentMessage.trim() || isAITyping}
-                  className="absolute bottom-2 right-2 bg-blue-600 text-white rounded-md p-2 hover:bg-blue-700 disabled:bg-gray-400"
-                >
-                  Send
-                </button>
+                {/* Chat Input */}
+                <div className="relative">
+                  <textarea
+                    value={currentMessage}
+                    onChange={e => setCurrentMessage(e.target.value)}
+                    onKeyPress={handleKeyPress}
+                    placeholder="Ask a question about this case..."
+                    className="w-full p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                    rows={3}
+                    disabled={isAITyping}
+                  />
+                  <button
+                    onClick={handleSendMessage}
+                    disabled={!currentMessage.trim() || isAITyping}
+                    className="absolute bottom-2 right-2 bg-blue-600 text-white rounded-md p-2 hover:bg-blue-700 disabled:bg-gray-400"
+                  >
+                    Send
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
           </div>
         </div>
       </main>

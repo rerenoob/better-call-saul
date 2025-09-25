@@ -1,6 +1,7 @@
 using BetterCallSaul.Core.Enums;
 using BetterCallSaul.Core.Interfaces;
 using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 
 namespace BetterCallSaul.Core.Models.Entities;
 
@@ -37,8 +38,11 @@ public class Document : IAuditableEntity
     public Guid? UploadedById { get; set; }
 
     // Navigation properties
+    [JsonIgnore]
     public virtual Case Case { get; set; } = null!;
+    [JsonIgnore]
     public virtual User? UploadedBy { get; set; }
+    [JsonIgnore]
     public virtual DocumentText? ExtractedText { get; set; }
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;

@@ -41,7 +41,10 @@ export const caseService = {
     return response.data;
   },
 
-  chatWithAI: async (caseId: string, message: string): Promise<{ success: boolean; generatedText?: string; errorMessage?: string }> => {
+  chatWithAI: async (
+    caseId: string,
+    message: string
+  ): Promise<{ success: boolean; generatedText?: string; errorMessage?: string }> => {
     const response = await apiClient.post(`/api/case/${caseId}/chat`, { message });
     return response.data;
   },

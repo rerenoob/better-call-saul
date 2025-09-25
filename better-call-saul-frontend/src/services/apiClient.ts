@@ -1,7 +1,10 @@
 import axios from 'axios';
 import { tokenStorage } from '../utils/tokenStorage';
 
-const GATEWAY_BASE_URL = import.meta.env.VITE_API_BASE_URL || import.meta.env.VITE_GATEWAY_BASE_URL || 'http://localhost:7191';
+const GATEWAY_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL ||
+  import.meta.env.VITE_GATEWAY_BASE_URL ||
+  'http://localhost:7191';
 
 export const apiClient = axios.create({
   baseURL: `${GATEWAY_BASE_URL}`,
@@ -12,22 +15,22 @@ export const apiClient = axios.create({
 
 // Request interceptor to add auth token
 apiClient.interceptors.request.use(
-  (config) => {
+  config => {
     const token = tokenStorage.getToken();
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
   },
-  (error) => {
+  error => {
     return Promise.reject(error);
   }
 );
 
 // Response interceptor to handle token refresh
 apiClient.interceptors.response.use(
-  (response) => response,
-  async (error) => {
+  response => response,
+  async error => {
     const originalRequest = error.config;
 
     if (error.response?.status === 401 && !originalRequest._retry) {

@@ -10,10 +10,10 @@ export const useFileUpload = () => {
 
   const addFiles = useCallback((newFiles: File[]) => {
     const validatedFiles: UploadFile[] = [];
-    
+
     newFiles.forEach(file => {
       const validation = fileUploadService.validateFile(file);
-      
+
       if (validation.isValid) {
         validatedFiles.push({
           id: generateFileId(),
@@ -22,7 +22,7 @@ export const useFileUpload = () => {
           size: file.size,
           type: file.type,
           uploadProgress: 0,
-          status: UploadStatus.PENDING
+          status: UploadStatus.PENDING,
         });
       }
     });
@@ -35,20 +35,23 @@ export const useFileUpload = () => {
     setFiles(prev => prev.filter(f => f.id !== fileId));
   }, []);
 
-  const updateFileProgress = useCallback((fileId: string, progress: number, status: UploadStatus) => {
-    setFiles(prev => prev.map(file => 
-      file.id === fileId 
-        ? { ...file, uploadProgress: progress, status }
-        : file
-    ));
-  }, []);
+  const updateFileProgress = useCallback(
+    (fileId: string, progress: number, status: UploadStatus) => {
+      setFiles(prev =>
+        prev.map(file =>
+          file.id === fileId ? { ...file, uploadProgress: progress, status } : file
+        )
+      );
+    },
+    []
+  );
 
   const uploadFiles = useCallback(async () => {
     if (files.length === 0) return { success: true, fileIds: [] };
 
     setIsUploading(true);
     const uploadResults: string[] = [];
-    
+
     try {
       for (const file of files) {
         if (file.status === UploadStatus.COMPLETED) {
@@ -57,9 +60,8 @@ export const useFileUpload = () => {
 
         updateFileProgress(file.id, 0, UploadStatus.UPLOADING);
 
-        const result = await fileUploadService.uploadFile(
-          file.file,
-          (progress) => updateFileProgress(file.id, progress, UploadStatus.UPLOADING)
+        const result = await fileUploadService.uploadFile(file.file, progress =>
+          updateFileProgress(file.id, progress, UploadStatus.UPLOADING)
         );
 
         if (result.success && result.fileId) {
@@ -67,11 +69,11 @@ export const useFileUpload = () => {
           uploadResults.push(result.fileId);
         } else {
           updateFileProgress(file.id, 0, UploadStatus.ERROR);
-          setFiles(prev => prev.map(f => 
-            f.id === file.id 
-              ? { ...f, error: result.error, status: UploadStatus.ERROR }
-              : f
-          ));
+          setFiles(prev =>
+            prev.map(f =>
+              f.id === file.id ? { ...f, error: result.error, status: UploadStatus.ERROR } : f
+            )
+          );
         }
       }
 
@@ -85,24 +87,23 @@ export const useFileUpload = () => {
 
   const retryFailedUploads = useCallback(async () => {
     const failedFiles = files.filter(f => f.status === UploadStatus.ERROR);
-    
+
     for (const file of failedFiles) {
       updateFileProgress(file.id, 0, UploadStatus.UPLOADING);
-      
-      const result = await fileUploadService.uploadFile(
-        file.file,
-        (progress) => updateFileProgress(file.id, progress, UploadStatus.UPLOADING)
+
+      const result = await fileUploadService.uploadFile(file.file, progress =>
+        updateFileProgress(file.id, progress, UploadStatus.UPLOADING)
       );
 
       if (result.success) {
         updateFileProgress(file.id, 100, UploadStatus.COMPLETED);
       } else {
         updateFileProgress(file.id, 0, UploadStatus.ERROR);
-        setFiles(prev => prev.map(f => 
-          f.id === file.id 
-            ? { ...f, error: result.error, status: UploadStatus.ERROR }
-            : f
-        ));
+        setFiles(prev =>
+          prev.map(f =>
+            f.id === file.id ? { ...f, error: result.error, status: UploadStatus.ERROR } : f
+          )
+        );
       }
     }
   }, [files, updateFileProgress]);
@@ -129,6 +130,6 @@ export const useFileUpload = () => {
     uploadFiles,
     retryFailedUploads,
     clearFiles,
-    getUploadStats
+    getUploadStats,
   };
 };

@@ -48,8 +48,6 @@ public class CaseManagementService : ICaseManagementService
     public async Task<Case> GetCaseAsync(Guid caseId, CancellationToken cancellationToken = default)
     {
         var caseData = await _sqlContext.Cases
-            .Include(c => c.Documents)
-            .Include(c => c.CaseAnalyses)
             .FirstOrDefaultAsync(c => c.Id == caseId, cancellationToken);
 
         if (caseData == null)

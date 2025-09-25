@@ -2,7 +2,6 @@ import { test, expect } from '@playwright/test';
 
 // This test demonstrates MCP server capabilities with comprehensive user flow testing
 test.describe('MCP Server Demonstration - Core User Flow', () => {
-  
   test.beforeEach(async ({ page }) => {
     // Comprehensive API mocking for the entire application
     await page.route('**/api/auth/login', route => {
@@ -18,9 +17,9 @@ test.describe('MCP Server Demonstration - Core User Flow', () => {
             firstName: 'Sarah',
             lastName: 'Connor',
             barNumber: 'BAR2024',
-            role: 'Senior Attorney'
-          }
-        })
+            role: 'Senior Attorney',
+          },
+        }),
       });
     });
 
@@ -37,9 +36,9 @@ test.describe('MCP Server Demonstration - Core User Flow', () => {
             firstName: 'John',
             lastName: 'Doe',
             barNumber: 'BAR2025',
-            role: 'Junior Attorney'
-          }
-        })
+            role: 'Junior Attorney',
+          },
+        }),
       });
     });
 
@@ -56,7 +55,7 @@ test.describe('MCP Server Demonstration - Core User Flow', () => {
             priority: 'High',
             description: 'First-degree murder case with complex evidence',
             successProbability: 0.72,
-            nextCourtDate: '2024-03-20T09:00:00Z'
+            nextCourtDate: '2024-03-20T09:00:00Z',
           },
           {
             id: 'case-002',
@@ -66,9 +65,9 @@ test.describe('MCP Server Demonstration - Core User Flow', () => {
             priority: 'Medium',
             description: 'White collar crime with financial documents',
             successProbability: 0.58,
-            nextCourtDate: '2024-04-05T14:30:00Z'
-          }
-        ])
+            nextCourtDate: '2024-04-05T14:30:00Z',
+          },
+        ]),
       });
     });
 
@@ -82,8 +81,8 @@ test.describe('MCP Server Demonstration - Core User Flow', () => {
           firstName: 'Sarah',
           lastName: 'Connor',
           barNumber: 'BAR2024',
-          role: 'Senior Attorney'
-        })
+          role: 'Senior Attorney',
+        }),
       });
     });
 
@@ -91,7 +90,7 @@ test.describe('MCP Server Demonstration - Core User Flow', () => {
       route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({ message: 'Successfully logged out' })
+        body: JSON.stringify({ message: 'Successfully logged out' }),
       });
     });
   });
@@ -99,15 +98,15 @@ test.describe('MCP Server Demonstration - Core User Flow', () => {
   test('complete authentication to case management flow', async ({ page }) => {
     // Test: Navigation to application
     await page.goto('http://localhost:5173');
-    
+
     // Verification: Should redirect to login page
     await expect(page).toHaveURL(/.*login/);
     await expect(page.getByRole('heading', { name: /login/i })).toBeVisible();
-    
+
     // Action: Fill login form with valid credentials
     await page.getByLabel(/email/i).fill('attorney@example.com');
     await page.getByLabel(/password/i).fill('SecurePassword123!');
-    
+
     // Action: Submit login form
     await page.getByRole('button', { name: /login/i }).click();
 
@@ -131,7 +130,7 @@ test.describe('MCP Server Demonstration - Core User Flow', () => {
 
     // Action: Navigate to case details
     await page.getByText('State v. Anderson').click();
-    
+
     // Verification: Case details page loads
     await expect(page).toHaveURL(/.*cases\/case-001/);
     await expect(page.getByText('State v. Anderson')).toBeVisible();
@@ -143,7 +142,7 @@ test.describe('MCP Server Demonstration - Core User Flow', () => {
 
     // Action: Logout
     await page.getByRole('button', { name: /logout/i }).click();
-    
+
     // Verification: Redirected back to login page
     await expect(page).toHaveURL(/.*login/);
   });
@@ -151,9 +150,11 @@ test.describe('MCP Server Demonstration - Core User Flow', () => {
   test('registration flow with validation', async ({ page }) => {
     // Test: Direct navigation to registration
     await page.goto('http://localhost:5173/register');
-    
+
     // Verification: Registration page loads
-    await expect(page.getByRole('heading', { name: /register for better call saul/i })).toBeVisible();
+    await expect(
+      page.getByRole('heading', { name: /register for better call saul/i })
+    ).toBeVisible();
 
     // Action: Fill registration form
     await page.getByLabel(/first name/i).fill('John');
@@ -178,10 +179,10 @@ test.describe('MCP Server Demonstration - Core User Flow', () => {
       route.fulfill({
         status: 401,
         contentType: 'application/json',
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           message: 'Authentication failed: Invalid email or password',
-          code: 'AUTH_FAILED'
-        })
+          code: 'AUTH_FAILED',
+        }),
       });
     });
 
@@ -193,7 +194,7 @@ test.describe('MCP Server Demonstration - Core User Flow', () => {
 
     // Verification: Should remain on login page with error indication
     await expect(page).toHaveURL(/.*login/);
-    
+
     // Check for any error message or form reset
     const pageContent = await page.textContent('body');
     expect(pageContent).toContain('Login');
@@ -205,10 +206,10 @@ test.describe('MCP Server Demonstration - Core User Flow', () => {
       route.fulfill({
         status: 401,
         contentType: 'application/json',
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           message: 'Unauthorized: Please login to access this resource',
-          code: 'UNAUTHORIZED'
-        })
+          code: 'UNAUTHORIZED',
+        }),
       });
     });
 
@@ -226,7 +227,7 @@ test.describe('MCP Server Demonstration - Core User Flow', () => {
 
   test('session management and token refresh', async ({ page }) => {
     // This test demonstrates MCP capabilities for testing token-based authentication
-    
+
     // Setup: Mock token refresh endpoint
     await page.route('**/api/auth/refresh', route => {
       route.fulfill({
@@ -239,9 +240,9 @@ test.describe('MCP Server Demonstration - Core User Flow', () => {
             id: 'user-001',
             email: 'attorney@example.com',
             firstName: 'Sarah',
-            lastName: 'Connor'
-          }
-        })
+            lastName: 'Connor',
+          },
+        }),
       });
     });
 
@@ -253,13 +254,13 @@ test.describe('MCP Server Demonstration - Core User Flow', () => {
 
     // Verification: Dashboard access
     await expect(page).toHaveURL(/.*dashboard/);
-    
+
     // Simulate token expiration by mocking 401 on subsequent requests
     await page.route('**/api/cases*', route => {
       route.fulfill({
         status: 401,
         contentType: 'application/json',
-        body: JSON.stringify({ message: 'Token expired' })
+        body: JSON.stringify({ message: 'Token expired' }),
       });
     });
 

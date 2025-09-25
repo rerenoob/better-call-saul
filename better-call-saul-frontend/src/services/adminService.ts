@@ -115,7 +115,7 @@ export const adminService = {
 
   async getUsers(page: number = 1, pageSize: number = 20): Promise<UsersResponse> {
     const response = await apiClient.get('/api/admin/users', {
-      params: { page, pageSize }
+      params: { page, pageSize },
     });
     return response.data;
   },
@@ -136,7 +136,7 @@ export const adminService = {
 
   async getAuditLogs(page: number = 1, pageSize: number = 50): Promise<AuditLogsResponse> {
     const response = await apiClient.get('/api/admin/audit-logs', {
-      params: { page, pageSize }
+      params: { page, pageSize },
     });
     return response.data;
   },
@@ -146,9 +146,12 @@ export const adminService = {
     return response.data;
   },
 
-  async getRegistrationCodes(page: number = 1, pageSize: number = 50): Promise<RegistrationCodesResponse> {
+  async getRegistrationCodes(
+    page: number = 1,
+    pageSize: number = 50
+  ): Promise<RegistrationCodesResponse> {
     const response = await apiClient.get('/api/admin/registration-codes', {
-      params: { page, pageSize }
+      params: { page, pageSize },
     });
     return response.data;
   },
@@ -158,7 +161,9 @@ export const adminService = {
     return response.data;
   },
 
-  async generateRegistrationCodes(request: GenerateCodesRequest): Promise<{ message: string; codes: string[] }> {
+  async generateRegistrationCodes(
+    request: GenerateCodesRequest
+  ): Promise<{ message: string; codes: string[] }> {
     const response = await apiClient.post('/api/admin/registration-codes/generate', request);
     return response.data;
   },
@@ -170,5 +175,5 @@ export const adminService = {
   async cleanupExpiredCodes(): Promise<{ message: string }> {
     const response = await apiClient.post('/api/admin/registration-codes/cleanup');
     return response.data;
-  }
+  },
 };

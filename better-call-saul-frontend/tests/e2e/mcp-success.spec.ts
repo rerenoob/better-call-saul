@@ -2,7 +2,6 @@ import { test, expect } from '@playwright/test';
 
 // Successful MCP server demonstration test
 test.describe('MCP Server Success Demonstration', () => {
-  
   test.beforeEach(async ({ page }) => {
     // Mock API endpoints for reliable testing
     await page.route('**/api/auth/login', route => {
@@ -16,9 +15,9 @@ test.describe('MCP Server Success Demonstration', () => {
             id: 'user-001',
             email: 'test.attorney@example.com',
             firstName: 'Test',
-            lastName: 'Attorney'
-          }
-        })
+            lastName: 'Attorney',
+          },
+        }),
       });
     });
 
@@ -32,9 +31,9 @@ test.describe('MCP Server Success Demonstration', () => {
             title: 'Test Case',
             caseNumber: 'TEST-001',
             status: 'New',
-            successProbability: 0.65
-          }
-        ])
+            successProbability: 0.65,
+          },
+        ]),
       });
     });
 
@@ -48,8 +47,8 @@ test.describe('MCP Server Success Demonstration', () => {
           caseNumber: 'TEST-001',
           status: 'New',
           description: 'Test case description',
-          successProbability: 0.65
-        })
+          successProbability: 0.65,
+        }),
       });
     });
 
@@ -61,8 +60,8 @@ test.describe('MCP Server Success Demonstration', () => {
           id: 'user-001',
           email: 'test.attorney@example.com',
           firstName: 'Test',
-          lastName: 'Attorney'
-        })
+          lastName: 'Attorney',
+        }),
       });
     });
 
@@ -70,7 +69,7 @@ test.describe('MCP Server Success Demonstration', () => {
       route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({ message: 'Successfully logged out' })
+        body: JSON.stringify({ message: 'Successfully logged out' }),
       });
     });
   });
@@ -78,11 +77,11 @@ test.describe('MCP Server Success Demonstration', () => {
   test('MCP: successful authentication flow', async ({ page }) => {
     // Test: Navigation to application
     await page.goto('http://localhost:5173');
-    
+
     // Verification: Redirect to login page
     await expect(page).toHaveURL(/.*login/);
     await expect(page.getByRole('heading', { name: /login/i })).toBeVisible();
-    
+
     // Action: Fill and submit login form
     await page.getByLabel(/email/i).fill('test.attorney@example.com');
     await page.getByLabel(/password/i).fill('Password123!');
@@ -98,7 +97,7 @@ test.describe('MCP Server Success Demonstration', () => {
 
     // Action: Logout
     await page.getByRole('button', { name: /logout/i }).click();
-    
+
     // Verification: Redirected back to login
     await expect(page).toHaveURL(/.*login/);
     await expect(page.getByRole('heading', { name: /login/i })).toBeVisible();
@@ -113,7 +112,7 @@ test.describe('MCP Server Success Demonstration', () => {
 
     // Navigate to case details
     await page.getByText('Test Case').click();
-    
+
     // Verification: Case details page loads
     await expect(page).toHaveURL(/.*cases\/case-001/);
     await expect(page.getByText('Test Case')).toBeVisible();
@@ -130,10 +129,10 @@ test.describe('MCP Server Success Demonstration', () => {
       route.fulfill({
         status: 401,
         contentType: 'application/json',
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           message: 'Invalid credentials',
-          code: 'AUTH_ERROR'
-        })
+          code: 'AUTH_ERROR',
+        }),
       });
     });
 
@@ -153,10 +152,10 @@ test.describe('MCP Server Success Demonstration', () => {
       route.fulfill({
         status: 401,
         contentType: 'application/json',
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           message: 'Authentication required',
-          code: 'UNAUTHORIZED'
-        })
+          code: 'UNAUTHORIZED',
+        }),
       });
     });
 

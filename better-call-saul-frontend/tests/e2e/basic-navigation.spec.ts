@@ -8,19 +8,19 @@ test.describe('Basic Navigation', () => {
       route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({})
+        body: JSON.stringify({}),
       });
     });
 
     // Navigate to the application
     await page.goto('http://localhost:5173');
-    
+
     // Check that we're on a page that contains React content
     await expect(page.locator('body')).not.toBeEmpty();
-    
+
     // Check for basic React app structure
     await expect(page.locator('#root')).toBeVisible();
-    
+
     // The app should have some text content
     const pageText = await page.textContent('body');
     expect(pageText).toContain('Login');
@@ -31,12 +31,12 @@ test.describe('Basic Navigation', () => {
       route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({})
+        body: JSON.stringify({}),
       });
     });
 
     await page.goto('http://localhost:5173/login');
-    
+
     // Check login page elements
     await expect(page.getByLabel(/email/i)).toBeVisible();
     await expect(page.getByLabel(/password/i)).toBeVisible();
@@ -55,7 +55,7 @@ test.describe('Basic Navigation', () => {
       route.fulfill({
         status: 401,
         contentType: 'application/json',
-        body: JSON.stringify({ message: 'Unauthorized' })
+        body: JSON.stringify({ message: 'Unauthorized' }),
       });
     });
 

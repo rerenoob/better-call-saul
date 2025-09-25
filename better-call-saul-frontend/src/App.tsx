@@ -25,7 +25,6 @@ const queryClient = new QueryClient({
   },
 });
 
-
 function LoginPage() {
   const navigate = useNavigate();
 
@@ -44,8 +43,8 @@ function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-gray-100 p-4 sm:p-6 lg:p-8">
       <div className="w-full max-w-sm sm:max-w-md transform transition-all duration-300 hover:scale-[1.01]">
-        <LoginForm 
-          onSuccess={handleLoginSuccess} 
+        <LoginForm
+          onSuccess={handleLoginSuccess}
           onSwitchToRegister={handleSwitchToRegister}
           onSwitchToAdminLogin={handleSwitchToAdminLogin}
         />
@@ -68,10 +67,7 @@ function RegisterPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-blue-100 p-4 sm:p-6 lg:p-8">
       <div className="w-full max-w-2xl transform transition-all duration-300 hover:scale-[1.01]">
-        <RegisterForm 
-          onSuccess={handleRegisterSuccess} 
-          onSwitchToLogin={handleSwitchToLogin}
-        />
+        <RegisterForm onSuccess={handleRegisterSuccess} onSwitchToLogin={handleSwitchToLogin} />
       </div>
     </div>
   );
@@ -91,8 +87,8 @@ function AdminLoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-red-50 to-gray-100 p-4 sm:p-6 lg:p-8">
       <div className="w-full max-w-sm sm:max-w-md transform transition-all duration-300 hover:scale-[1.01]">
-        <AdminLoginForm 
-          onSuccess={handleLoginSuccess} 
+        <AdminLoginForm
+          onSuccess={handleLoginSuccess}
           onSwitchToUserLogin={handleSwitchToUserLogin}
         />
       </div>
@@ -106,41 +102,62 @@ function App() {
       <AuthProvider>
         <Router>
           <Routes>
-            <Route path="/login" element={
-              <ProtectedRoute requireAuth={false}>
-                <LoginPage />
-              </ProtectedRoute>
-            } />
-            <Route path="/register" element={
-              <ProtectedRoute requireAuth={false}>
-                <RegisterPage />
-              </ProtectedRoute>
-            } />
-            <Route path="/admin-login" element={
-              <ProtectedRoute requireAuth={false}>
-                <AdminLoginPage />
-              </ProtectedRoute>
-            } />
-            <Route path="/dashboard" element={
-              <ProtectedRoute>
-                <Dashboard />
-              </ProtectedRoute>
-            } />
-            <Route path="/cases/:id" element={
-              <ProtectedRoute>
-                <CaseDetail />
-              </ProtectedRoute>
-            } />
-            <Route path="/cases/new" element={
-              <ProtectedRoute>
-                <CaseUpload />
-              </ProtectedRoute>
-            } />
-            <Route path="/admin" element={
-              <ProtectedRoute requireAdmin>
-                <AdminLayout />
-              </ProtectedRoute>
-            }>
+            <Route
+              path="/login"
+              element={
+                <ProtectedRoute requireAuth={false}>
+                  <LoginPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/register"
+              element={
+                <ProtectedRoute requireAuth={false}>
+                  <RegisterPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin-login"
+              element={
+                <ProtectedRoute requireAuth={false}>
+                  <AdminLoginPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard"
+              element={
+                <ProtectedRoute>
+                  <Dashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/cases/:id"
+              element={
+                <ProtectedRoute>
+                  <CaseDetail />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/cases/new"
+              element={
+                <ProtectedRoute>
+                  <CaseUpload />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin"
+              element={
+                <ProtectedRoute requireAdmin>
+                  <AdminLayout />
+                </ProtectedRoute>
+              }
+            >
               <Route index element={<Navigate to="dashboard" replace />} />
               <Route path="dashboard" element={<AdminDashboard />} />
               <Route path="users" element={<UserManagement />} />

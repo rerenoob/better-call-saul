@@ -2,7 +2,6 @@ import { test, expect } from '@playwright/test';
 
 // Focused test demonstrating MCP server capabilities for core authentication flow
 test.describe('MCP Server Capabilities Demonstration', () => {
-  
   test.beforeEach(async ({ page }) => {
     // Mock API endpoints for reliable testing
     await page.route('**/api/auth/login', route => {
@@ -18,9 +17,9 @@ test.describe('MCP Server Capabilities Demonstration', () => {
             firstName: 'Test',
             lastName: 'Attorney',
             barNumber: 'BAR2024',
-            role: 'Attorney'
-          }
-        })
+            role: 'Attorney',
+          },
+        }),
       });
     });
 
@@ -35,9 +34,9 @@ test.describe('MCP Server Capabilities Demonstration', () => {
             caseNumber: 'TEST-001',
             status: 'New',
             priority: 'High',
-            successProbability: 0.65
-          }
-        ])
+            successProbability: 0.65,
+          },
+        ]),
       });
     });
 
@@ -49,8 +48,8 @@ test.describe('MCP Server Capabilities Demonstration', () => {
           id: 'user-001',
           email: 'test.attorney@example.com',
           firstName: 'Test',
-          lastName: 'Attorney'
-        })
+          lastName: 'Attorney',
+        }),
       });
     });
 
@@ -58,7 +57,7 @@ test.describe('MCP Server Capabilities Demonstration', () => {
       route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({ message: 'Successfully logged out' })
+        body: JSON.stringify({ message: 'Successfully logged out' }),
       });
     });
   });
@@ -66,15 +65,15 @@ test.describe('MCP Server Capabilities Demonstration', () => {
   test('MCP: complete login to logout flow with navigation', async ({ page }) => {
     // Test: Navigation to application root
     await page.goto('http://localhost:5173');
-    
+
     // Verification: Automatic redirect to login page (MCP navigation testing)
     await expect(page).toHaveURL(/.*login/);
     await expect(page.getByRole('heading', { name: /login/i })).toBeVisible();
-    
+
     // Action: Fill login form (MCP form interaction testing)
     await page.getByLabel(/email/i).fill('test.attorney@example.com');
     await page.getByLabel(/password/i).fill('Password123!');
-    
+
     // Action: Submit login form (MCP button click testing)
     await page.getByRole('button', { name: /login/i }).click();
 
@@ -92,7 +91,7 @@ test.describe('MCP Server Capabilities Demonstration', () => {
 
     // Action: Navigate to case details (MCP navigation testing)
     await page.getByText('Test Case').click();
-    
+
     // Verification: Case details page loads (MCP URL pattern matching)
     await expect(page).toHaveURL(/.*cases\/case-001/);
     await expect(page.getByText('Test Case')).toBeVisible();
@@ -103,7 +102,7 @@ test.describe('MCP Server Capabilities Demonstration', () => {
 
     // Action: Logout from application (MCP button interaction)
     await page.getByRole('button', { name: /logout/i }).click();
-    
+
     // Verification: Redirected back to login page (MCP URL assertion)
     await expect(page).toHaveURL(/.*login/);
     await expect(page.getByRole('heading', { name: /login/i })).toBeVisible();
@@ -115,10 +114,10 @@ test.describe('MCP Server Capabilities Demonstration', () => {
       route.fulfill({
         status: 401,
         contentType: 'application/json',
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           message: 'Invalid credentials',
-          code: 'AUTH_ERROR'
-        })
+          code: 'AUTH_ERROR',
+        }),
       });
     });
 
@@ -131,7 +130,7 @@ test.describe('MCP Server Capabilities Demonstration', () => {
     // Verification: Should remain on login page (MCP state persistence testing)
     await expect(page).toHaveURL(/.*login/);
     await expect(page.getByRole('heading', { name: /login/i })).toBeVisible();
-    
+
     // Form should still be accessible for retry (MCP form state testing)
     await expect(page.getByLabel(/email/i)).toHaveValue('wrong@example.com');
     await expect(page.getByLabel(/password/i)).toBeEmpty();
@@ -143,10 +142,10 @@ test.describe('MCP Server Capabilities Demonstration', () => {
       route.fulfill({
         status: 401,
         contentType: 'application/json',
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           message: 'Authentication required',
-          code: 'UNAUTHORIZED'
-        })
+          code: 'UNAUTHORIZED',
+        }),
       });
     });
 
@@ -164,7 +163,7 @@ test.describe('MCP Server Capabilities Demonstration', () => {
 
   test('MCP: session management simulation', async ({ page }) => {
     // This test demonstrates MCP capabilities for testing session workflows
-    
+
     // Setup: Mock token refresh endpoint
     await page.route('**/api/auth/refresh', route => {
       route.fulfill({
@@ -177,9 +176,9 @@ test.describe('MCP Server Capabilities Demonstration', () => {
             id: 'user-001',
             email: 'test.attorney@example.com',
             firstName: 'Test',
-            lastName: 'Attorney'
-          }
-        })
+            lastName: 'Attorney',
+          },
+        }),
       });
     });
 
@@ -191,30 +190,30 @@ test.describe('MCP Server Capabilities Demonstration', () => {
 
     // Verification: Dashboard access with valid session
     await expect(page).toHaveURL(/.*dashboard/);
-    
+
     // Simulate token expiration scenario (MCP API condition testing)
     await page.route('**/api/cases*', route => {
       route.fulfill({
         status: 401,
         contentType: 'application/json',
-        body: JSON.stringify({ message: 'Token expired' })
+        body: JSON.stringify({ message: 'Token expired' }),
       });
     });
 
     // The application should handle token refresh automatically
     // This demonstrates MCP's ability to test complex authentication workflows
-    
+
     // Note: The apiClient interceptors should handle token refresh automatically
     // This test verifies the application remains functional during auth challenges
   });
 
   test('MCP: comprehensive user authentication journey', async ({ page }) => {
     // Complete authentication journey demonstrating MCP testing capabilities
-    
+
     // Phase 1: Initial login
     await page.goto('http://localhost:5173/login');
     await expect(page.getByRole('heading', { name: /login/i })).toBeVisible();
-    
+
     await page.getByLabel(/email/i).fill('test.attorney@example.com');
     await page.getByLabel(/password/i).fill('Password123!');
     await page.getByRole('button', { name: /login/i }).click();

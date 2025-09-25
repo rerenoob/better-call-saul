@@ -25,9 +25,9 @@ export const useAdminDashboard = (): AdminDashboardData => {
     activeUsers: 0,
     casesAnalyzed24h: 0,
     avgAnalysisTime: 0,
-    activeIncidents: 0
+    activeIncidents: 0,
   });
-  
+
   const [userActivity, setUserActivity] = useState<UserActivity[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -36,10 +36,10 @@ export const useAdminDashboard = (): AdminDashboardData => {
     const fetchDashboardData = async () => {
       try {
         setIsLoading(true);
-        
+
         // Fetch real metrics from API
         const dashboardMetrics = await adminService.getDashboardMetrics();
-        
+
         // For now, keep mock user activity (can be replaced with real API later)
         const mockUserActivity: UserActivity[] = [
           {
@@ -47,38 +47,38 @@ export const useAdminDashboard = (): AdminDashboardData => {
             user: { name: 'Sarah Johnson', initials: 'SJ' },
             action: 'Uploaded case files',
             time: '2 hours ago',
-            type: 'upload'
+            type: 'upload',
           },
           {
             id: '2',
             user: { name: 'Michael Chen', initials: 'MC' },
             action: 'Completed analysis',
             time: '3 hours ago',
-            type: 'analysis'
+            type: 'analysis',
           },
           {
             id: '3',
             user: { name: 'Emily Rodriguez', initials: 'ER' },
             action: 'Started new case',
             time: '4 hours ago',
-            type: 'upload'
+            type: 'upload',
           },
           {
             id: '4',
             user: { name: 'David Kim', initials: 'DK' },
             action: 'Viewed dashboard',
             time: '5 hours ago',
-            type: 'other'
+            type: 'other',
           },
           {
             id: '5',
             user: { name: 'Lisa Wang', initials: 'LW' },
             action: 'Updated profile',
             time: '6 hours ago',
-            type: 'other'
-          }
+            type: 'other',
+          },
         ];
-        
+
         setMetrics(dashboardMetrics);
         setUserActivity(mockUserActivity);
         setError(null);
@@ -97,6 +97,6 @@ export const useAdminDashboard = (): AdminDashboardData => {
     metrics,
     userActivity,
     isLoading,
-    error
+    error,
   };
 };

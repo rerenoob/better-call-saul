@@ -21,7 +21,7 @@ export const CaseUpload: React.FC = () => {
     removeFile,
     uploadFiles,
     retryFailedUploads,
-    getUploadStats
+    getUploadStats,
   } = useFileUpload();
 
   const handleFilesSelected = (newFiles: File[]) => {
@@ -50,7 +50,7 @@ export const CaseUpload: React.FC = () => {
     try {
       // First upload all files
       const uploadResult = await uploadFiles();
-      
+
       if (!uploadResult.success || uploadResult.fileIds.length === 0) {
         setError('Failed to upload files. Please try again.');
         setIsCreatingCase(false);
@@ -84,7 +84,8 @@ export const CaseUpload: React.FC = () => {
   };
 
   const stats = getUploadStats();
-  const canAnalyze = caseName.trim() && clientName.trim() && files.length > 0 && !isUploading && !isCreatingCase;
+  const canAnalyze =
+    caseName.trim() && clientName.trim() && files.length > 0 && !isUploading && !isCreatingCase;
 
   if (isAnalyzing) {
     return (
@@ -93,16 +94,25 @@ export const CaseUpload: React.FC = () => {
           <div className="mb-6">
             <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-100 rounded-full mb-4">
               <svg className="w-8 h-8 text-blue-600 animate-spin" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                <path className="opacity-75" fill="currentColor" d="m4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                />
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="m4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                />
               </svg>
             </div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">
-              AI Analysis in Progress...
-            </h2>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">AI Analysis in Progress...</h2>
             <p className="text-gray-600">
-              Our AI is extracting text from your documents, analyzing the case content, and generating insights. 
-              This process takes a few moments to complete.
+              Our AI is extracting text from your documents, analyzing the case content, and
+              generating insights. This process takes a few moments to complete.
             </p>
           </div>
         </div>
@@ -126,7 +136,7 @@ export const CaseUpload: React.FC = () => {
                 id="caseName"
                 type="text"
                 value={caseName}
-                onChange={(e) => setCaseName(e.target.value)}
+                onChange={e => setCaseName(e.target.value)}
                 placeholder="e.g., State v. Anderson"
                 className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                 disabled={isCreatingCase}
@@ -141,7 +151,7 @@ export const CaseUpload: React.FC = () => {
                 id="clientName"
                 type="text"
                 value={clientName}
-                onChange={(e) => setClientName(e.target.value)}
+                onChange={e => setClientName(e.target.value)}
                 placeholder="e.g., David Anderson"
                 className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                 disabled={isCreatingCase}
@@ -159,7 +169,7 @@ export const CaseUpload: React.FC = () => {
               disabled={isCreatingCase}
               maxFiles={10}
             />
-            
+
             <FilePreview
               files={files}
               onRemoveFile={removeFile}
@@ -172,9 +182,13 @@ export const CaseUpload: React.FC = () => {
             <div className="mb-6 p-4 bg-gray-50 rounded-lg">
               <div className="flex items-center justify-between text-sm text-gray-600">
                 <span>Files: {stats.total}</span>
-                {stats.completed > 0 && <span className="text-green-600">Completed: {stats.completed}</span>}
+                {stats.completed > 0 && (
+                  <span className="text-green-600">Completed: {stats.completed}</span>
+                )}
                 {stats.failed > 0 && <span className="text-red-600">Failed: {stats.failed}</span>}
-                {stats.uploading > 0 && <span className="text-blue-600">Uploading: {stats.uploading}</span>}
+                {stats.uploading > 0 && (
+                  <span className="text-blue-600">Uploading: {stats.uploading}</span>
+                )}
               </div>
             </div>
           )}
@@ -184,7 +198,11 @@ export const CaseUpload: React.FC = () => {
             <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-md">
               <div className="flex">
                 <svg className="w-5 h-5 text-red-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                  <path
+                    fillRule="evenodd"
+                    d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                    clipRule="evenodd"
+                  />
                 </svg>
                 <p className="text-sm text-red-800">{error}</p>
               </div>
@@ -205,16 +223,29 @@ export const CaseUpload: React.FC = () => {
               onClick={handleAnalyzeCase}
               disabled={!canAnalyze}
               className={`px-6 py-2 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 flex items-center ${
-                canAnalyze
-                  ? 'bg-blue-600 hover:bg-blue-700'
-                  : 'bg-gray-400 cursor-not-allowed'
+                canAnalyze ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-400 cursor-not-allowed'
               }`}
             >
               {isCreatingCase ? (
                 <>
-                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="m4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  <svg
+                    className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    />
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="m4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    />
                   </svg>
                   Creating Case...
                 </>

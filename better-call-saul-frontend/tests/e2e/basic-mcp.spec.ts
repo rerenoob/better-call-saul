@@ -2,7 +2,6 @@ import { test, expect } from '@playwright/test';
 
 // Basic MCP server test focusing on core authentication
 test.describe('Basic MCP Authentication Test', () => {
-  
   test.beforeEach(async ({ page }) => {
     // Mock API endpoints
     await page.route('**/api/auth/login', route => {
@@ -16,9 +15,9 @@ test.describe('Basic MCP Authentication Test', () => {
             id: 'user-001',
             email: 'test.attorney@example.com',
             firstName: 'Test',
-            lastName: 'Attorney'
-          }
-        })
+            lastName: 'Attorney',
+          },
+        }),
       });
     });
 
@@ -32,9 +31,9 @@ test.describe('Basic MCP Authentication Test', () => {
             title: 'Test Case',
             caseNumber: 'TEST-001',
             status: 'New',
-            successProbability: 0.65
-          }
-        ])
+            successProbability: 0.65,
+          },
+        ]),
       });
     });
 
@@ -42,7 +41,7 @@ test.describe('Basic MCP Authentication Test', () => {
       route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({ message: 'Successfully logged out' })
+        body: JSON.stringify({ message: 'Successfully logged out' }),
       });
     });
   });
@@ -50,11 +49,11 @@ test.describe('Basic MCP Authentication Test', () => {
   test('MCP: basic login and dashboard access', async ({ page }) => {
     // Test: Navigation to application
     await page.goto('http://localhost:5173');
-    
+
     // Verification: Redirect to login page
     await expect(page).toHaveURL(/.*login/);
     await expect(page.getByRole('heading', { name: /login/i })).toBeVisible();
-    
+
     // Action: Fill and submit login form
     await page.getByLabel(/email/i).fill('test.attorney@example.com');
     await page.getByLabel(/password/i).fill('Password123!');
@@ -75,10 +74,10 @@ test.describe('Basic MCP Authentication Test', () => {
       route.fulfill({
         status: 401,
         contentType: 'application/json',
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           message: 'Invalid credentials',
-          code: 'AUTH_ERROR'
-        })
+          code: 'AUTH_ERROR',
+        }),
       });
     });
 
@@ -98,10 +97,10 @@ test.describe('Basic MCP Authentication Test', () => {
       route.fulfill({
         status: 401,
         contentType: 'application/json',
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           message: 'Authentication required',
-          code: 'UNAUTHORIZED'
-        })
+          code: 'UNAUTHORIZED',
+        }),
       });
     });
 

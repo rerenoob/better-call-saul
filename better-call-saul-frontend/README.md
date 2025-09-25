@@ -3,6 +3,7 @@
 Modern React TypeScript frontend for the Better Call Saul AI legal assistant platform.
 
 ## Technology Stack
+
 - **React 18** with TypeScript for type safety
 - **Vite** for fast development and building
 - **Tailwind CSS** for responsive styling
@@ -12,6 +13,7 @@ Modern React TypeScript frontend for the Better Call Saul AI legal assistant pla
 - **ESLint & Prettier** for code quality
 
 ## Features
+
 - 🔐 JWT-based authentication with automatic token refresh
 - 👑 Separate admin login for system administration
 - 📊 Interactive dashboard with case metrics and analytics
@@ -24,6 +26,7 @@ Modern React TypeScript frontend for the Better Call Saul AI legal assistant pla
 ## Quick Start
 
 ### Development
+
 ```bash
 npm install           # Install dependencies
 npm run dev          # Start development server (http://localhost:5173)
@@ -32,17 +35,20 @@ npm run lint         # ESLint code quality check
 ```
 
 ### Production
+
 ```bash
 npm run build        # Build for production
 npm run preview      # Preview production build
 ```
 
 ### Testing
+
 ```bash
 npx playwright test  # Run E2E tests
 ```
 
 ## Project Structure
+
 ```
 src/
 ├── components/      # Reusable UI components
@@ -55,11 +61,14 @@ src/
 ```
 
 ## Environment Configuration
+
 - `.env.development` - Development environment variables
 - `.env.production` - Production environment variables
 
 ## API Integration
+
 The frontend communicates with the .NET Web API backend via:
+
 - RESTful API endpoints for data operations
 - SignalR for real-time updates during AI analysis
 - JWT tokens for secure authentication
@@ -70,13 +79,16 @@ For backend API documentation, visit `/swagger` when the API is running.
 ## Admin Access
 
 ### Admin Login
+
 Access the admin panel by visiting `/admin-login` or clicking the "Admin login here" link on the regular login page.
 
 ### Default Admin Credentials
+
 - **Email**: `admin@bettercallsaul.com`
 - **Password**: `Admin123!`
 
 ### Admin Features
+
 - User management and registration code generation
 - System health monitoring and audit logs
 - Case analytics and performance metrics

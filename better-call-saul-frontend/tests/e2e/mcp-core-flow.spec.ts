@@ -6,7 +6,7 @@ const testUser = {
   password: 'SecurePassword123!',
   firstName: 'Test',
   lastName: 'Attorney',
-  barNumber: 'BAR123456'
+  barNumber: 'BAR123456',
 };
 
 const mockCases = [
@@ -17,7 +17,7 @@ const mockCases = [
     status: 'Pending',
     priority: 'High',
     nextCourtDate: '2024-03-15T10:00:00Z',
-    successProbability: 65
+    successProbability: 65,
   },
   {
     id: '2',
@@ -26,8 +26,8 @@ const mockCases = [
     status: 'In Progress',
     priority: 'Medium',
     nextCourtDate: '2024-03-20T14:30:00Z',
-    successProbability: 42
-  }
+    successProbability: 42,
+  },
 ];
 
 test.describe('MCP Core User Flow', () => {
@@ -46,9 +46,9 @@ test.describe('MCP Core User Flow', () => {
             firstName: testUser.firstName,
             lastName: testUser.lastName,
             barNumber: testUser.barNumber,
-            role: 'Attorney'
-          }
-        })
+            role: 'Attorney',
+          },
+        }),
       });
     });
 
@@ -65,9 +65,9 @@ test.describe('MCP Core User Flow', () => {
             firstName: testUser.firstName,
             lastName: testUser.lastName,
             barNumber: testUser.barNumber,
-            role: 'Attorney'
-          }
-        })
+            role: 'Attorney',
+          },
+        }),
       });
     });
 
@@ -75,7 +75,7 @@ test.describe('MCP Core User Flow', () => {
       route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify(mockCases)
+        body: JSON.stringify(mockCases),
       });
     });
 
@@ -89,8 +89,8 @@ test.describe('MCP Core User Flow', () => {
           firstName: testUser.firstName,
           lastName: testUser.lastName,
           barNumber: testUser.barNumber,
-          role: 'Attorney'
-        })
+          role: 'Attorney',
+        }),
       });
     });
 
@@ -98,7 +98,7 @@ test.describe('MCP Core User Flow', () => {
       route.fulfill({
         status: 200,
         contentType: 'application/json',
-        body: JSON.stringify({})
+        body: JSON.stringify({}),
       });
     });
   });
@@ -106,11 +106,11 @@ test.describe('MCP Core User Flow', () => {
   test('complete authentication and case management flow', async ({ page }) => {
     // Navigate to application
     await page.goto('http://localhost:5173');
-    
+
     // Verify login page
     await expect(page).toHaveURL(/.*login/);
     await expect(page.getByRole('heading', { name: /login/i })).toBeVisible();
-    
+
     // Fill login form
     await page.getByLabel(/email/i).fill(testUser.email);
     await page.getByLabel(/password/i).fill(testUser.password);
@@ -150,9 +150,11 @@ test.describe('MCP Core User Flow', () => {
 
   test('registration flow', async ({ page }) => {
     await page.goto('http://localhost:5173/register');
-    
+
     // Verify registration page
-    await expect(page.getByRole('heading', { name: /register for better call saul/i })).toBeVisible();
+    await expect(
+      page.getByRole('heading', { name: /register for better call saul/i })
+    ).toBeVisible();
 
     // Fill registration form
     await page.getByLabel(/first name/i).fill(testUser.firstName);
@@ -176,7 +178,7 @@ test.describe('MCP Core User Flow', () => {
       route.fulfill({
         status: 401,
         contentType: 'application/json',
-        body: JSON.stringify({ message: 'Invalid credentials' })
+        body: JSON.stringify({ message: 'Invalid credentials' }),
       });
     });
 
@@ -196,7 +198,7 @@ test.describe('MCP Core User Flow', () => {
       route.fulfill({
         status: 401,
         contentType: 'application/json',
-        body: JSON.stringify({ message: 'Unauthorized' })
+        body: JSON.stringify({ message: 'Unauthorized' }),
       });
     });
 

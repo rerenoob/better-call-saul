@@ -3,14 +3,14 @@ import { FileUploadResponse, CaseCreationResponse, UploadFile } from '../types/u
 
 export const fileUploadService = {
   uploadFile: async (
-    file: File, 
+    file: File,
     onProgress?: (progress: number) => void,
     caseId?: string,
     uploadSessionId?: string
   ): Promise<FileUploadResponse> => {
     const formData = new FormData();
     formData.append('file', file);
-    
+
     // Use default values if not provided
     if (caseId) {
       formData.append('caseId', caseId);
@@ -18,26 +18,35 @@ export const fileUploadService = {
       // Use a temporary GUID for standalone uploads
       formData.append('caseId', '00000000-0000-0000-0000-000000000000');
     }
-    
+
     if (uploadSessionId) {
       formData.append('uploadSessionId', uploadSessionId);
     } else {
       // Generate a unique session ID
-      formData.append('uploadSessionId', `upload-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`);
+      formData.append(
+        'uploadSessionId',
+        `upload-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+      );
     }
 
     try {
-      const response = await apiClient.post<FileUploadResponse>('/api/fileupload/upload', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-        onUploadProgress: (progressEvent) => {
-          if (progressEvent.total && onProgress) {
-            const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-            onProgress(percentCompleted);
-          }
-        },
-      });
+      const response = await apiClient.post<FileUploadResponse>(
+        '/api/fileupload/upload',
+        formData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+          },
+          onUploadProgress: progressEvent => {
+            if (progressEvent.total && onProgress) {
+              const percentCompleted = Math.round(
+                (progressEvent.loaded * 100) / progressEvent.total
+              );
+              onProgress(percentCompleted);
+            }
+          },
+        }
+      );
 
       return response.data;
     } catch (error: unknown) {
@@ -45,7 +54,17 @@ export const fileUploadService = {
         success: false,
         fileId: '',
         fileName: file.name,
-        error: error instanceof Error && 'response' in error && error.response && typeof error.response === 'object' && 'data' in error.response && error.response.data && typeof error.response.data === 'object' && 'message' in error.response.data ? (error.response.data as {message: string}).message : 'Failed to upload file',
+        error:
+          error instanceof Error &&
+          'response' in error &&
+          error.response &&
+          typeof error.response === 'object' &&
+          'data' in error.response &&
+          error.response.data &&
+          typeof error.response.data === 'object' &&
+          'message' in error.response.data
+            ? (error.response.data as { message: string }).message
+            : 'Failed to upload file',
       };
     }
   },
@@ -54,10 +73,9 @@ export const fileUploadService = {
     files: UploadFile[],
     onProgress?: (fileId: string, progress: number) => void
   ): Promise<FileUploadResponse[]> => {
-    const uploadPromises = files.map(uploadFile => 
-      fileUploadService.uploadFile(
-        uploadFile.file,
-        (progress) => onProgress?.(uploadFile.id, progress)
+    const uploadPromises = files.map(uploadFile =>
+      fileUploadService.uploadFile(uploadFile.file, progress =>
+        onProgress?.(uploadFile.id, progress)
       )
     );
 
@@ -81,7 +99,17 @@ export const fileUploadService = {
       return {
         success: false,
         caseId: '',
-        error: error instanceof Error && 'response' in error && error.response && typeof error.response === 'object' && 'data' in error.response && error.response.data && typeof error.response.data === 'object' && 'message' in error.response.data ? (error.response.data as {message: string}).message : 'Failed to create case',
+        error:
+          error instanceof Error &&
+          'response' in error &&
+          error.response &&
+          typeof error.response === 'object' &&
+          'data' in error.response &&
+          error.response.data &&
+          typeof error.response.data === 'object' &&
+          'message' in error.response.data
+            ? (error.response.data as { message: string }).message
+            : 'Failed to create case',
       };
     }
   },
@@ -93,7 +121,17 @@ export const fileUploadService = {
     } catch (error: unknown) {
       return {
         success: false,
-        error: error instanceof Error && 'response' in error && error.response && typeof error.response === 'object' && 'data' in error.response && error.response.data && typeof error.response.data === 'object' && 'message' in error.response.data ? (error.response.data as {message: string}).message : 'Failed to delete file',
+        error:
+          error instanceof Error &&
+          'response' in error &&
+          error.response &&
+          typeof error.response === 'object' &&
+          'data' in error.response &&
+          error.response.data &&
+          typeof error.response.data === 'object' &&
+          'message' in error.response.data
+            ? (error.response.data as { message: string }).message
+            : 'Failed to delete file',
       };
     }
   },
@@ -103,7 +141,7 @@ export const fileUploadService = {
       'application/pdf',
       'application/msword',
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-      'text/plain'
+      'text/plain',
     ];
 
     const maxSize = 50 * 1024 * 1024; // 50MB
@@ -111,17 +149,17 @@ export const fileUploadService = {
     if (!allowedTypes.includes(file.type)) {
       return {
         isValid: false,
-        error: 'Only PDF, DOC, DOCX, and TXT files are allowed'
+        error: 'Only PDF, DOC, DOCX, and TXT files are allowed',
       };
     }
 
     if (file.size > maxSize) {
       return {
         isValid: false,
-        error: 'File size must be less than 50MB'
+        error: 'File size must be less than 50MB',
       };
     }
 
     return { isValid: true };
-  }
+  },
 };

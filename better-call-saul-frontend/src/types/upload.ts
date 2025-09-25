@@ -14,7 +14,7 @@ export enum UploadStatus {
   UPLOADING = 'uploading',
   COMPLETED = 'completed',
   ERROR = 'error',
-  CANCELLED = 'cancelled'
+  CANCELLED = 'cancelled',
 }
 
 export interface FileUploadProgress {
@@ -48,7 +48,7 @@ export const ALLOWED_FILE_TYPES = [
   'application/pdf',
   'application/msword',
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-  'text/plain'
+  'text/plain',
 ];
 
 export const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB

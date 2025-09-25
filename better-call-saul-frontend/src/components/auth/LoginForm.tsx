@@ -8,7 +8,11 @@ interface LoginFormProps {
   onSwitchToAdminLogin?: () => void;
 }
 
-export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onSwitchToRegister, onSwitchToAdminLogin }) => {
+export const LoginForm: React.FC<LoginFormProps> = ({
+  onSuccess,
+  onSwitchToRegister,
+  onSwitchToAdminLogin,
+}) => {
   const [credentials, setCredentials] = useState<LoginRequest>({
     email: '',
     password: '',
@@ -44,7 +48,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onSwitchToRegis
       <h2 className="text-xl sm:text-2xl font-bold text-center mb-4 sm:mb-6 text-gray-800">
         🔐 Login
       </h2>
-      
+
       {error && (
         <div className="bg-red-100 border border-red-400 text-red-700 px-3 py-2 sm:px-4 sm:py-3 rounded mb-3 sm:mb-4 text-xs sm:text-sm">
           {error}

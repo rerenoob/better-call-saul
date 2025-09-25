@@ -10,7 +10,7 @@ export const CaseOverview: React.FC<CaseOverviewProps> = ({ statistics, isLoadin
   if (isLoading) {
     return (
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-        {[1, 2, 3, 4].map((i) => (
+        {[1, 2, 3, 4].map(i => (
           <div key={i} className="bg-white rounded-lg shadow p-4 animate-pulse">
             <div className="h-4 bg-gray-200 rounded mb-2"></div>
             <div className="h-6 bg-gray-200 rounded"></div>
@@ -45,7 +45,7 @@ export const CaseOverview: React.FC<CaseOverviewProps> = ({ statistics, isLoadin
 
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-      {stats.map((stat) => (
+      {stats.map(stat => (
         <div key={stat.label} className="bg-white rounded-lg shadow p-4">
           <div className="text-sm text-gray-600 mb-1">{stat.label}</div>
           <div className="text-2xl font-bold text-gray-900">{stat.value}</div>

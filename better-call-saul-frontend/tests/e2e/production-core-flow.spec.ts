@@ -4,14 +4,14 @@ import { test, expect } from '@playwright/test';
 const PRODUCTION_URL = 'https://orange-island-0a659d210.1.azurestaticapps.net/';
 const PRODUCTION_USER = {
   email: 'duong.pham@example.com',
-  password: 'Test123!'
+  password: 'Test123!',
 };
 
 test.describe('Production Core User Flow', () => {
   test('should complete login and access dashboard', async ({ page }) => {
     // Navigate to production application
     await page.goto(PRODUCTION_URL);
-    
+
     // Should be on login page
     await expect(page).toHaveURL(/.*login/);
     await expect(page.getByRole('heading', { name: /login/i })).toBeVisible();
@@ -45,7 +45,7 @@ test.describe('Production Core User Flow', () => {
 
     // Try to navigate to case upload/creation
     await page.getByRole('link', { name: /new case/i }).click();
-    
+
     // Should be on case upload page
     await expect(page).toHaveURL(/.*upload/);
     await expect(page.getByRole('heading', { name: /upload/i })).toBeVisible();
@@ -64,11 +64,11 @@ test.describe('Production Core User Flow', () => {
 
     // Check if cases are displayed on dashboard
     const caseElements = await page.getByTestId('case-item').count();
-    
+
     if (caseElements > 0) {
       // Click on first case if available
       await page.getByTestId('case-item').first().click();
-      
+
       // Should navigate to case details
       await expect(page).toHaveURL(/.*cases\//);
       await expect(page.getByText(/case details/i)).toBeVisible();
@@ -103,13 +103,13 @@ test.describe('Production Core User Flow', () => {
   test('should verify production environment features', async ({ page }) => {
     // Check production-specific features
     await page.goto(PRODUCTION_URL);
-    
+
     // Verify production URL
     expect(page.url()).toContain('azurestaticapps.net');
-    
+
     // Check for production-specific elements (like analytics, etc.)
     await expect(page).toHaveTitle(/Better Call Saul/);
-    
+
     // Verify responsive design elements
     const viewport = page.viewportSize();
     if (viewport && viewport.width < 768) {

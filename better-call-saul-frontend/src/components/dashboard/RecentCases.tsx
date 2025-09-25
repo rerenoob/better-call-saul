@@ -31,8 +31,11 @@ export const RecentCases: React.FC<RecentCasesProps> = ({ cases, isLoading }) =>
       <div className="bg-white rounded-lg shadow p-6">
         <h3 className="text-lg font-medium text-gray-900 mb-4">Recent Cases</h3>
         <div className="space-y-3">
-          {[1, 2, 3, 4, 5].map((i) => (
-            <div key={i} className="flex items-center justify-between p-3 border rounded animate-pulse">
+          {[1, 2, 3, 4, 5].map(i => (
+            <div
+              key={i}
+              className="flex items-center justify-between p-3 border rounded animate-pulse"
+            >
               <div className="flex items-center space-x-3">
                 <div className="h-4 bg-gray-200 rounded w-24"></div>
                 <div className="h-4 bg-gray-200 rounded w-32"></div>
@@ -53,31 +56,38 @@ export const RecentCases: React.FC<RecentCasesProps> = ({ cases, isLoading }) =>
       </div>
 
       <div className="space-y-3">
-        {cases.map((caseItem) => (
-          <div key={caseItem.id} className="flex items-center justify-between p-3 border rounded hover:bg-gray-50">
+        {cases.map(caseItem => (
+          <div
+            key={caseItem.id}
+            className="flex items-center justify-between p-3 border rounded hover:bg-gray-50"
+          >
             <div className="flex items-center space-x-3">
               <div className="flex-shrink-0">
-                <div className={`px-2 py-1 text-xs font-medium rounded-full ${priorityColors[caseItem.priority]}`}>
+                <div
+                  className={`px-2 py-1 text-xs font-medium rounded-full ${priorityColors[caseItem.priority]}`}
+                >
                   {caseItem.priority}
                 </div>
               </div>
               <div>
                 <h4 className="text-sm font-medium text-gray-900">{caseItem.title}</h4>
-                <p className="text-xs text-gray-500">{caseItem.description ? `${caseItem.description.substring(0, 50)}...` : 'No description'}</p>
+                <p className="text-xs text-gray-500">
+                  {caseItem.description
+                    ? `${caseItem.description.substring(0, 50)}...`
+                    : 'No description'}
+                </p>
               </div>
             </div>
-            <div className={`px-2 py-1 text-xs font-medium rounded-full ${statusColors[caseItem.status]}`}>
+            <div
+              className={`px-2 py-1 text-xs font-medium rounded-full ${statusColors[caseItem.status]}`}
+            >
               {caseItem.status}
             </div>
           </div>
         ))}
       </div>
 
-      {cases.length === 0 && (
-        <div className="text-center py-8 text-gray-500">
-          No cases found
-        </div>
-      )}
+      {cases.length === 0 && <div className="text-center py-8 text-gray-500">No cases found</div>}
     </div>
   );
 };

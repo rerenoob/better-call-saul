@@ -24,7 +24,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onSwitchT
 
   const validateForm = () => {
     const errors: Record<string, string> = {};
-    
+
     // Email validation
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!formData.email) {
@@ -32,23 +32,24 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onSwitchT
     } else if (!emailRegex.test(formData.email)) {
       errors.email = 'Please enter a valid email address';
     }
-    
+
     // Password validation
     if (!formData.password) {
       errors.password = 'Password is required';
     } else if (formData.password.length < 8) {
       errors.password = 'Password must be at least 8 characters long';
     } else if (!/(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^a-zA-Z\d])/.test(formData.password)) {
-      errors.password = 'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character';
+      errors.password =
+        'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character';
     }
-    
+
     // Confirm password validation
     if (!confirmPassword) {
       errors.confirmPassword = 'Please confirm your password';
     } else if (formData.password !== confirmPassword) {
       errors.confirmPassword = 'Passwords do not match';
     }
-    
+
     // Required fields validation
     if (!formData.firstName.trim()) {
       errors.firstName = 'First name is required';
@@ -59,13 +60,13 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onSwitchT
     if (!formData.registrationCode.trim()) {
       errors.registrationCode = 'Registration code is required';
     }
-    
+
     return errors;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     const validationErrors = validateForm();
     if (Object.keys(validationErrors).length > 0) {
       setFieldErrors(validationErrors);
@@ -81,7 +82,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onSwitchT
       onSuccess?.();
     } catch (error: unknown) {
       console.error('Registration error:', error);
-      
+
       // Handle specific error cases
       if (error && typeof error === 'object' && 'response' in error) {
         const axiosError = error as { response?: { status?: number; data?: unknown } };
@@ -91,9 +92,14 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onSwitchT
           if (errorData && typeof errorData === 'object') {
             const data = errorData as { message?: string; errors?: Record<string, unknown> };
             if (data.message?.includes('registration code')) {
-              setFieldErrors({ registrationCode: 'Invalid registration code. Please check the code and try again.' });
+              setFieldErrors({
+                registrationCode: 'Invalid registration code. Please check the code and try again.',
+              });
             } else if (data.message?.includes('email')) {
-              setFieldErrors({ email: 'This email is already registered. Please use a different email or try logging in.' });
+              setFieldErrors({
+                email:
+                  'This email is already registered. Please use a different email or try logging in.',
+              });
             } else {
               // Handle validation errors from server
               if (data.errors) {
@@ -112,9 +118,14 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onSwitchT
             }
           }
         } else if (axiosError.response?.status === 409) {
-          setFieldErrors({ email: 'An account with this email already exists. Please use a different email or try logging in.' });
+          setFieldErrors({
+            email:
+              'An account with this email already exists. Please use a different email or try logging in.',
+          });
         } else if (axiosError.response?.status === 422) {
-          setFieldErrors({ registrationCode: 'This registration code has already been used or is no longer valid.' });
+          setFieldErrors({
+            registrationCode: 'This registration code has already been used or is no longer valid.',
+          });
         }
       }
     } finally {
@@ -124,7 +135,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onSwitchT
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    
+
     // Clear field-specific error when user starts typing
     if (fieldErrors[name]) {
       setFieldErrors(prev => {
@@ -133,7 +144,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onSwitchT
         return newErrors;
       });
     }
-    
+
     if (name === 'confirmPassword') {
       setConfirmPassword(value);
       // Clear confirm password error when user starts typing
@@ -154,7 +165,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onSwitchT
 
   const passwordsMatch = formData.password === confirmPassword;
   const isConfirmPasswordEmpty = confirmPassword === '';
-  
+
   const getErrorMessage = (error: string): string => {
     // Map generic server errors to user-friendly messages
     if (error.includes('Registration failed')) {
@@ -174,7 +185,7 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onSwitchT
       <h2 className="text-xl sm:text-2xl font-bold text-center mb-4 sm:mb-6 text-gray-800">
         📝 Register for Better Call Saul
       </h2>
-      
+
       {error && Object.keys(fieldErrors).length === 0 && (
         <div className="bg-red-50 border border-red-200 text-red-800 px-4 py-3 rounded-lg mb-4 flex items-start gap-3">
           <span className="text-red-500 text-lg">⚠️</span>
@@ -185,11 +196,13 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onSwitchT
         </div>
       )}
 
-
       <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
         {/* Registration Code - Most Important Field */}
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <label htmlFor="registrationCode" className="block text-sm font-semibold text-blue-800 mb-2">
+          <label
+            htmlFor="registrationCode"
+            className="block text-sm font-semibold text-blue-800 mb-2"
+          >
             🎫 Registration Code *
           </label>
           <input
@@ -213,14 +226,18 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onSwitchT
             </p>
           )}
           <p className="text-xs text-blue-600 mt-1">
-            You need a valid registration code to create an account. Contact your administrator to obtain one.
+            You need a valid registration code to create an account. Contact your administrator to
+            obtain one.
           </p>
         </div>
 
         {/* Personal Information */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
           <div>
-            <label htmlFor="firstName" className="block text-xs sm:text-sm font-medium text-gray-700">
+            <label
+              htmlFor="firstName"
+              className="block text-xs sm:text-sm font-medium text-gray-700"
+            >
               First Name *
             </label>
             <input
@@ -245,7 +262,10 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onSwitchT
           </div>
 
           <div>
-            <label htmlFor="lastName" className="block text-xs sm:text-sm font-medium text-gray-700">
+            <label
+              htmlFor="lastName"
+              className="block text-xs sm:text-sm font-medium text-gray-700"
+            >
               Last Name *
             </label>
             <input
@@ -300,7 +320,10 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onSwitchT
         {/* Password Fields */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
           <div>
-            <label htmlFor="password" className="block text-xs sm:text-sm font-medium text-gray-700">
+            <label
+              htmlFor="password"
+              className="block text-xs sm:text-sm font-medium text-gray-700"
+            >
               Password *
             </label>
             <input
@@ -326,34 +349,70 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onSwitchT
             {formData.password && !fieldErrors.password && (
               <div className="mt-2 space-y-1">
                 <div className="flex items-center gap-2 text-xs">
-                  <span className={formData.password.length >= 8 ? 'text-green-600' : 'text-gray-400'}>
+                  <span
+                    className={formData.password.length >= 8 ? 'text-green-600' : 'text-gray-400'}
+                  >
                     {formData.password.length >= 8 ? '✅' : '⭕'}
                   </span>
-                  <span className={formData.password.length >= 8 ? 'text-green-600' : 'text-gray-500'}>
+                  <span
+                    className={formData.password.length >= 8 ? 'text-green-600' : 'text-gray-500'}
+                  >
                     At least 8 characters
                   </span>
                 </div>
                 <div className="flex items-center gap-2 text-xs">
-                  <span className={/(?=.*[a-z])(?=.*[A-Z])/.test(formData.password) ? 'text-green-600' : 'text-gray-400'}>
+                  <span
+                    className={
+                      /(?=.*[a-z])(?=.*[A-Z])/.test(formData.password)
+                        ? 'text-green-600'
+                        : 'text-gray-400'
+                    }
+                  >
                     {/(?=.*[a-z])(?=.*[A-Z])/.test(formData.password) ? '✅' : '⭕'}
                   </span>
-                  <span className={/(?=.*[a-z])(?=.*[A-Z])/.test(formData.password) ? 'text-green-600' : 'text-gray-500'}>
+                  <span
+                    className={
+                      /(?=.*[a-z])(?=.*[A-Z])/.test(formData.password)
+                        ? 'text-green-600'
+                        : 'text-gray-500'
+                    }
+                  >
                     Both uppercase and lowercase letters
                   </span>
                 </div>
                 <div className="flex items-center gap-2 text-xs">
-                  <span className={/(?=.*\d)/.test(formData.password) ? 'text-green-600' : 'text-gray-400'}>
+                  <span
+                    className={
+                      /(?=.*\d)/.test(formData.password) ? 'text-green-600' : 'text-gray-400'
+                    }
+                  >
                     {/(?=.*\d)/.test(formData.password) ? '✅' : '⭕'}
                   </span>
-                  <span className={/(?=.*\d)/.test(formData.password) ? 'text-green-600' : 'text-gray-500'}>
+                  <span
+                    className={
+                      /(?=.*\d)/.test(formData.password) ? 'text-green-600' : 'text-gray-500'
+                    }
+                  >
                     At least one number
                   </span>
                 </div>
                 <div className="flex items-center gap-2 text-xs">
-                  <span className={/(?=.*[^a-zA-Z\d])/.test(formData.password) ? 'text-green-600' : 'text-gray-400'}>
+                  <span
+                    className={
+                      /(?=.*[^a-zA-Z\d])/.test(formData.password)
+                        ? 'text-green-600'
+                        : 'text-gray-400'
+                    }
+                  >
                     {/(?=.*[^a-zA-Z\d])/.test(formData.password) ? '✅' : '⭕'}
                   </span>
-                  <span className={/(?=.*[^a-zA-Z\d])/.test(formData.password) ? 'text-green-600' : 'text-gray-500'}>
+                  <span
+                    className={
+                      /(?=.*[^a-zA-Z\d])/.test(formData.password)
+                        ? 'text-green-600'
+                        : 'text-gray-500'
+                    }
+                  >
                     At least one special character
                   </span>
                 </div>
@@ -362,7 +421,10 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onSwitchT
           </div>
 
           <div>
-            <label htmlFor="confirmPassword" className="block text-xs sm:text-sm font-medium text-gray-700">
+            <label
+              htmlFor="confirmPassword"
+              className="block text-xs sm:text-sm font-medium text-gray-700"
+            >
               Confirm Password *
             </label>
             <input
@@ -376,10 +438,10 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onSwitchT
                 fieldErrors.confirmPassword
                   ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
                   : !isConfirmPasswordEmpty && passwordsMatch
-                  ? 'border-green-300 focus:ring-green-500 focus:border-green-500'
-                  : !isConfirmPasswordEmpty && !passwordsMatch
-                  ? 'border-yellow-300 focus:ring-yellow-500 focus:border-yellow-500'
-                  : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
+                    ? 'border-green-300 focus:ring-green-500 focus:border-green-500'
+                    : !isConfirmPasswordEmpty && !passwordsMatch
+                      ? 'border-yellow-300 focus:ring-yellow-500 focus:border-yellow-500'
+                      : 'border-gray-300 focus:ring-blue-500 focus:border-blue-500'
               }`}
               placeholder="Confirm your password"
               autoComplete="new-password"
@@ -404,10 +466,15 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onSwitchT
 
         {/* Professional Information */}
         <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
-          <h3 className="text-sm font-medium text-gray-700 mb-3">Professional Information (Optional)</h3>
+          <h3 className="text-sm font-medium text-gray-700 mb-3">
+            Professional Information (Optional)
+          </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
             <div>
-              <label htmlFor="barNumber" className="block text-xs sm:text-sm font-medium text-gray-700">
+              <label
+                htmlFor="barNumber"
+                className="block text-xs sm:text-sm font-medium text-gray-700"
+              >
                 Bar Number
               </label>
               <input
@@ -422,7 +489,10 @@ export const RegisterForm: React.FC<RegisterFormProps> = ({ onSuccess, onSwitchT
             </div>
 
             <div>
-              <label htmlFor="lawFirm" className="block text-xs sm:text-sm font-medium text-gray-700">
+              <label
+                htmlFor="lawFirm"
+                className="block text-xs sm:text-sm font-medium text-gray-700"
+              >
                 Law Firm / Organization
               </label>
               <input

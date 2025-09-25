@@ -26,7 +26,7 @@ export const CasePriorityChart: React.FC<CasePriorityChartProps> = ({ statistics
       <div className="bg-white rounded-lg shadow p-6">
         <h3 className="text-lg font-medium text-gray-900 mb-4">Case Priority Distribution</h3>
         <div className="space-y-3 animate-pulse">
-          {[1, 2, 3, 4].map((i) => (
+          {[1, 2, 3, 4].map(i => (
             <div key={i} className="flex items-center justify-between">
               <div className="h-4 bg-gray-200 rounded w-16"></div>
               <div className="h-4 bg-gray-200 rounded w-8"></div>
@@ -43,21 +43,19 @@ export const CasePriorityChart: React.FC<CasePriorityChartProps> = ({ statistics
   return (
     <div className="bg-white rounded-lg shadow p-6">
       <h3 className="text-lg font-medium text-gray-900 mb-4">Case Priority Distribution</h3>
-      
+
       <div className="space-y-3">
         {Object.entries(statistics.byPriority).map(([priority, count]) => {
           const percentage = total > 0 ? (count / total) * 100 : 0;
-          
+
           return (
             <div key={priority} className="flex items-center justify-between">
               <span className="text-sm font-medium text-gray-700 w-16">
                 {priorityLabels[priority as CasePriority]}
               </span>
-              
-              <span className="text-sm text-gray-600 w-8 text-right">
-                {count}
-              </span>
-              
+
+              <span className="text-sm text-gray-600 w-8 text-right">{count}</span>
+
               <div className="flex-1 max-w-32 ml-2">
                 <div className="bg-gray-200 rounded-full h-2">
                   <div
@@ -66,7 +64,7 @@ export const CasePriorityChart: React.FC<CasePriorityChartProps> = ({ statistics
                   />
                 </div>
               </div>
-              
+
               <span className="text-sm text-gray-600 w-12 text-right">
                 {percentage.toFixed(0)}%
               </span>
@@ -75,11 +73,7 @@ export const CasePriorityChart: React.FC<CasePriorityChartProps> = ({ statistics
         })}
       </div>
 
-      {total === 0 && (
-        <div className="text-center py-8 text-gray-500">
-          No case data available
-        </div>
-      )}
+      {total === 0 && <div className="text-center py-8 text-gray-500">No case data available</div>}
     </div>
   );
 };

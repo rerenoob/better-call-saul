@@ -6,7 +6,7 @@ const testUser = {
   password: 'Password123!',
   firstName: 'Test',
   lastName: 'User',
-  barNumber: '123456'
+  barNumber: '123456',
 };
 
 const mockAuthResponse = {
@@ -18,8 +18,8 @@ const mockAuthResponse = {
     firstName: testUser.firstName,
     lastName: testUser.lastName,
     barNumber: testUser.barNumber,
-    role: 'Attorney'
-  }
+    role: 'Attorney',
+  },
 };
 
 const mockCasesResponse = [
@@ -30,7 +30,7 @@ const mockCasesResponse = [
     status: 'Pending',
     priority: 'High',
     nextCourtDate: '2024-03-15T10:00:00Z',
-    successProbability: 65
+    successProbability: 65,
   },
   {
     id: '2',
@@ -39,8 +39,8 @@ const mockCasesResponse = [
     status: 'In Progress',
     priority: 'Medium',
     nextCourtDate: '2024-03-20T14:30:00Z',
-    successProbability: 42
-  }
+    successProbability: 42,
+  },
 ];
 
 // Setup mock API responses
@@ -49,7 +49,7 @@ async function setupMocks(page: Page) {
     route.fulfill({
       status: 200,
       contentType: 'application/json',
-      body: JSON.stringify(mockAuthResponse)
+      body: JSON.stringify(mockAuthResponse),
     });
   });
 
@@ -57,7 +57,7 @@ async function setupMocks(page: Page) {
     route.fulfill({
       status: 200,
       contentType: 'application/json',
-      body: JSON.stringify(mockAuthResponse)
+      body: JSON.stringify(mockAuthResponse),
     });
   });
 
@@ -65,7 +65,7 @@ async function setupMocks(page: Page) {
     route.fulfill({
       status: 200,
       contentType: 'application/json',
-      body: JSON.stringify(mockCasesResponse)
+      body: JSON.stringify(mockCasesResponse),
     });
   });
 
@@ -73,7 +73,7 @@ async function setupMocks(page: Page) {
     route.fulfill({
       status: 200,
       contentType: 'application/json',
-      body: JSON.stringify(mockAuthResponse.user)
+      body: JSON.stringify(mockAuthResponse.user),
     });
   });
 }
@@ -86,7 +86,7 @@ test.describe('Core User Flow', () => {
   test('should complete full user registration and login flow', async ({ page }) => {
     // Navigate to the application
     await page.goto('/');
-    
+
     // Should redirect to login page
     await expect(page).toHaveURL(/.*login/);
     await expect(page.getByRole('heading', { name: /login/i })).toBeVisible();
@@ -180,7 +180,7 @@ test.describe('Core User Flow', () => {
       route.fulfill({
         status: 401,
         contentType: 'application/json',
-        body: JSON.stringify({ message: 'Invalid credentials' })
+        body: JSON.stringify({ message: 'Invalid credentials' }),
       });
     });
 
@@ -197,7 +197,7 @@ test.describe('Core User Flow', () => {
   test('should protect authenticated routes', async ({ page }) => {
     // Try to access dashboard without login
     await page.goto('/dashboard');
-    
+
     // Should redirect to login
     await expect(page).toHaveURL(/.*login/);
 

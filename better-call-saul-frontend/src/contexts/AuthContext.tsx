@@ -16,8 +16,6 @@ interface AuthContextType extends AuthState {
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-
-
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [state, dispatch] = useReducer(authReducer, initialState);
 
@@ -41,7 +39,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               id: profile.id,
               email: profile.email,
               fullName: profile.fullName,
-              roles: profile.roles || ['User']
+              roles: profile.roles || ['User'],
             };
             dispatch({
               type: 'LOGIN_SUCCESS',
@@ -67,7 +65,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         id: response.userId,
         email: response.email,
         fullName: response.fullName,
-        roles: response.roles
+        roles: response.roles,
       };
 
       tokenStorage.setToken(response.token);
@@ -93,7 +91,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         } else if (status === 500) {
           errorMessage = 'Server error. Please try again later.';
         } else if (status >= 400) {
-          errorMessage = axiosError.response.data?.message || 'Authentication failed. Please try again.';
+          errorMessage =
+            axiosError.response.data?.message || 'Authentication failed. Please try again.';
         }
       } else if (error && typeof error === 'object' && 'code' in error) {
         const networkError = error as { code: string };
@@ -127,7 +126,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         id: response.userId,
         email: response.email,
         fullName: response.fullName,
-        roles: response.roles
+        roles: response.roles,
       };
 
       tokenStorage.setToken(response.token);
@@ -147,15 +146,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const status = axiosError.response.status;
 
         if (status === 400) {
-          errorMessage = axiosError.response.data?.message || 'Invalid registration data. Please check your information.';
+          errorMessage =
+            axiosError.response.data?.message ||
+            'Invalid registration data. Please check your information.';
         } else if (status === 409) {
-          errorMessage = 'An account with this email already exists. Please try logging in instead.';
+          errorMessage =
+            'An account with this email already exists. Please try logging in instead.';
         } else if (status === 429) {
           errorMessage = 'Too many registration attempts. Please wait a moment and try again.';
         } else if (status === 500) {
           errorMessage = 'Server error. Please try again later.';
         } else if (status >= 400) {
-          errorMessage = axiosError.response.data?.message || 'Registration failed. Please try again.';
+          errorMessage =
+            axiosError.response.data?.message || 'Registration failed. Please try again.';
         }
       } else if (error && typeof error === 'object' && 'code' in error) {
         const networkError = error as { code: string };
@@ -184,4 +187,3 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
-
