@@ -185,7 +185,7 @@ public class FileUploadController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error generating SAS token for blob: {BlobName}", blobName);
-            return StatusCode(500, new { error = $"Internal server error: {ex.Message}" });
+            return Task.FromResult<ActionResult<object>>(StatusCode(500, new { error = $"Internal server error: {ex.Message}" }));
         }
     }
 

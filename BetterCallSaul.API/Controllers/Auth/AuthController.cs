@@ -178,7 +178,7 @@ public class AuthController : ControllerBase
         {
             // Log the exception for debugging but don't expose internal details
             Console.WriteLine($"Logout error: {ex.Message}");
-            return StatusCode(500, new { message = "Error during logout" });
+            return Task.FromResult<IActionResult>(StatusCode(500, new { message = "Error during logout" }));
         }
     }
 
