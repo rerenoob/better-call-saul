@@ -51,7 +51,14 @@ if (!builder.Environment.IsDevelopment())
 }
 
 // Add services to the container.
-builder.Services.AddControllers();
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        // Configure JSON serializer to handle circular references
+        options.JsonSerializerOptions.ReferenceHandler = System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
+        options.JsonSerializerOptions.WriteIndented = false;
+        options.JsonSerializerOptions.DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull;
+    });
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
@@ -63,13 +70,25 @@ if (builder.Environment.IsDevelopment())
 {
     // Use SQLite for local development on Linux
     builder.Services.AddDbContext<BetterCallSaulContext>(options =>
-        options.UseSqlite("Data Source=BetterCallSaul.db"));
+    {
+        options.UseSqlite("Data Source=BetterCallSaul.db");
+        options.EnableSensitiveDataLogging(false);
+        options.EnableDetailedErrors(false);
+        // Disable lazy loading to prevent circular references
+        options.UseLazyLoadingProxies(false);
+    });
 }
 else
 {
     // Use PostgreSQL for production
     builder.Services.AddDbContext<BetterCallSaulContext>(options =>
-        options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+    {
+        options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"));
+        options.EnableSensitiveDataLogging(false);
+        options.EnableDetailedErrors(false);
+        // Disable lazy loading to prevent circular references
+        options.UseLazyLoadingProxies(false);
+    });
 }
 
 // Add MongoDB configuration
