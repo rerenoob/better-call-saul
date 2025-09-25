@@ -21,9 +21,10 @@ public class FileUploadServiceTests : IDisposable
 
     public FileUploadServiceTests()
     {
-        // Setup InMemory database
+        // Setup InMemory database with transaction warnings ignored
         var options = new DbContextOptionsBuilder<BetterCallSaulContext>()
             .UseInMemoryDatabase(databaseName: Guid.NewGuid().ToString())
+            .ConfigureWarnings(warnings => warnings.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.InMemoryEventId.TransactionIgnoredWarning))
             .EnableSensitiveDataLogging()
             .Options;
 
@@ -58,6 +59,24 @@ public class FileUploadServiceTests : IDisposable
         var validationResult = new BetterCallSaul.Infrastructure.Services.FileProcessing.ValidationResult { IsValid = true };
         _fileValidationServiceMock.Setup(s => s.ValidateFileAsync(fileMock.Object))
             .ReturnsAsync(validationResult);
+
+        // Mock text extraction service to return successful result
+        var extractionResult = new BetterCallSaul.Core.Models.Entities.TextExtractionResult 
+        { 
+            Success = true, 
+            ExtractedText = "Mock extracted text",
+            ConfidenceScore = 0.95,
+            ProcessingTime = TimeSpan.FromSeconds(1),
+            Status = BetterCallSaul.Core.Models.Entities.TextExtractionStatus.Success
+        };
+        _textExtractionServiceMock.Setup(s => s.ExtractTextAsync(It.IsAny<string>(), It.IsAny<string>()))
+            .ReturnsAsync(extractionResult);
+
+        // Mock case document repository to return null (case doesn't exist yet)
+        _caseDocumentRepositoryMock.Setup(r => r.GetByIdAsync(It.IsAny<Guid>()))
+            .ReturnsAsync((BetterCallSaul.Core.Models.NoSQL.CaseDocument?)null);
+        _caseDocumentRepositoryMock.Setup(r => r.CreateAsync(It.IsAny<BetterCallSaul.Core.Models.NoSQL.CaseDocument>()))
+            .ReturnsAsync((BetterCallSaul.Core.Models.NoSQL.CaseDocument document) => document);
 
         // Act
         var result = await _fileUploadService.UploadFileAsync(fileMock.Object, caseId, userId, uploadSessionId);

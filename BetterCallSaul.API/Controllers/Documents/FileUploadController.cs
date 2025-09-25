@@ -22,17 +22,20 @@ public class FileUploadController : ControllerBase
     private readonly ICaseAnalysisService _caseAnalysisService;
     private readonly ILogger<FileUploadController> _logger;
     private readonly BetterCallSaulContext _context;
+    private readonly IServiceProvider _serviceProvider;
 
     public FileUploadController(
         IFileUploadService fileUploadService,
         ICaseAnalysisService caseAnalysisService,
         ILogger<FileUploadController> logger,
-        BetterCallSaulContext context)
+        BetterCallSaulContext context,
+        IServiceProvider serviceProvider)
     {
         _fileUploadService = fileUploadService;
         _caseAnalysisService = caseAnalysisService;
         _logger = logger;
         _context = context;
+        _serviceProvider = serviceProvider;
     }
 
     [HttpPost("upload")]
@@ -87,12 +90,9 @@ public class FileUploadController : ControllerBase
 
             if (result.Success)
             {
-                // Trigger automatic case analysis if we have a document ID, text extraction is complete, and it's not a temporary case
-                if (result.FileId != Guid.Empty &&
-                    result.Metadata != null &&
-                    result.Metadata.ContainsKey("TextExtractionComplete") &&
-                    result.Metadata["TextExtractionComplete"] == "true" &&
-                    !IsTemporaryCase(caseId))
+                // Trigger automatic case analysis if we have a document ID and it's not a temporary case
+                // Analysis will check if text is available and proceed accordingly
+                if (result.FileId != Guid.Empty && !IsTemporaryCase(caseId))
                 {
                     _ = Task.Run(async () => await TriggerCaseAnalysisAsync(caseId, result.FileId, file.FileName));
                 }
@@ -246,9 +246,14 @@ public class FileUploadController : ControllerBase
         {
             _logger.LogInformation("Starting automatic case analysis for case {CaseId}, document {DocumentId}", caseId, documentId);
 
+            // Use a new scope to avoid ObjectDisposedException with background tasks
+            using var scope = _serviceProvider.CreateScope();
+            var context = scope.ServiceProvider.GetRequiredService<BetterCallSaulContext>();
+            var caseAnalysisService = scope.ServiceProvider.GetRequiredService<ICaseAnalysisService>();
+
             // With database transactions, text extraction is guaranteed to be complete
             // Get the document with extracted text directly
-            var document = await _context.Documents
+            var document = await context.Documents
                 .Include(d => d.ExtractedText)
                 .FirstOrDefaultAsync(d => d.Id == documentId);
 
@@ -259,7 +264,7 @@ public class FileUploadController : ControllerBase
             }
 
             // Trigger the case analysis
-            await _caseAnalysisService.AnalyzeCaseAsync(caseId, documentId, document.ExtractedText.FullText);
+            await caseAnalysisService.AnalyzeCaseAsync(caseId, documentId, document.ExtractedText.FullText);
 
             _logger.LogInformation("Successfully triggered automatic case analysis for case {CaseId}, document {DocumentId}", caseId, documentId);
         }
