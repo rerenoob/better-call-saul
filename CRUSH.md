@@ -98,6 +98,14 @@ npm test                  # Frontend tests
 - **State Management**: React Query for server state, React Context for global state
 - **Styling**: Tailwind CSS utility classes with custom components
 
+## Admin Panel Features
+- **Dashboard**: System overview and metrics
+- **User Management**: View and manage user accounts
+- **Case Management**: View and manage uploaded case files
+- **System Health**: Monitor system performance and status
+- **Audit Logs**: View system activity and security events
+- **Registration Codes**: Generate and manage user registration codes
+
 ## Architecture Patterns
 
 ### Backend Patterns

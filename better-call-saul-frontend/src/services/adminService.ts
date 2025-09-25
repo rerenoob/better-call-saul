@@ -70,6 +70,51 @@ export interface CaseStatistics {
   casesByDay: Array<{ date: string; count: number }>;
 }
 
+export interface Case {
+  id: string;
+  caseNumber: string;
+  title: string;
+  description?: string;
+  status: string;
+  userId: string;
+  userName: string;
+  userEmail: string;
+  successProbability?: number;
+  hearingDate?: string;
+  createdAt: string;
+  updatedAt: string;
+  documentCount: number;
+  analysisStatus?: string;
+}
+
+export interface CaseDetails extends Case {
+  documents: Array<{
+    id: string;
+    fileName: string;
+    fileSize: number;
+    fileType: string;
+    status: string;
+    uploadedAt: string;
+    extractedText?: string;
+  }>;
+  analyses: Array<{
+    id: string;
+    status: string;
+    viabilityScore?: number;
+    analysisText?: string;
+    createdAt: string;
+    updatedAt: string;
+  }>;
+}
+
+export interface CasesResponse {
+  cases: Case[];
+  totalCount: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+}
+
 export interface RegistrationCode {
   id: string;
   code: string;
@@ -175,5 +220,32 @@ export const adminService = {
   async cleanupExpiredCodes(): Promise<{ message: string }> {
     const response = await apiClient.post('/api/admin/registration-codes/cleanup');
     return response.data;
+  },
+
+  async getCases(
+    page: number = 1,
+    pageSize: number = 20,
+    search?: string,
+    status?: string
+  ): Promise<CasesResponse> {
+    const params: { page: number; pageSize: number; search?: string; status?: string } = { page, pageSize };
+    if (search) params.search = search;
+    if (status) params.status = status;
+    
+    const response = await apiClient.get('/api/admin/cases', { params });
+    return response.data;
+  },
+
+  async getCase(id: string): Promise<CaseDetails> {
+    const response = await apiClient.get(`/api/admin/cases/${id}`);
+    return response.data;
+  },
+
+  async updateCaseStatus(id: string, status: string): Promise<void> {
+    await apiClient.put(`/api/admin/cases/${id}/status`, { status });
+  },
+
+  async deleteCase(id: string): Promise<void> {
+    await apiClient.delete(`/api/admin/cases/${id}`);
   },
 };

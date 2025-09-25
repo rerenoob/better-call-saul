@@ -211,6 +211,159 @@ public class AdminController : ControllerBase
         });
     }
 
+    [HttpGet("cases")]
+    public async Task<IActionResult> GetCases(
+        [FromQuery] int page = 1, 
+        [FromQuery] int pageSize = 20,
+        [FromQuery] string? search = null,
+        [FromQuery] string? status = null)
+    {
+        var query = _context.Cases
+            .Include(c => c.User)
+            .Include(c => c.Documents)
+            .OrderByDescending(c => c.CreatedAt);
+
+        // Apply search filter
+        if (!string.IsNullOrEmpty(search))
+        {
+            query = (IOrderedQueryable<Case>)query.Where(c => 
+                c.Title.Contains(search) || 
+                c.CaseNumber.Contains(search) ||
+                c.User.FullName.Contains(search) ||
+                c.User.Email.Contains(search));
+        }
+
+        // Apply status filter
+        if (!string.IsNullOrEmpty(status) && Enum.TryParse<CaseStatus>(status, true, out var statusEnum))
+        {
+            query = (IOrderedQueryable<Case>)query.Where(c => c.Status == statusEnum);
+        }
+
+        var totalCount = await query.CountAsync();
+        var cases = await query
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .Select(c => new
+            {
+                c.Id,
+                c.CaseNumber,
+                c.Title,
+                c.Description,
+                Status = c.Status.ToString(),
+                c.UserId,
+                UserName = c.User.FullName,
+                UserEmail = c.User.Email,
+                c.SuccessProbability,
+                c.HearingDate,
+                c.CreatedAt,
+                c.UpdatedAt,
+                DocumentCount = c.Documents.Count(d => !d.IsDeleted)
+            })
+            .ToListAsync();
+
+        return Ok(new
+        {
+            Cases = cases,
+            TotalCount = totalCount,
+            Page = page,
+            PageSize = pageSize,
+            TotalPages = (int)Math.Ceiling(totalCount / (double)pageSize)
+        });
+    }
+
+    [HttpGet("cases/{id}")]
+    public async Task<IActionResult> GetCase(Guid id)
+    {
+        var caseItem = await _context.Cases
+            .Include(c => c.User)
+            .Include(c => c.Documents.Where(d => !d.IsDeleted))
+            .ThenInclude(d => d.ExtractedText)
+            .Include(c => c.Documents.Where(d => !d.IsDeleted))
+            .ThenInclude(d => d.Annotations)
+            .FirstOrDefaultAsync(c => c.Id == id);
+
+        if (caseItem == null)
+            return NotFound();
+
+        // Get case analyses from NoSQL (if available)
+        // This would require integration with the NoSQL repository
+        var analyses = new List<object>(); // Placeholder for analysis data
+
+        var result = new
+        {
+            caseItem.Id,
+            caseItem.CaseNumber,
+            caseItem.Title,
+            caseItem.Description,
+            Status = caseItem.Status.ToString(),
+            caseItem.UserId,
+            UserName = caseItem.User.FullName,
+            UserEmail = caseItem.User.Email,
+            caseItem.SuccessProbability,
+            caseItem.HearingDate,
+            caseItem.CreatedAt,
+            caseItem.UpdatedAt,
+            Documents = caseItem.Documents.Select(d => new
+            {
+                d.Id,
+                d.FileName,
+                d.FileSize,
+                FileType = d.FileType.ToString(),
+                Status = d.Status.ToString(),
+                d.UploadedAt,
+                ExtractedText = d.ExtractedText != null ? d.ExtractedText.FullText : null
+            }),
+            Analyses = analyses
+        };
+
+        return Ok(result);
+    }
+
+    [HttpPut("cases/{id}/status")]
+    public async Task<IActionResult> UpdateCaseStatus(Guid id, [FromBody] string status)
+    {
+        if (!Enum.TryParse<CaseStatus>(status, true, out var statusEnum))
+        {
+            return BadRequest(new { message = "Invalid status value" });
+        }
+
+        var caseItem = await _context.Cases.FindAsync(id);
+        if (caseItem == null)
+            return NotFound();
+
+        caseItem.Status = statusEnum;
+        caseItem.UpdatedAt = DateTime.UtcNow;
+
+        await _context.SaveChangesAsync();
+
+        return Ok(new { message = "Case status updated successfully" });
+    }
+
+    [HttpDelete("cases/{id}")]
+    public async Task<IActionResult> DeleteCase(Guid id)
+    {
+        var caseItem = await _context.Cases
+            .Include(c => c.Documents)
+            .FirstOrDefaultAsync(c => c.Id == id);
+
+        if (caseItem == null)
+            return NotFound();
+
+        // Soft delete the case and its documents
+        caseItem.IsDeleted = true;
+        caseItem.UpdatedAt = DateTime.UtcNow;
+
+        foreach (var document in caseItem.Documents)
+        {
+            document.IsDeleted = true;
+            document.UpdatedAt = DateTime.UtcNow;
+        }
+
+        await _context.SaveChangesAsync();
+
+        return Ok(new { message = "Case deleted successfully" });
+    }
+
     [HttpGet("registration-codes")]
     public async Task<IActionResult> GetRegistrationCodes([FromQuery] int page = 1, [FromQuery] int pageSize = 50)
     {

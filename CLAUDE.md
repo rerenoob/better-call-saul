@@ -132,6 +132,14 @@ The solution follows clean architecture principles with clear separation between
 - **Backend:** Uses `BetterCallSaul` namespace following C# conventions
 - **Frontend:** Uses consistent naming with TypeScript interfaces and types
 
+### Admin Panel Features
+- **Dashboard:** System overview with user metrics and activity
+- **User Management:** View, activate/deactivate, and manage user accounts
+- **Case Management:** View all uploaded cases, filter by status, search, and manage case files
+- **System Health:** Monitor database connectivity, memory usage, and system uptime
+- **Audit Logs:** Track system activity, security events, and user actions
+- **Registration Codes:** Generate, manage, and clean up user registration codes
+
 ## Development Notes
 
 ### Backend Configuration
