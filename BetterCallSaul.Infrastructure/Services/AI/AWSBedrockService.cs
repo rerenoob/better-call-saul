@@ -17,10 +17,10 @@ public class AWSBedrockService : IAIService
     private readonly ILogger<AWSBedrockService> _logger;
     private readonly List<string> _fallbackModelIds = new()
     {
-        "anthropic.claude-3-5-sonnet-20241022-v2:0",
-        "anthropic.claude-3-5-sonnet-20240620-v1:0",
+        "anthropic.claude-3-haiku-20240307-v1:0",
         "anthropic.claude-3-sonnet-20240229-v1:0",
-        "anthropic.claude-3-haiku-20240307-v1:0"
+        "anthropic.claude-instant-v1",
+        "anthropic.claude-v2:1"
     };
 
     public AWSBedrockService(IOptions<AWSOptions> awsOptions, ILogger<AWSBedrockService> logger)
@@ -40,13 +40,22 @@ public class AWSBedrockService : IAIService
             {
                 RegionEndpoint = Amazon.RegionEndpoint.GetBySystemName(_options.Region)
             };
-            
+
             _bedrockClient = new AmazonBedrockRuntimeClient(config);
-            _logger.LogInformation("AWS Bedrock service initialized with model: {ModelId}", _options.ModelId);
+            _logger.LogInformation("AWS Bedrock service initialized successfully with model: {ModelId} in region: {Region}",
+                _options.ModelId, _options.Region);
+            _logger.LogDebug("Fallback models available: {FallbackModels}", string.Join(", ", _fallbackModelIds));
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to initialize AWS Bedrock client. Exception type: {ExceptionType}", ex.GetType().Name);
+            _logger.LogError(ex, "Failed to initialize AWS Bedrock client. Region: {Region}, Exception type: {ExceptionType}",
+                _options.Region, ex.GetType().Name);
+
+            if (ex is Amazon.Runtime.AmazonServiceException awsEx)
+            {
+                _logger.LogError("AWS Service Exception during initialization - ErrorCode: {ErrorCode}, StatusCode: {StatusCode}",
+                    awsEx.ErrorCode, awsEx.StatusCode);
+            }
         }
     }
 
@@ -91,22 +100,63 @@ public class AWSBedrockService : IAIService
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "Model {ModelId} failed with error: {ErrorMessage}", modelId, ex.Message);
+                _logger.LogWarning(ex, "Model {ModelId} failed with error: {ErrorMessage}. Exception Type: {ExceptionType}",
+                    modelId, ex.Message, ex.GetType().Name);
+
+                // Log AWS-specific error details
+                if (ex is Amazon.Runtime.AmazonServiceException awsEx)
+                {
+                    _logger.LogWarning("AWS Service Exception Details - ErrorCode: {ErrorCode}, StatusCode: {StatusCode}",
+                        awsEx.ErrorCode, awsEx.StatusCode);
+                }
+                else if (ex is Amazon.Runtime.AmazonClientException awsClientEx)
+                {
+                    _logger.LogWarning("AWS Client Exception: {Message}", awsClientEx.Message);
+                }
 
                 if (modelId == modelsToTry.Last())
                 {
                     // This was the last model to try
-                    _logger.LogError(ex, "All models failed. Last error from {ModelId}: {ErrorMessage}", modelId, ex.Message);
+                    _logger.LogError(ex, "All models failed. Last error from {ModelId}: {ErrorMessage}. Region: {Region}",
+                        modelId, ex.Message, _options.Region);
+
+                    var errorMessage = "AWS Bedrock service error: All models failed. ";
+
+                    if (ex is Amazon.Runtime.AmazonServiceException awsServiceEx)
+                    {
+                        if (awsServiceEx.ErrorCode == "AccessDeniedException")
+                        {
+                            errorMessage += $"Access denied to model {modelId}. Please check:\n" +
+                                          "1. AWS Bedrock model access is enabled in AWS Console (Bedrock > Model Access)\n" +
+                                          "2. IAM permissions include 'bedrock:InvokeModel' for Anthropic models\n" +
+                                          "3. Your AWS account has access to Claude models in the {_options.Region} region";
+                        }
+                        else if (awsServiceEx.ErrorCode == "ValidationException")
+                        {
+                            errorMessage += $"Invalid model ID or request format. Error: {awsServiceEx.Message}";
+                        }
+                        else
+                        {
+                            errorMessage += $"AWS Error ({awsServiceEx.ErrorCode}): {awsServiceEx.Message}";
+                        }
+                    }
+                    else
+                    {
+                        errorMessage += $"Last error: {ex.Message}";
+                    }
+
                     return new AIResponse
                     {
                         Success = false,
-                        ErrorMessage = $"AWS Bedrock service error: All models failed. Last error: {ex.Message}",
+                        ErrorMessage = errorMessage,
                         ProcessingTime = DateTime.UtcNow - startTime,
                         Metadata = new Dictionary<string, object>
                         {
                             ["error_type"] = ex.GetType().Name,
                             ["aws_bedrock_failed"] = true,
-                            ["attempted_models"] = modelsToTry
+                            ["attempted_models"] = modelsToTry,
+                            ["region"] = _options.Region,
+                            ["aws_error_code"] = ex is Amazon.Runtime.AmazonServiceException awsSvcEx ? awsSvcEx.ErrorCode : "Unknown"
                         }
                     };
                 }
@@ -279,29 +329,47 @@ public class AWSBedrockService : IAIService
 
     private InvokeModelRequest CreateBedrockRequest(AIRequest request, string? modelId = null)
     {
+        var targetModelId = modelId ?? _options.ModelId;
         var prompt = !string.IsNullOrEmpty(request.Prompt)
             ? request.Prompt
             : BuildCaseAnalysisPrompt(request.DocumentText, request.CaseContext);
 
-        // Use Claude 3 message format
-        var bedrockPayload = new
+        object bedrockPayload;
+
+        // Use different request formats based on model type
+        if (targetModelId.Contains("claude-v2") || targetModelId.Contains("claude-instant"))
         {
-            anthropic_version = "bedrock-2023-05-31",
-            max_tokens = request.MaxTokens,
-            temperature = request.Temperature,
-            messages = new[]
+            // Legacy Claude v2/Instant format
+            bedrockPayload = new
             {
-                new
+                prompt = $"\n\nHuman: {prompt}\n\nAssistant:",
+                max_tokens_to_sample = request.MaxTokens,
+                temperature = request.Temperature,
+                stop_sequences = new[] { "\n\nHuman:" }
+            };
+        }
+        else
+        {
+            // Claude 3+ message format
+            bedrockPayload = new
+            {
+                anthropic_version = "bedrock-2023-05-31",
+                max_tokens = request.MaxTokens,
+                temperature = request.Temperature,
+                messages = new[]
                 {
-                    role = "user",
-                    content = prompt
+                    new
+                    {
+                        role = "user",
+                        content = prompt
+                    }
                 }
-            }
-        };
+            };
+        }
 
         return new InvokeModelRequest
         {
-            ModelId = modelId ?? _options.ModelId,
+            ModelId = targetModelId,
             ContentType = "application/json",
             Body = new System.IO.MemoryStream(System.Text.Encoding.UTF8.GetBytes(JsonSerializer.Serialize(bedrockPayload)))
         };
