@@ -4,6 +4,7 @@ using BetterCallSaul.Infrastructure.Data;
 using BetterCallSaul.Infrastructure.Services.FileProcessing;
 using BetterCallSaul.Infrastructure.Validators;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Cors;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -13,6 +14,7 @@ namespace BetterCallSaul.API.Controllers;
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
+[EnableCors("ReactFrontend")]
 public class FileUploadController : ControllerBase
 {
     private readonly IFileUploadService _fileUploadService;
@@ -216,5 +218,15 @@ public class FileUploadController : ControllerBase
         _logger.LogInformation("Created temporary case {CaseId} for user {UserId}", newTempCase.Id, userId);
 
         return newTempCase.Id;
+    }
+
+    [HttpOptions]
+    [HttpOptions("upload")]
+    [HttpOptions("validate")]
+    [HttpOptions("limits/{userId:guid}")]
+    [HttpOptions("sas-token/{blobName}")]
+    public IActionResult OptionsHandler()
+    {
+        return Ok();
     }
 }
