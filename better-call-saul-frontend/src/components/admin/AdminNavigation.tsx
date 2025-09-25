@@ -67,7 +67,7 @@ export const AdminNavigation: React.FC<AdminNavigationProps> = ({ isOpen }) => {
     <div 
       className={`fixed inset-y-0 left-0 z-50 bg-slate-800 text-white transition-transform duration-300 ease-in-out transform ${
         isOpen ? 'translate-x-0' : '-translate-x-full'
-      } w-64 lg:translate-x-0 lg:static lg:inset-y-0 lg:z-auto`}
+      } w-64 lg:translate-x-0 lg:static lg:inset-y-0 lg:z-auto lg:w-64 flex flex-col`}
     >
       {/* Header */}
       <div className="flex items-center justify-center h-16 px-4 bg-slate-900">

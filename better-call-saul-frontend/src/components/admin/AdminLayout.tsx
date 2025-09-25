@@ -7,7 +7,7 @@ export const AdminLayout: React.FC = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
+    <div className="min-h-screen bg-gray-100 dark:bg-gray-900 flex">
       {/* Admin Navigation Sidebar */}
       <AdminNavigation isOpen={sidebarOpen} />
       
@@ -20,8 +20,8 @@ export const AdminLayout: React.FC = () => {
       )}
       
       {/* Main Content Area */}
-      <div className={`transition-all duration-300 ease-in-out ${
-        sidebarOpen ? 'lg:ml-64' : 'ml-0'
+      <div className={`flex-1 min-w-0 transition-all duration-300 ease-in-out ${
+        sidebarOpen ? 'lg:ml-64 ml-64' : 'ml-0'
       }`}>
         {/* Admin Header */}
         <AdminHeader 
@@ -30,7 +30,7 @@ export const AdminLayout: React.FC = () => {
         />
         
         {/* Page Content */}
-        <main className="p-4 sm:p-6 lg:p-8">
+        <main className="p-4 sm:p-6 lg:p-8 flex-1">
           <Outlet />
         </main>
       </div>
