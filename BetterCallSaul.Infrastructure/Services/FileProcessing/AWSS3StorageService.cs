@@ -232,7 +232,7 @@ public class AWSS3StorageService : IStorageService
     }
 
     // Additional method for generating upload presigned URLs
-    public async Task<string> GenerateUploadPresignedUrlAsync(string fileName, Guid caseId, Guid userId, TimeSpan expiryTime)
+    public Task<string> GenerateUploadPresignedUrlAsync(string fileName, Guid caseId, Guid userId, TimeSpan expiryTime)
     {
         try
         {
@@ -257,7 +257,7 @@ public class AWSS3StorageService : IStorageService
             _logger.LogInformation("Generated upload presigned URL for: {FileName}, expires in {ExpiryTime}", 
                 fileName, expiryTime);
             
-            return presignedUrl;
+            return Task.FromResult(presignedUrl);
         }
         catch (AmazonS3Exception ex)
         {

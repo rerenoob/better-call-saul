@@ -166,13 +166,13 @@ public class AuthController : ControllerBase
 
     [HttpPost("logout")]
     [Authorize]
-    public async Task<IActionResult> Logout()
+    public Task<IActionResult> Logout()
     {
         try
         {
             // Invalidate the current token (client-side responsibility)
             // Could implement server-side token blacklisting if needed
-            return Ok(new { message = "Logged out successfully" });
+            return Task.FromResult<IActionResult>(Ok(new { message = "Logged out successfully" }));
         }
         catch (Exception ex)
         {

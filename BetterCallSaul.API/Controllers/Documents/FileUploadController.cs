@@ -174,13 +174,13 @@ public class FileUploadController : ControllerBase
     }
 
     [HttpGet("sas-token/{blobName}")]
-    public async Task<ActionResult<object>> GenerateSasToken(string blobName, [FromQuery] int expiryMinutes = 60)
+    public Task<ActionResult<object>> GenerateSasToken(string blobName, [FromQuery] int expiryMinutes = 60)
     {
         try
         {
             // SAS tokens were only available with cloud blob storage
             // This feature is not available in the current AWS/Local configuration
-            return BadRequest(new { error = "SAS tokens are not available in the current storage configuration." });
+            return Task.FromResult<ActionResult<object>>(BadRequest(new { error = "SAS tokens are not available in the current storage configuration." }));
         }
         catch (Exception ex)
         {

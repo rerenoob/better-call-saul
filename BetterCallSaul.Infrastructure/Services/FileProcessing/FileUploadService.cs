@@ -155,12 +155,12 @@ public class FileUploadService : IFileUploadService, IStorageService
         return result;
     }
 
-    public async Task<string> GenerateSecureUrlAsync(string storagePath, TimeSpan expiryTime)
+    public Task<string> GenerateSecureUrlAsync(string storagePath, TimeSpan expiryTime)
     {
         // For local file storage, we don't generate secure URLs
         // In production, this would be handled by a proper storage service
         // For development, return the local file path
-        return storagePath;
+        return Task.FromResult(storagePath);
     }
 
     private UploadResult ConvertToUploadResult(StorageResult storageResult)

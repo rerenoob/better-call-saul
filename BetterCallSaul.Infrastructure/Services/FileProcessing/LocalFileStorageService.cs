@@ -144,7 +144,7 @@ public class LocalFileStorageService : IStorageService
         }
     }
 
-    public async Task<string> GenerateSecureUrlAsync(string storagePath, TimeSpan expiryTime)
+    public Task<string> GenerateSecureUrlAsync(string storagePath, TimeSpan expiryTime)
     {
         try
         {
@@ -166,7 +166,7 @@ public class LocalFileStorageService : IStorageService
             // In a real scenario, this would generate a secure access URL
             _logger.LogInformation("Generated local file access URL for: {StoragePath}", storagePath);
             
-            return storagePath;
+            return Task.FromResult(storagePath);
         }
         catch (Exception ex)
         {
