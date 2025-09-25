@@ -256,9 +256,16 @@ using (var scope = app.Services.CreateScope())
     
     // Seed registration codes if needed
     await seedingService.SeedRegistrationCodesAsync(100, 365, "System", "Initial seeding - 100 registration codes");
-    
+
+    // Seed admin user with configured email
+    var adminEmail = Environment.GetEnvironmentVariable("ADMIN_EMAIL") ?? "dphamsw@gmail.com";
+    var adminPassword = Environment.GetEnvironmentVariable("ADMIN_PASSWORD") ?? "TempAdmin123!";
+    var adminName = Environment.GetEnvironmentVariable("ADMIN_NAME") ?? "Duong Pham";
+
+    await seedingService.SeedAdminUserAsync(adminEmail, adminPassword, adminName);
+
     var stats = await seedingService.GetRegistrationCodeStatsAsync();
-    Log.Information("Registration Code Stats - Total: {Total}, Active: {Active}, Used: {Used}, Expired: {Expired}", 
+    Log.Information("Registration Code Stats - Total: {Total}, Active: {Active}, Used: {Used}, Expired: {Expired}",
         stats.Total, stats.Active, stats.Used, stats.Expired);
 }
 

@@ -13,12 +13,15 @@ public class DatabaseSeedingService
     private readonly BetterCallSaulContext _context;
     private readonly ILogger<DatabaseSeedingService> _logger;
     private readonly RoleManager<Role> _roleManager;
+    private readonly UserManager<User> _userManager;
 
-    public DatabaseSeedingService(BetterCallSaulContext context, ILogger<DatabaseSeedingService> logger, RoleManager<Role> roleManager)
+    public DatabaseSeedingService(BetterCallSaulContext context, ILogger<DatabaseSeedingService> logger,
+        RoleManager<Role> roleManager, UserManager<User> userManager)
     {
         _context = context;
         _logger = logger;
         _roleManager = roleManager;
+        _userManager = userManager;
     }
 
     public async Task SeedRegistrationCodesAsync(int count = 100, int expireDays = 365, string createdBy = "System", string? notes = null)
@@ -157,5 +160,81 @@ public class DatabaseSeedingService
         }
 
         _logger.LogInformation("Role seeding completed");
+    }
+
+    public async Task SeedAdminUserAsync(string email = "admin@bettercallsaul.com",
+        string password = "Admin123!", string fullName = "System Administrator")
+    {
+        _logger.LogInformation("Starting admin user seeding for email: {Email}", email);
+
+        // Check if admin user already exists
+        var existingUser = await _userManager.FindByEmailAsync(email);
+        if (existingUser != null)
+        {
+            _logger.LogInformation("Admin user with email {Email} already exists", email);
+
+            // Ensure user has admin role
+            if (!await _userManager.IsInRoleAsync(existingUser, "Admin"))
+            {
+                var addRoleResult = await _userManager.AddToRoleAsync(existingUser, "Admin");
+                if (addRoleResult.Succeeded)
+                {
+                    _logger.LogInformation("Added Admin role to existing user {Email}", email);
+                }
+                else
+                {
+                    _logger.LogError("Failed to add Admin role to user {Email}: {Errors}",
+                        email, string.Join(", ", addRoleResult.Errors.Select(e => e.Description)));
+                }
+            }
+            return;
+        }
+
+        // Ensure Admin role exists
+        if (!await _roleManager.RoleExistsAsync("Admin"))
+        {
+            _logger.LogWarning("Admin role does not exist. Creating it first...");
+            await SeedRolesAsync();
+        }
+
+        // Parse full name into first and last name
+        var nameParts = fullName.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        var firstName = nameParts.Length > 0 ? nameParts[0] : "Admin";
+        var lastName = nameParts.Length > 1 ? string.Join(" ", nameParts.Skip(1)) : "User";
+
+        // Create admin user
+        var adminUser = new User
+        {
+            UserName = email,
+            Email = email,
+            EmailConfirmed = true,
+            FirstName = firstName,
+            LastName = lastName,
+            CreatedAt = DateTime.UtcNow
+        };
+
+        var createResult = await _userManager.CreateAsync(adminUser, password);
+        if (!createResult.Succeeded)
+        {
+            _logger.LogError("Failed to create admin user {Email}: {Errors}",
+                email, string.Join(", ", createResult.Errors.Select(e => e.Description)));
+            return;
+        }
+
+        _logger.LogInformation("Successfully created admin user: {Email}", email);
+
+        // Add admin role
+        var roleResult = await _userManager.AddToRoleAsync(adminUser, "Admin");
+        if (roleResult.Succeeded)
+        {
+            _logger.LogInformation("Successfully assigned Admin role to user: {Email}", email);
+        }
+        else
+        {
+            _logger.LogError("Failed to assign Admin role to user {Email}: {Errors}",
+                email, string.Join(", ", roleResult.Errors.Select(e => e.Description)));
+        }
+
+        _logger.LogInformation("Admin user seeding completed for: {Email}", email);
     }
 }
