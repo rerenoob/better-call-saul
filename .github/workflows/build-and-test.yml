@@ -68,6 +68,33 @@ jobs:
           echo "✅ All core dependencies present in Release build"
         fi
 
+  frontend-checks:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: better-call-saul-frontend/package-lock.json
+
+    - name: Install frontend dependencies
+      run: |
+        cd better-call-saul-frontend
+        npm ci
+
+    - name: Run frontend type check
+      run: |
+        cd better-call-saul-frontend
+        npm run type-check
+
+    - name: Run frontend build test
+      run: |
+        cd better-call-saul-frontend
+        npm run build
+
   dependency-check:
     runs-on: ubuntu-latest
     steps:

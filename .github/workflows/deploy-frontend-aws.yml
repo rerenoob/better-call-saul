@@ -48,6 +48,11 @@ jobs:
           cd better-call-saul-frontend
           npm ci
 
+      - name: Run frontend type check
+        run: |
+          cd better-call-saul-frontend
+          npm run type-check
+
       - name: Build application
         run: |
           cd better-call-saul-frontend

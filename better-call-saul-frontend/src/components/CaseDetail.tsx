@@ -4,6 +4,12 @@ import { Case } from '../types/case';
 import { caseService } from '../services/caseService';
 import { useAuth } from '../hooks/useAuth';
 
+interface CaseWithDocuments {
+  case: Case;
+  documents: Array<{ id: string; name: string }>;
+  analyses: Array<{ id: string; status: string }>;
+}
+
 interface ChatMessage {
   id: string;
   message: string;
@@ -16,6 +22,7 @@ export const CaseDetail: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const [caseData, setCaseData] = useState<Case | null>(null);
+  const [documents, setDocuments] = useState<Array<{ id: string; name: string }>>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
@@ -35,8 +42,9 @@ export const CaseDetail: React.FC = () => {
     try {
       setLoading(true);
       setError(null);
-      const caseDetails = await caseService.getCase(caseId);
-      setCaseData(caseDetails);
+      const response = await caseService.getCase(caseId) as unknown as CaseWithDocuments;
+      setCaseData(response.case);
+      setDocuments(response.documents || []);
 
       // Load case analysis data
       await loadCaseAnalysis();
@@ -83,7 +91,7 @@ export const CaseDetail: React.FC = () => {
     if (!caseData?.id) return;
     
     try {
-      const result = await caseService.analyzeCase(caseData.id, caseData.documents?.[0]?.id || caseData.id);
+      const result = await caseService.analyzeCase(caseData.id, documents?.[0]?.id || caseData.id);
       
       if (result.success) {
         alert('AI analysis started. Please refresh the page in a few moments to see the results.');
