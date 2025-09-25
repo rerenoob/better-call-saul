@@ -92,7 +92,7 @@ public class FileUploadController : ControllerBase
             {
                 // Trigger automatic case analysis if we have a document ID and it's not a temporary case
                 // Analysis will check if text is available and proceed accordingly
-                if (result.FileId != Guid.Empty && !IsTemporaryCase(caseId))
+                if (result.FileId != Guid.Empty && !await IsTemporaryCaseAsync(caseId))
                 {
                     _ = Task.Run(async () => await TriggerCaseAnalysisAsync(caseId, result.FileId, file.FileName));
                 }
@@ -234,9 +234,9 @@ public class FileUploadController : ControllerBase
         return newTempCase.Id;
     }
 
-    private bool IsTemporaryCase(Guid caseId)
+    private async Task<bool> IsTemporaryCaseAsync(Guid caseId)
     {
-        var caseItem = _context.Cases.FirstOrDefault(c => c.Id == caseId);
+        var caseItem = await _context.Cases.FirstOrDefaultAsync(c => c.Id == caseId);
         return caseItem?.Title == "TEMPORARY_UPLOAD_CASE";
     }
 
