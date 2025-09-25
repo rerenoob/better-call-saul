@@ -9,7 +9,7 @@ interface AdminNavigationProps {
 const navigationItems = [
   {
     name: 'Dashboard',
-    path: '/admin',
+    path: '/admin/dashboard',
     icon: (
       <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2H5a2 2 0 00-2-2z" />
@@ -85,7 +85,7 @@ export const AdminNavigation: React.FC<AdminNavigationProps> = ({ isOpen }) => {
       <nav className="flex-1 px-2 py-4 space-y-1">
         {navigationItems.map((item) => {
           const isActive = location.pathname === item.path || 
-                          (item.path === '/admin' && location.pathname === '/admin/dashboard');
+                          (item.path === '/admin/dashboard' && location.pathname === '/admin');
           
           return (
             <NavLink

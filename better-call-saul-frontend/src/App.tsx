@@ -138,14 +138,10 @@ function App() {
             } />
             <Route path="/admin" element={
               <ProtectedRoute requireAdmin>
-                <Navigate to="/admin/dashboard" replace />
-              </ProtectedRoute>
-            } />
-            <Route path="/admin" element={
-              <ProtectedRoute requireAdmin>
                 <AdminLayout />
               </ProtectedRoute>
             }>
+              <Route index element={<Navigate to="dashboard" replace />} />
               <Route path="dashboard" element={<AdminDashboard />} />
               <Route path="users" element={<UserManagement />} />
               <Route path="health" element={<SystemHealth />} />
