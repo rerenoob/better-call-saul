@@ -7,7 +7,7 @@ const PRODUCTION_USER = {
   password: 'Test123!',
 };
 
-test.describe('Production Core User Flow', () => {
+test.describe('Production Environment', () => {
   test('should complete login and access dashboard', async ({ page }) => {
     // Navigate to production application
     await page.goto(PRODUCTION_URL);

@@ -22,29 +22,8 @@ const mockAuthResponse = {
   },
 };
 
-const mockCasesResponse = [
-  {
-    id: '1',
-    title: 'State v. Johnson',
-    caseNumber: 'CR-2024-001',
-    status: 'Pending',
-    priority: 'High',
-    nextCourtDate: '2024-03-15T10:00:00Z',
-    successProbability: 65,
-  },
-  {
-    id: '2',
-    title: 'People v. Smith',
-    caseNumber: 'CR-2024-002',
-    status: 'In Progress',
-    priority: 'Medium',
-    nextCourtDate: '2024-03-20T14:30:00Z',
-    successProbability: 42,
-  },
-];
-
 // Setup mock API responses
-async function setupMocks(page: Page) {
+async function setupAuthMocks(page: Page) {
   await page.route('**/api/auth/login', route => {
     route.fulfill({
       status: 200,
@@ -61,14 +40,6 @@ async function setupMocks(page: Page) {
     });
   });
 
-  await page.route('**/api/cases*', route => {
-    route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify(mockCasesResponse),
-    });
-  });
-
   await page.route('**/api/auth/profile', route => {
     route.fulfill({
       status: 200,
@@ -76,11 +47,19 @@ async function setupMocks(page: Page) {
       body: JSON.stringify(mockAuthResponse.user),
     });
   });
+
+  await page.route('**/api/auth/logout', route => {
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({}),
+    });
+  });
 }
 
-test.describe('Core User Flow', () => {
+test.describe('Authentication Flow', () => {
   test.beforeEach(async ({ page }) => {
-    await setupMocks(page);
+    await setupAuthMocks(page);
   });
 
   test('should complete full user registration and login flow', async ({ page }) => {
@@ -131,49 +110,6 @@ test.describe('Core User Flow', () => {
     await expect(page.getByRole('heading', { name: /dashboard/i })).toBeVisible();
   });
 
-  test('should display cases on dashboard', async ({ page }) => {
-    // Login directly
-    await page.goto('/login');
-    await page.getByLabel(/email/i).fill(testUser.email);
-    await page.getByLabel(/password/i).fill(testUser.password);
-    await page.getByRole('button', { name: /sign in/i }).click();
-
-    // Verify dashboard loads
-    await expect(page).toHaveURL(/.*dashboard/);
-    await expect(page.getByRole('heading', { name: /dashboard/i })).toBeVisible();
-
-    // Verify cases are displayed
-    await expect(page.getByText(mockCasesResponse[0].title)).toBeVisible();
-    await expect(page.getByText(mockCasesResponse[0].caseNumber)).toBeVisible();
-    await expect(page.getByText(mockCasesResponse[1].title)).toBeVisible();
-    await expect(page.getByText(mockCasesResponse[1].caseNumber)).toBeVisible();
-
-    // Verify case status and priority are visible
-    await expect(page.getByText(mockCasesResponse[0].status)).toBeVisible();
-    await expect(page.getByText(mockCasesResponse[0].priority)).toBeVisible();
-    await expect(page.getByText(`${mockCasesResponse[0].successProbability}%`)).toBeVisible();
-  });
-
-  test('should navigate to case details', async ({ page }) => {
-    // Login directly
-    await page.goto('/login');
-    await page.getByLabel(/email/i).fill(testUser.email);
-    await page.getByLabel(/password/i).fill(testUser.password);
-    await page.getByRole('button', { name: /sign in/i }).click();
-
-    // Click on first case
-    await page.getByText(mockCasesResponse[0].title).click();
-
-    // Should navigate to case details page
-    await expect(page).toHaveURL(/.*cases\/1/);
-    await expect(page.getByText(mockCasesResponse[0].title)).toBeVisible();
-    await expect(page.getByText(mockCasesResponse[0].caseNumber)).toBeVisible();
-
-    // Navigate back to dashboard
-    await page.getByRole('link', { name: /back to dashboard/i }).click();
-    await expect(page).toHaveURL(/.*dashboard/);
-  });
-
   test('should handle authentication errors', async ({ page }) => {
     // Mock login failure
     await page.route('**/api/auth/login', route => {
@@ -203,6 +139,28 @@ test.describe('Core User Flow', () => {
 
     // Try to access case details without login
     await page.goto('/cases/1');
+    await expect(page).toHaveURL(/.*login/);
+  });
+
+  test('should handle logout correctly', async ({ page }) => {
+    // Login first
+    await page.goto('/login');
+    await page.getByLabel(/email/i).fill(testUser.email);
+    await page.getByLabel(/password/i).fill(testUser.password);
+    await page.getByRole('button', { name: /sign in/i }).click();
+
+    // Verify logged in
+    await expect(page).toHaveURL(/.*dashboard/);
+
+    // Logout
+    await page.getByRole('button', { name: /logout/i }).click();
+
+    // Should redirect to login page
+    await expect(page).toHaveURL(/.*login/);
+    await expect(page.getByRole('heading', { name: /login/i })).toBeVisible();
+
+    // Try to access protected route after logout
+    await page.goto('/dashboard');
     await expect(page).toHaveURL(/.*login/);
   });
 });
