@@ -48,4 +48,13 @@ export const caseService = {
     const response = await apiClient.post(`/api/case/${caseId}/chat`, { message });
     return response.data;
   },
+
+  analyzeCase: async (caseId: string, documentId: string): Promise<{ success: boolean; analysisId?: string; message?: string }> => {
+    const response = await apiClient.post(`/api/caseanalysis/analyze/${caseId}`, { 
+      documentId,
+      analysisType: 'comprehensive',
+      includeViabilityAssessment: true
+    });
+    return response.data;
+  },
 };

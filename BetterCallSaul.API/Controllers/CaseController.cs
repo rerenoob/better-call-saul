@@ -428,8 +428,13 @@ public class CaseController : ControllerBase
             _logger.LogInformation("Successfully created case {CaseId} with {FileCount} files", 
                 caseItem.Id, request.FileIds?.Count ?? 0);
 
-            // Trigger case analysis for uploaded documents
-            _ = Task.Run(async () => await AnalyzeCaseDocumentsAsync(caseItem.Id));
+            // Trigger case analysis for uploaded documents with proper delay for text extraction
+            _ = Task.Run(async () => 
+            {
+                // Wait longer for text extraction to complete
+                await Task.Delay(TimeSpan.FromSeconds(15));
+                await AnalyzeCaseDocumentsAsync(caseItem.Id);
+            });
 
             return Ok(new CaseCreationResponse
             {

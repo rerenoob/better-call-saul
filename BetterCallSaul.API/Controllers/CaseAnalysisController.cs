@@ -46,8 +46,9 @@ public class CaseAnalysisController : ControllerBase
                 return NotFound(new { error = "Case not found" });
             }
 
-            // Get document for analysis
+            // Get document for analysis with extracted text
             var document = await _context.Documents
+                .Include(d => d.ExtractedText)
                 .FirstOrDefaultAsync(d => d.Id == request.DocumentId && d.CaseId == caseId);
             
             if (document == null)
@@ -55,26 +56,23 @@ public class CaseAnalysisController : ControllerBase
                 return NotFound(new { error = "Document not found" });
             }
 
+            // Check if document has extracted text
+            if (document.ExtractedText?.FullText == null)
+            {
+                return BadRequest(new { error = "Document text extraction not completed. Please wait for text extraction to finish." });
+            }
+
             // Start analysis
             var analysis = await _caseAnalysisService.AnalyzeCaseAsync(
                 caseId, 
                 request.DocumentId, 
-                document.ExtractedText?.FullText ?? string.Empty);
+                document.ExtractedText.FullText);
 
-            var response = new CaseAnalysisResponse
+            var response = new 
             {
-                AnalysisId = analysis.Id,
-                CaseId = caseId,
-                Status = analysis.Status.ToString(),
-                ViabilityScore = analysis.ViabilityScore > 0 ? analysis.ViabilityScore : null,
-                ConfidenceScore = analysis.ConfidenceScore > 0 ? analysis.ConfidenceScore : null,
-                Summary = analysis.AnalysisText,
-                KeyIssues = analysis.KeyLegalIssues.ToArray(),
-                PotentialDefenses = analysis.PotentialDefenses.ToArray(),
-                EvidenceGaps = analysis.EvidenceEvaluation.EvidenceGaps.ToArray(),
-                RecommendedActions = analysis.Recommendations.Select(r => r.Action ?? "").Where(a => !string.IsNullOrEmpty(a)).ToArray(),
-                SimilarCases = new string[0], // Placeholder for similar cases
-                CreatedAt = analysis.CreatedAt
+                success = true,
+                analysisId = analysis.Id,
+                message = "Analysis started successfully"
             };
 
             return Ok(response);
