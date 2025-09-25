@@ -242,14 +242,29 @@ public class FileUploadController : ControllerBase
         {
             _logger.LogInformation("Starting automatic case analysis for case {CaseId}, document {DocumentId}", caseId, documentId);
 
-            // Get the document with extracted text
-            var document = await _context.Documents
-                .Include(d => d.ExtractedText)
-                .FirstOrDefaultAsync(d => d.Id == documentId);
+            // Add a small delay to ensure text extraction is fully committed
+            await Task.Delay(2000);
+
+            // Try to get the document with extracted text with retries
+            Document? document = null;
+            for (int attempt = 0; attempt < 5; attempt++)
+            {
+                document = await _context.Documents
+                    .Include(d => d.ExtractedText)
+                    .FirstOrDefaultAsync(d => d.Id == documentId);
+
+                if (document?.ExtractedText?.FullText != null)
+                {
+                    break; // Found text, proceed with analysis
+                }
+
+                _logger.LogInformation("Attempt {Attempt}: No extracted text yet for document {DocumentId}, waiting...", attempt + 1, documentId);
+                await Task.Delay(3000); // Wait 3 seconds between attempts
+            }
 
             if (document?.ExtractedText?.FullText == null)
             {
-                _logger.LogWarning("No extracted text available for document {DocumentId}, skipping analysis", documentId);
+                _logger.LogWarning("No extracted text available for document {DocumentId} after 5 attempts, skipping analysis", documentId);
                 return;
             }
 
