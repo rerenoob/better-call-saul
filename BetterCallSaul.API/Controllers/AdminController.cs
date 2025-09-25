@@ -229,8 +229,8 @@ public class AdminController : ControllerBase
             query = (IOrderedQueryable<Case>)query.Where(c => 
                 c.Title.Contains(search) || 
                 c.CaseNumber.Contains(search) ||
-                c.User.FullName.Contains(search) ||
-                c.User.Email.Contains(search));
+                (c.User.FullName != null && c.User.FullName.Contains(search)) ||
+                (c.User.Email != null && c.User.Email.Contains(search)));
         }
 
         // Apply status filter
@@ -278,8 +278,6 @@ public class AdminController : ControllerBase
             .Include(c => c.User)
             .Include(c => c.Documents.Where(d => !d.IsDeleted))
             .ThenInclude(d => d.ExtractedText)
-            .Include(c => c.Documents.Where(d => !d.IsDeleted))
-            .ThenInclude(d => d.Annotations)
             .FirstOrDefaultAsync(c => c.Id == id);
 
         if (caseItem == null)
@@ -310,7 +308,7 @@ public class AdminController : ControllerBase
                 d.FileSize,
                 FileType = d.FileType.ToString(),
                 Status = d.Status.ToString(),
-                d.UploadedAt,
+                d.CreatedAt,
                 ExtractedText = d.ExtractedText != null ? d.ExtractedText.FullText : null
             }),
             Analyses = analyses

@@ -123,7 +123,11 @@ public class LocalFileStorageService : IStorageService
                 File.Delete(storagePath);
                 
                 // Clean up empty directories
-                await CleanupEmptyDirectoriesAsync(Path.GetDirectoryName(storagePath));
+                var directoryPath = Path.GetDirectoryName(storagePath);
+                if (!string.IsNullOrEmpty(directoryPath))
+                {
+                    await CleanupEmptyDirectoriesAsync(directoryPath);
+                }
                 
                 _logger.LogInformation("File deleted from local storage: {StoragePath}", storagePath);
                 return true;
