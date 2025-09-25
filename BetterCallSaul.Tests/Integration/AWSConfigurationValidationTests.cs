@@ -10,7 +10,7 @@ public class AWSConfigurationValidationTests
     {
         // Arrange
         var configuration = new ConfigurationBuilder()
-            .AddInMemoryCollection(new Dictionary<string, string>
+            .AddInMemoryCollection(new Dictionary<string, string?>
             {
                 ["ASPNETCORE_ENVIRONMENT"] = "Production"
             })
@@ -45,7 +45,7 @@ public class AWSConfigurationValidationTests
     {
         // Arrange
         var configuration = new ConfigurationBuilder()
-            .AddInMemoryCollection(new Dictionary<string, string>
+            .AddInMemoryCollection(new Dictionary<string, string?>
             {
                 ["ASPNETCORE_ENVIRONMENT"] = "Production"
             })
@@ -79,7 +79,7 @@ public class AWSConfigurationValidationTests
     {
         // Arrange
         var configuration = new ConfigurationBuilder()
-            .AddInMemoryCollection(new Dictionary<string, string>
+            .AddInMemoryCollection(new Dictionary<string, string?>
             {
                 ["ASPNETCORE_ENVIRONMENT"] = "Development"
             })
@@ -113,7 +113,7 @@ public class AWSConfigurationValidationTests
     {
         // Arrange
         var configuration = new ConfigurationBuilder()
-            .AddInMemoryCollection(new Dictionary<string, string>
+            .AddInMemoryCollection(new Dictionary<string, string?>
             {
                 ["ASPNETCORE_ENVIRONMENT"] = "Production"
             })
@@ -146,7 +146,7 @@ public class AWSConfigurationValidationTests
     {
         // Arrange
         var configuration = new ConfigurationBuilder()
-            .AddInMemoryCollection(new Dictionary<string, string>
+            .AddInMemoryCollection(new Dictionary<string, string?>
             {
                 ["ASPNETCORE_ENVIRONMENT"] = "Production"
             })
@@ -179,7 +179,7 @@ public class AWSConfigurationValidationTests
     {
         // Arrange
         var configuration = new ConfigurationBuilder()
-            .AddInMemoryCollection(new Dictionary<string, string>
+            .AddInMemoryCollection(new Dictionary<string, string?>
             {
                 ["ASPNETCORE_ENVIRONMENT"] = "Production"
             })

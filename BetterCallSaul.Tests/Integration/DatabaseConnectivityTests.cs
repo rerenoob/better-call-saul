@@ -13,7 +13,7 @@ namespace BetterCallSaul.Tests.Integration
         {
             // Arrange
             var configuration = new ConfigurationBuilder()
-                .AddInMemoryCollection(new Dictionary<string, string>
+                .AddInMemoryCollection(new Dictionary<string, string?>
                 {
                     ["ConnectionStrings:DefaultConnection"] = "Host=test-rds-host;Port=5432;Database=BetterCallSaul;Username=testuser;Password=testpass"
                 })

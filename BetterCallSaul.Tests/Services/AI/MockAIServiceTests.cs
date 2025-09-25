@@ -118,7 +118,7 @@ public class MockAIServiceTests
     public async Task SummarizeLegalDocumentAsync_NullInput_ReturnsSuccessResponse()
     {
         // Arrange
-        string? documentText = null;
+        string documentText = "";
 
         // Act
         var result = await _service.SummarizeLegalDocumentAsync(documentText);

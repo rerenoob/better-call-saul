@@ -11,7 +11,7 @@ public class AWSConfigurationTests
     {
         // Arrange
         var configuration = new ConfigurationBuilder()
-            .AddInMemoryCollection(new Dictionary<string, string>
+            .AddInMemoryCollection(new Dictionary<string, string?>
             {
                 ["AWS:Bedrock:Region"] = "us-west-2",
                 ["AWS:Bedrock:ModelId"] = "anthropic.claude-v2.1",
@@ -56,7 +56,7 @@ public class AWSConfigurationTests
     {
         // Arrange
         var configuration = new ConfigurationBuilder()
-            .AddInMemoryCollection(new Dictionary<string, string>())
+            .AddInMemoryCollection(new Dictionary<string, string?>())
             .Build();
 
         // Act
@@ -80,7 +80,7 @@ public class AWSConfigurationTests
     {
         // Arrange
         var configuration = new ConfigurationBuilder()
-            .AddInMemoryCollection(new Dictionary<string, string>
+            .AddInMemoryCollection(new Dictionary<string, string?>
             {
                 ["AWS:Bedrock:ModelId"] = "anthropic.claude-v2.1",
                 ["AWS:S3:BucketName"] = "custom-bucket"
@@ -104,7 +104,7 @@ public class AWSConfigurationTests
     {
         // Arrange
         var configuration = new ConfigurationBuilder()
-            .AddInMemoryCollection(new Dictionary<string, string>
+            .AddInMemoryCollection(new Dictionary<string, string?>
             {
                 ["AWS:Bedrock:Region"] = "us-east-1",
                 ["AWS:S3:Region"] = "us-east-1"

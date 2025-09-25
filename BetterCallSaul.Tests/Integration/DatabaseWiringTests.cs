@@ -21,7 +21,7 @@ namespace BetterCallSaul.Tests.Integration
         {
             // Arrange
             var configuration = new ConfigurationBuilder()
-                .AddInMemoryCollection(new Dictionary<string, string>
+                .AddInMemoryCollection(new Dictionary<string, string?>
                 {
                     ["ConnectionStrings:DefaultConnection"] = "Host=test-host;Port=5432;Database=BetterCallSaul;Username=testuser;Password=testpass"
                 })
@@ -120,7 +120,7 @@ namespace BetterCallSaul.Tests.Integration
         {
             // Arrange - Simulate production environment variables
             var configuration = new ConfigurationBuilder()
-                .AddInMemoryCollection(new Dictionary<string, string>
+                .AddInMemoryCollection(new Dictionary<string, string?>
                 {
                     // PostgreSQL configuration (from CloudFormation)
                     ["ConnectionStrings:DefaultConnection"] = "Host=${RDS_HOST};Port=5432;Database=BetterCallSaul;Username=${RDS_USERNAME};Password=${RDS_PASSWORD}",
