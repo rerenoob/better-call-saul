@@ -109,66 +109,66 @@ export interface GenerateCodesRequest {
 
 export const adminService = {
   async getDashboardMetrics(): Promise<DashboardMetrics> {
-    const response = await apiClient.get('/admin/dashboard/metrics');
+    const response = await apiClient.get('/api/admin/dashboard/metrics');
     return response.data;
   },
 
   async getUsers(page: number = 1, pageSize: number = 20): Promise<UsersResponse> {
-    const response = await apiClient.get('/admin/users', {
+    const response = await apiClient.get('/api/admin/users', {
       params: { page, pageSize }
     });
     return response.data;
   },
 
   async getUser(id: string): Promise<UserDetails> {
-    const response = await apiClient.get(`/admin/users/${id}`);
+    const response = await apiClient.get(`/api/admin/users/${id}`);
     return response.data;
   },
 
   async updateUserStatus(id: string, isActive: boolean): Promise<void> {
-    await apiClient.put(`/admin/users/${id}/status`, { isActive });
+    await apiClient.put(`/api/admin/users/${id}/status`, { isActive });
   },
 
   async getSystemHealth(): Promise<SystemHealth> {
-    const response = await apiClient.get('/admin/system/health');
+    const response = await apiClient.get('/api/admin/system/health');
     return response.data;
   },
 
   async getAuditLogs(page: number = 1, pageSize: number = 50): Promise<AuditLogsResponse> {
-    const response = await apiClient.get('/admin/audit-logs', {
+    const response = await apiClient.get('/api/admin/audit-logs', {
       params: { page, pageSize }
     });
     return response.data;
   },
 
   async getCaseStatistics(): Promise<CaseStatistics> {
-    const response = await apiClient.get('/admin/cases/stats');
+    const response = await apiClient.get('/api/admin/cases/stats');
     return response.data;
   },
 
   async getRegistrationCodes(page: number = 1, pageSize: number = 50): Promise<RegistrationCodesResponse> {
-    const response = await apiClient.get('/admin/registration-codes', {
+    const response = await apiClient.get('/api/admin/registration-codes', {
       params: { page, pageSize }
     });
     return response.data;
   },
 
   async getRegistrationCodeStats(): Promise<RegistrationCodeStats> {
-    const response = await apiClient.get('/admin/registration-codes/stats');
+    const response = await apiClient.get('/api/admin/registration-codes/stats');
     return response.data;
   },
 
   async generateRegistrationCodes(request: GenerateCodesRequest): Promise<{ message: string; codes: string[] }> {
-    const response = await apiClient.post('/admin/registration-codes/generate', request);
+    const response = await apiClient.post('/api/admin/registration-codes/generate', request);
     return response.data;
   },
 
   async deleteRegistrationCode(id: string): Promise<void> {
-    await apiClient.delete(`/admin/registration-codes/${id}`);
+    await apiClient.delete(`/api/admin/registration-codes/${id}`);
   },
 
   async cleanupExpiredCodes(): Promise<{ message: string }> {
-    const response = await apiClient.post('/admin/registration-codes/cleanup');
+    const response = await apiClient.post('/api/admin/registration-codes/cleanup');
     return response.data;
   }
 };
