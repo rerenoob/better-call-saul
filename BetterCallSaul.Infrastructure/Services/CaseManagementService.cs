@@ -89,11 +89,12 @@ public class CaseManagementService : ICaseManagementService
 
     public async Task DeleteCaseAsync(Guid caseId, CancellationToken cancellationToken = default)
     {
-        // Delete from SQL
+        // Soft delete from SQL - set IsDeleted flag instead of removing
         var caseData = await _sqlContext.Cases.FindAsync(new object[] { caseId }, cancellationToken);
         if (caseData != null)
         {
-            _sqlContext.Cases.Remove(caseData);
+            caseData.IsDeleted = true;
+            caseData.UpdatedAt = DateTime.UtcNow;
             await _sqlContext.SaveChangesAsync(cancellationToken);
         }
 
@@ -107,7 +108,7 @@ public class CaseManagementService : ICaseManagementService
             _logger.LogWarning(ex, "Failed to delete NoSQL document for case {CaseId}", caseId);
         }
         
-        _logger.LogInformation("Deleted case {CaseId}", caseId);
+        _logger.LogInformation("Soft deleted case {CaseId}", caseId);
     }
 
     public async Task<CaseAnalysisStats> GetCaseAnalysisStatsAsync(Guid caseId, CancellationToken cancellationToken = default)

@@ -145,23 +145,33 @@ public class CaseController : ControllerBase
     {
         try
         {
+            // Verify user owns the case
+            var userId = GetCurrentUserId();
+            if (userId == Guid.Empty)
+            {
+                return Unauthorized();
+            }
+
+            // Get the case to verify ownership
             var caseItem = await _context.Cases.FindAsync(id);
             if (caseItem == null)
             {
                 return NotFound();
             }
 
-            // Verify user owns the case
-            var userId = GetCurrentUserId();
-            if (userId == Guid.Empty || caseItem.UserId != userId)
+            if (caseItem.UserId != userId)
             {
                 return Unauthorized();
             }
 
-            _context.Cases.Remove(caseItem);
-            await _context.SaveChangesAsync();
+            // Use the service method for soft delete
+            await _caseManagementService.DeleteCaseAsync(id);
 
             return Ok(new { message = "Case deleted successfully" });
+        }
+        catch (KeyNotFoundException)
+        {
+            return NotFound();
         }
         catch (Exception ex)
         {

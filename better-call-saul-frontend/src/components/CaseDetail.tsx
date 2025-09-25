@@ -52,6 +52,20 @@ export const CaseDetail: React.FC = () => {
     }
   };
 
+  const handleDeleteCase = async () => {
+    if (!id || !window.confirm('Are you sure you want to delete this case? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      await caseService.deleteCase(id);
+      navigate('/dashboard');
+    } catch (error) {
+      console.error('Failed to delete case:', error);
+      alert('Failed to delete case. Please try again.');
+    }
+  };
+
   const loadCaseAnalysis = async () => {
     try {
       // This would integrate with the case analysis API endpoint
@@ -267,15 +281,24 @@ export const CaseDetail: React.FC = () => {
               <h1 className="text-3xl font-bold text-slate-800">{caseData.title}</h1>
               <p className="text-slate-500 mt-1">Case Number: {caseData.caseNumber}</p>
             </div>
-            <div className="text-right">
-              <p className="text-sm text-slate-500">AI Success Prediction</p>
-              <p
-                className={`text-4xl font-bold ${getSuccessProbabilityColor(caseData.successProbability || 0)}`}
+            <div className="flex items-center space-x-4">
+              <button
+                onClick={handleDeleteCase}
+                className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
+                title="Delete this case"
               >
-                {caseData.successProbability
-                  ? `${(caseData.successProbability * 100).toFixed(0)}%`
-                  : 'N/A'}
-              </p>
+                Delete Case
+              </button>
+              <div className="text-right">
+                <p className="text-sm text-slate-500">AI Success Prediction</p>
+                <p
+                  className={`text-4xl font-bold ${getSuccessProbabilityColor(caseData.successProbability || 0)}`}
+                >
+                  {caseData.successProbability
+                    ? `${(caseData.successProbability * 100).toFixed(0)}%`
+                    : 'N/A'}
+                </p>
+              </div>
             </div>
           </div>
         </header>

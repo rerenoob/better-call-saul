@@ -59,6 +59,22 @@ export const Dashboard: React.FC = () => {
     navigate(`/cases/${caseId}`);
   };
 
+  const handleDeleteCase = async (caseId: string, caseTitle: string, e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent triggering the case click
+    
+    if (!window.confirm(`Are you sure you want to delete "${caseTitle}"? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      await caseService.deleteCase(caseId);
+      await loadCases(); // Reload the cases list
+    } catch (error) {
+      console.error('Failed to delete case:', error);
+      alert('Failed to delete case. Please try again.');
+    }
+  };
+
   return (
     <AppLayout>
       <div className="bg-slate-100 min-h-screen">
@@ -184,7 +200,14 @@ export const Dashboard: React.FC = () => {
                       </div>
                     )}
 
-                    <div className="mt-4 pt-4 border-t border-slate-200 text-right">
+                    <div className="mt-4 pt-4 border-t border-slate-200 flex justify-between items-center">
+                      <button 
+                        onClick={(e) => handleDeleteCase(caseItem.id, caseItem.title, e)}
+                        className="text-sm text-red-600 font-semibold hover:underline"
+                        title="Delete this case"
+                      >
+                        Delete
+                      </button>
                       <button className="text-sm text-blue-600 font-semibold hover:underline">
                         View Analysis
                       </button>
