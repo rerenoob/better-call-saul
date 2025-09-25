@@ -1,9 +1,12 @@
 using BetterCallSaul.Core.Models.Entities;
+using BetterCallSaul.Core.Enums;
+using BetterCallSaul.Infrastructure.Data;
 using BetterCallSaul.Infrastructure.Services.FileProcessing;
 using BetterCallSaul.Infrastructure.Validators;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace BetterCallSaul.API.Controllers;
 
@@ -14,11 +17,16 @@ public class FileUploadController : ControllerBase
 {
     private readonly IFileUploadService _fileUploadService;
     private readonly ILogger<FileUploadController> _logger;
+    private readonly BetterCallSaulContext _context;
 
-    public FileUploadController(IFileUploadService fileUploadService, ILogger<FileUploadController> logger)
+    public FileUploadController(
+        IFileUploadService fileUploadService,
+        ILogger<FileUploadController> logger,
+        BetterCallSaulContext context)
     {
         _fileUploadService = fileUploadService;
         _logger = logger;
+        _context = context;
     }
 
     [HttpPost("upload")]
@@ -43,11 +51,17 @@ public class FileUploadController : ControllerBase
             var userId = GetCurrentUserId();
             if (userId == Guid.Empty)
             {
-                return Unauthorized(new UploadResult 
-                { 
-                    Success = false, 
-                    Message = "User not authenticated" 
+                return Unauthorized(new UploadResult
+                {
+                    Success = false,
+                    Message = "User not authenticated"
                 });
+            }
+
+            // Handle temporary case uploads - create a temporary case if needed
+            if (caseId == Guid.Empty)
+            {
+                caseId = await GetOrCreateTemporaryCaseAsync(userId);
             }
 
             // Validate file
@@ -167,5 +181,40 @@ public class FileUploadController : ControllerBase
             return userId;
         }
         return Guid.Empty;
+    }
+
+    private async Task<Guid> GetOrCreateTemporaryCaseAsync(Guid userId)
+    {
+        // Try to find existing temporary case for this user created in the last hour
+        var temporaryCase = await _context.Cases
+            .Where(c => c.UserId == userId &&
+                       c.Title == "TEMPORARY_UPLOAD_CASE" &&
+                       c.CreatedAt > DateTime.UtcNow.AddHours(-1))
+            .FirstOrDefaultAsync();
+
+        if (temporaryCase != null)
+        {
+            return temporaryCase.Id;
+        }
+
+        // Create new temporary case
+        var newTempCase = new Case
+        {
+            Id = Guid.NewGuid(),
+            Title = "TEMPORARY_UPLOAD_CASE",
+            Description = "Temporary case for file uploads before case creation",
+            UserId = userId,
+            CaseNumber = $"TEMP-{DateTime.UtcNow:yyyyMMdd}-{Guid.NewGuid().ToString()[..8].ToUpper()}",
+            Status = CaseStatus.Draft,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        };
+
+        _context.Cases.Add(newTempCase);
+        await _context.SaveChangesAsync();
+
+        _logger.LogInformation("Created temporary case {CaseId} for user {UserId}", newTempCase.Id, userId);
+
+        return newTempCase.Id;
     }
 }

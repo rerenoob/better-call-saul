@@ -374,10 +374,40 @@ public class CaseController : ControllerBase
                     .Where(d => request.FileIds.Contains(d.Id.ToString()))
                     .ToListAsync();
 
+                var temporaryCaseIds = new HashSet<Guid>();
                 foreach (var document in documents)
                 {
+                    // Track the original case ID if it was temporary
+                    if (document.CaseId != Guid.Empty)
+                    {
+                        var originalCase = await _context.Cases
+                            .Where(c => c.Id == document.CaseId && c.Title == "TEMPORARY_UPLOAD_CASE")
+                            .FirstOrDefaultAsync();
+                        if (originalCase != null)
+                        {
+                            temporaryCaseIds.Add(originalCase.Id);
+                        }
+                    }
+
                     document.CaseId = caseItem.Id;
                     document.UpdatedAt = DateTime.UtcNow;
+                }
+
+                // Clean up empty temporary cases
+                foreach (var tempCaseId in temporaryCaseIds)
+                {
+                    var hasRemainingDocuments = await _context.Documents
+                        .AnyAsync(d => d.CaseId == tempCaseId && !d.IsDeleted);
+
+                    if (!hasRemainingDocuments)
+                    {
+                        var tempCase = await _context.Cases.FindAsync(tempCaseId);
+                        if (tempCase != null)
+                        {
+                            _context.Cases.Remove(tempCase);
+                            _logger.LogInformation("Cleaned up empty temporary case {TempCaseId}", tempCaseId);
+                        }
+                    }
                 }
             }
 
