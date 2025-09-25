@@ -38,6 +38,42 @@ public class CaseController : ControllerBase
         _context = context;
     }
 
+    [HttpPost]
+    [Authorize]
+    public async Task<ActionResult<Case>> CreateCase([FromBody] CreateCaseRequest request)
+    {
+        try
+        {
+            var userId = GetCurrentUserId();
+            if (userId == Guid.Empty)
+            {
+                return Unauthorized();
+            }
+
+            var caseItem = new Case
+            {
+                Id = Guid.NewGuid(),
+                Title = request.Title,
+                Description = request.Description,
+                UserId = userId,
+                CaseNumber = $"CASE-{DateTime.UtcNow:yyyyMMdd}-{Guid.NewGuid().ToString()[..8].ToUpper()}",
+                Status = CaseStatus.New,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
+
+            _context.Cases.Add(caseItem);
+            await _context.SaveChangesAsync();
+
+            return CreatedAtAction(nameof(GetCase), new { id = caseItem.Id }, caseItem);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error creating case");
+            return StatusCode(500, new { error = "Internal server error" });
+        }
+    }
+
     [HttpGet("{id}")]
     [Authorize]
     public async Task<ActionResult<Case>> GetCase(Guid id)
@@ -54,6 +90,82 @@ public class CaseController : ControllerBase
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error getting case {CaseId}", id);
+            return StatusCode(500, new { error = "Internal server error" });
+        }
+    }
+
+    [HttpPut("{id}")]
+    [Authorize]
+    public async Task<ActionResult<Case>> UpdateCase(Guid id, [FromBody] UpdateCaseRequest request)
+    {
+        try
+        {
+            var caseItem = await _context.Cases.FindAsync(id);
+            if (caseItem == null)
+            {
+                return NotFound();
+            }
+
+            // Verify user owns the case
+            var userId = GetCurrentUserId();
+            if (userId == Guid.Empty || caseItem.UserId != userId)
+            {
+                return Unauthorized();
+            }
+
+            // Update allowed fields
+            if (!string.IsNullOrEmpty(request.Title))
+                caseItem.Title = request.Title;
+            
+            if (!string.IsNullOrEmpty(request.Description))
+                caseItem.Description = request.Description;
+            
+            if (request.Status.HasValue)
+                caseItem.Status = request.Status.Value;
+            
+            if (request.HearingDate.HasValue)
+                caseItem.HearingDate = request.HearingDate.Value;
+
+            caseItem.UpdatedAt = DateTime.UtcNow;
+
+            await _context.SaveChangesAsync();
+
+            return Ok(caseItem);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error updating case {CaseId}", id);
+            return StatusCode(500, new { error = "Internal server error" });
+        }
+    }
+
+    [HttpDelete("{id}")]
+    [Authorize]
+    public async Task<IActionResult> DeleteCase(Guid id)
+    {
+        try
+        {
+            var caseItem = await _context.Cases.FindAsync(id);
+            if (caseItem == null)
+            {
+                return NotFound();
+            }
+
+            // Verify user owns the case
+            var userId = GetCurrentUserId();
+            if (userId == Guid.Empty || caseItem.UserId != userId)
+            {
+                return Unauthorized();
+            }
+
+            _context.Cases.Remove(caseItem);
+            await _context.SaveChangesAsync();
+
+            return Ok(new { message = "Case deleted successfully" });
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error deleting case {CaseId}", id);
             return StatusCode(500, new { error = "Internal server error" });
         }
     }
@@ -465,6 +577,20 @@ public class CreateCaseWithFilesRequest
     public string Title { get; set; } = string.Empty;
     public string? Description { get; set; }
     public List<string> FileIds { get; set; } = new();
+}
+
+public class CreateCaseRequest
+{
+    public string Title { get; set; } = string.Empty;
+    public string? Description { get; set; }
+}
+
+public class UpdateCaseRequest
+{
+    public string? Title { get; set; }
+    public string? Description { get; set; }
+    public CaseStatus? Status { get; set; }
+    public DateTime? HearingDate { get; set; }
 }
 
 public class CaseCreationResponse

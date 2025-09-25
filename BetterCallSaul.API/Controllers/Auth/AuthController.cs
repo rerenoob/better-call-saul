@@ -2,6 +2,7 @@ using BetterCallSaul.API.DTOs.Auth;
 using BetterCallSaul.Core.Models.Entities;
 using BetterCallSaul.Core.Interfaces.Services;
 using BetterCallSaul.Infrastructure.Data;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -160,6 +161,24 @@ public class AuthController : ControllerBase
         catch (Exception ex)
         {
             return Unauthorized(new { message = ex.Message });
+        }
+    }
+
+    [HttpPost("logout")]
+    [Authorize]
+    public async Task<IActionResult> Logout()
+    {
+        try
+        {
+            // Invalidate the current token (client-side responsibility)
+            // Could implement server-side token blacklisting if needed
+            return Ok(new { message = "Logged out successfully" });
+        }
+        catch (Exception ex)
+        {
+            // Log the exception for debugging but don't expose internal details
+            Console.WriteLine($"Logout error: {ex.Message}");
+            return StatusCode(500, new { message = "Error during logout" });
         }
     }
 

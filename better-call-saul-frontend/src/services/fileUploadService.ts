@@ -27,7 +27,7 @@ export const fileUploadService = {
     }
 
     try {
-      const response = await apiClient.post<FileUploadResponse>('/documents/upload', formData, {
+      const response = await apiClient.post<FileUploadResponse>('/api/fileupload/upload', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
@@ -70,7 +70,7 @@ export const fileUploadService = {
     fileIds: string[]
   ): Promise<CaseCreationResponse> => {
     try {
-      const response = await apiClient.post<CaseCreationResponse>('/cases/create-with-files', {
+      const response = await apiClient.post<CaseCreationResponse>('/api/cases/create-with-files', {
         title: caseName,
         description: clientName ? `Client: ${clientName}` : undefined,
         fileIds,
@@ -88,7 +88,7 @@ export const fileUploadService = {
 
   deleteFile: async (fileId: string): Promise<{ success: boolean; error?: string }> => {
     try {
-      await apiClient.delete(`/documents/${fileId}`);
+      await apiClient.delete(`/api/documents/${fileId}`);
       return { success: true };
     } catch (error: unknown) {
       return {
