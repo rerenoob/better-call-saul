@@ -79,7 +79,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         payload: { user, token: response.token },
       });
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'Login failed';
+      let errorMessage = 'Login failed. Please try again.';
+
+      // Handle axios error with response
+      if (error && typeof error === 'object' && 'response' in error) {
+        const axiosError = error as { response: { status: number; data?: { message?: string } } };
+        const status = axiosError.response.status;
+
+        if (status === 401) {
+          errorMessage = 'Invalid email or password. Please check your credentials and try again.';
+        } else if (status === 429) {
+          errorMessage = 'Too many login attempts. Please wait a moment and try again.';
+        } else if (status === 500) {
+          errorMessage = 'Server error. Please try again later.';
+        } else if (status >= 400) {
+          errorMessage = axiosError.response.data?.message || 'Authentication failed. Please try again.';
+        }
+      } else if (error && typeof error === 'object' && 'code' in error) {
+        const networkError = error as { code: string };
+        if (networkError.code === 'NETWORK_ERROR' || !navigator.onLine) {
+          errorMessage = 'Network error. Please check your internet connection.';
+        }
+      }
+
       dispatch({ type: 'LOGIN_FAILURE', payload: errorMessage });
       throw error;
     }
@@ -117,7 +139,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         payload: { user, token: response.token },
       });
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'Registration failed';
+      let errorMessage = 'Registration failed. Please try again.';
+
+      // Handle axios error with response
+      if (error && typeof error === 'object' && 'response' in error) {
+        const axiosError = error as { response: { status: number; data?: { message?: string } } };
+        const status = axiosError.response.status;
+
+        if (status === 400) {
+          errorMessage = axiosError.response.data?.message || 'Invalid registration data. Please check your information.';
+        } else if (status === 409) {
+          errorMessage = 'An account with this email already exists. Please try logging in instead.';
+        } else if (status === 429) {
+          errorMessage = 'Too many registration attempts. Please wait a moment and try again.';
+        } else if (status === 500) {
+          errorMessage = 'Server error. Please try again later.';
+        } else if (status >= 400) {
+          errorMessage = axiosError.response.data?.message || 'Registration failed. Please try again.';
+        }
+      } else if (error && typeof error === 'object' && 'code' in error) {
+        const networkError = error as { code: string };
+        if (networkError.code === 'NETWORK_ERROR' || !navigator.onLine) {
+          errorMessage = 'Network error. Please check your internet connection.';
+        }
+      }
+
       dispatch({ type: 'LOGIN_FAILURE', payload: errorMessage });
       throw error;
     }
