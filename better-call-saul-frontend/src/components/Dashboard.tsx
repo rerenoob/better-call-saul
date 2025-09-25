@@ -161,11 +161,8 @@ export const Dashboard: React.FC = () => {
                       </span>
                     </div>
 
-                    <p className="text-sm text-slate-500 mb-4">
-                      Client:{' '}
-                      {caseItem.description?.includes('Client:')
-                        ? caseItem.description.split('Client:')[1].split('.')[0].trim()
-                        : caseItem.description?.split(' - ')[0] || 'Not specified'}
+                    <p className="text-sm text-slate-500 mb-4 line-clamp-2">
+                      {caseItem.description || 'No description available'}
                     </p>
 
                     {caseItem.successProbability && (

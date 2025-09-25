@@ -212,22 +212,23 @@ public class CaseController : ControllerBase
             return Unauthorized();
         }
 
+        // Use SQL database for case metadata (title, description, etc.)
+        var cases = await _caseManagementService.GetCasesByUserAsync(userId);
+        
+        // Enhance with NoSQL data for analysis results
         var caseDocuments = await _caseDocumentRepository.GetByUserIdAsync(userId);
-        var cases = caseDocuments.Select(cd => new Case
+        var caseDocumentsDict = caseDocuments.ToDictionary(cd => cd.CaseId);
+        
+        foreach (var caseItem in cases)
         {
-            Id = cd.CaseId,
-            Title = cd.Metadata.Tags.FirstOrDefault() ?? "Untitled Case",
-            Description = cd.Documents.FirstOrDefault()?.Description ?? "No description",
-            UserId = cd.UserId,
-            CaseNumber = $"CASE-{cd.CaseId.ToString()[..8].ToUpper()}",
-            Status = CaseStatus.New, // Default status
-            CreatedAt = cd.CreatedAt,
-            UpdatedAt = cd.UpdatedAt,
-            HearingDate = null, // Not available in NoSQL model
-            SuccessProbability = cd.Analyses.FirstOrDefault()?.ViabilityScore > 0 
-                ? (decimal)(cd.Analyses.First().ViabilityScore / 100.0) 
-                : 0
-        }).ToList();
+            if (caseDocumentsDict.TryGetValue(caseItem.Id, out var caseDoc))
+            {
+                // Update success probability from NoSQL analysis data
+                caseItem.SuccessProbability = caseDoc.Analyses.FirstOrDefault()?.ViabilityScore > 0 
+                    ? (decimal)(caseDoc.Analyses.First().ViabilityScore / 100.0) 
+                    : 0;
+            }
+        }
 
         return Ok(cases);
     }
@@ -301,26 +302,27 @@ public class CaseController : ControllerBase
             return Unauthorized();
         }
 
-        var caseDocuments = await _caseDocumentRepository.GetByUserIdAsync(userId);
-        var recentCases = caseDocuments
+        // Use SQL database for case metadata (title, description, etc.)
+        var cases = await _caseManagementService.GetCasesByUserAsync(userId);
+        var recentCases = cases
             .OrderByDescending(c => c.CreatedAt)
             .Take(limit)
-            .Select(cd => new Case
-            {
-                Id = cd.CaseId,
-                Title = cd.Metadata.Tags.FirstOrDefault() ?? "Untitled Case",
-                Description = cd.Documents.FirstOrDefault()?.Description ?? "No description",
-                UserId = cd.UserId,
-                CaseNumber = $"CASE-{cd.CaseId.ToString()[..8].ToUpper()}",
-                Status = CaseStatus.New, // Default status
-                CreatedAt = cd.CreatedAt,
-                UpdatedAt = cd.UpdatedAt,
-                HearingDate = null, // Not available in NoSQL model
-                SuccessProbability = cd.Analyses.FirstOrDefault()?.ViabilityScore > 0 
-                    ? (decimal)(cd.Analyses.First().ViabilityScore / 100.0) 
-                    : 0
-            })
             .ToList();
+        
+        // Enhance with NoSQL data for analysis results
+        var caseDocuments = await _caseDocumentRepository.GetByUserIdAsync(userId);
+        var caseDocumentsDict = caseDocuments.ToDictionary(cd => cd.CaseId);
+        
+        foreach (var caseItem in recentCases)
+        {
+            if (caseDocumentsDict.TryGetValue(caseItem.Id, out var caseDoc))
+            {
+                // Update success probability from NoSQL analysis data
+                caseItem.SuccessProbability = caseDoc.Analyses.FirstOrDefault()?.ViabilityScore > 0 
+                    ? (decimal)(caseDoc.Analyses.First().ViabilityScore / 100.0) 
+                    : 0;
+            }
+        }
 
         return Ok(recentCases);
     }
