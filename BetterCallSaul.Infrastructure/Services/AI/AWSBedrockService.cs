@@ -38,18 +38,15 @@ public class AWSBedrockService : IAIService
         {
             var config = new AmazonBedrockRuntimeConfig
             {
-                RegionEndpoint = Amazon.RegionEndpoint.GetBySystemName(_options.Region),
-                ServiceURL = null // Let AWS SDK determine the correct endpoint
+                RegionEndpoint = Amazon.RegionEndpoint.GetBySystemName(_options.Region)
             };
 
-            // Use AWS credentials from environment variables or default credential chain
-            var credentials = Amazon.Runtime.FallbackCredentialsFactory.GetCredentials();
-            _bedrockClient = new AmazonBedrockRuntimeClient(credentials, config);
+            // Use default credential chain (environment variables, IAM role, etc.)
+            _bedrockClient = new AmazonBedrockRuntimeClient(config);
 
             _logger.LogInformation("AWS Bedrock service initialized successfully with model: {ModelId} in region: {Region}",
                 _options.ModelId, _options.Region);
             _logger.LogDebug("Fallback models available: {FallbackModels}", string.Join(", ", _fallbackModelIds));
-            _logger.LogInformation("Using AWS credentials provider: {CredentialsType}", credentials.GetType().Name);
         }
         catch (Exception ex)
         {
