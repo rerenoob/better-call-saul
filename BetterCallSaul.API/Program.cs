@@ -108,11 +108,17 @@ else
 {
     // Use AWS DocumentDB for production
     var documentDbConnectionString = builder.Configuration.GetConnectionString("DocumentDb") ??
+        builder.Configuration["NoSql:ConnectionString"] ??
         Environment.GetEnvironmentVariable("DOCUMENTDB_CONNECTION_STRING");
 
     if (string.IsNullOrEmpty(documentDbConnectionString))
     {
+        Log.Error("DocumentDB connection string is not configured for production. Check NoSql:ConnectionString in appsettings or DOCUMENTDB_CONNECTION_STRING environment variable.");
         throw new InvalidOperationException("DocumentDB connection string is not configured for production.");
+    }
+    else
+    {
+        Log.Information("DocumentDB connection string configured successfully");
     }
 
     builder.Services.AddSingleton<IMongoClient>(_ =>
@@ -301,28 +307,46 @@ builder.Services.AddCors(options =>
 var app = builder.Build();
 
 // Initialize database on startup
-using (var scope = app.Services.CreateScope())
+try
 {
-    var context = scope.ServiceProvider.GetRequiredService<BetterCallSaulContext>();
-    context.Database.EnsureCreated();
-    
-    // Seed roles first
-    var seedingService = scope.ServiceProvider.GetRequiredService<DatabaseSeedingService>();
-    await seedingService.SeedRolesAsync();
-    
-    // Seed registration codes if needed
-    await seedingService.SeedRegistrationCodesAsync(100, 365, "System", "Initial seeding - 100 registration codes");
+    using (var scope = app.Services.CreateScope())
+    {
+        Log.Information("Starting database initialization...");
+        
+        var context = scope.ServiceProvider.GetRequiredService<BetterCallSaulContext>();
+        
+        // Test database connection
+        Log.Information("Testing PostgreSQL database connection...");
+        await context.Database.CanConnectAsync();
+        Log.Information("PostgreSQL database connection successful");
+        
+        context.Database.EnsureCreated();
+        
+        // Seed roles first
+        var seedingService = scope.ServiceProvider.GetRequiredService<DatabaseSeedingService>();
+        await seedingService.SeedRolesAsync();
+        
+        // Seed registration codes if needed
+        await seedingService.SeedRegistrationCodesAsync(100, 365, "System", "Initial seeding - 100 registration codes");
 
-    // Seed admin user with configured email
-    var adminEmail = Environment.GetEnvironmentVariable("ADMIN_EMAIL") ?? "dphamsw@gmail.com";
-    var adminPassword = Environment.GetEnvironmentVariable("ADMIN_PASSWORD") ?? "TempAdmin123!";
-    var adminName = Environment.GetEnvironmentVariable("ADMIN_NAME") ?? "Duong Pham";
+        // Seed admin user with configured email
+        var adminEmail = Environment.GetEnvironmentVariable("ADMIN_EMAIL") ?? "dphamsw@gmail.com";
+        var adminPassword = Environment.GetEnvironmentVariable("ADMIN_PASSWORD") ?? "TempAdmin123!";
+        var adminName = Environment.GetEnvironmentVariable("ADMIN_NAME") ?? "Duong Pham";
 
-    await seedingService.SeedAdminUserAsync(adminEmail, adminPassword, adminName);
+        await seedingService.SeedAdminUserAsync(adminEmail, adminPassword, adminName);
 
-    var stats = await seedingService.GetRegistrationCodeStatsAsync();
-    Log.Information("Registration Code Stats - Total: {Total}, Active: {Active}, Used: {Used}, Expired: {Expired}",
-        stats.Total, stats.Active, stats.Used, stats.Expired);
+        var stats = await seedingService.GetRegistrationCodeStatsAsync();
+        Log.Information("Registration Code Stats - Total: {Total}, Active: {Active}, Used: {Used}, Expired: {Expired}",
+            stats.Total, stats.Active, stats.Used, stats.Expired);
+            
+        Log.Information("Database initialization completed successfully");
+    }
+}
+catch (Exception ex)
+{
+    Log.Error(ex, "Database initialization failed");
+    throw;
 }
 
 // Configure the HTTP request pipeline.
