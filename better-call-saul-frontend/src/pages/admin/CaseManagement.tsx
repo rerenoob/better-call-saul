@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useCaseManagement } from '../../hooks/useCaseManagement';
 import { CaseDetails } from '../../services/adminService';
+import { DocumentViewer } from '../../components/document-viewer/DocumentViewer';
 
 export const CaseManagement: React.FC = () => {
   const {
@@ -28,6 +29,7 @@ export const CaseManagement: React.FC = () => {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [isAnalysisModalOpen, setIsAnalysisModalOpen] = useState(false);
+  const [isDocumentViewerOpen, setIsDocumentViewerOpen] = useState(false);
   const [selectedCaseId, setSelectedCaseId] = useState<string | null>(null);
   const [editingCase, setEditingCase] = useState<CaseDetails | null>(null);
   const [selectedDocumentId, setSelectedDocumentId] = useState<string | null>(null);
@@ -63,6 +65,11 @@ export const CaseManagement: React.FC = () => {
   const handleDeleteCase = (caseId: string) => {
     setSelectedCaseId(caseId);
     setIsDeleteModalOpen(true);
+  };
+
+  const handleViewDocument = (documentId: string) => {
+    setSelectedDocumentId(documentId);
+    setIsDocumentViewerOpen(true);
   };
 
   const confirmDeleteCase = async () => {
@@ -427,6 +434,13 @@ export const CaseManagement: React.FC = () => {
                             <span className="text-xs text-gray-500 dark:text-gray-400">
                               {new Date(doc.uploadedAt).toLocaleDateString()}
                             </span>
+                            <button
+                              onClick={() => handleViewDocument(doc.id)}
+                              className="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300 text-xs font-medium"
+                              title="View Document Text"
+                            >
+                              View Text
+                            </button>
                             <button
                               onClick={() => {
                                 setSelectedDocumentId(doc.id);
@@ -857,6 +871,17 @@ export const CaseManagement: React.FC = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Document Viewer Modal */}
+      {isDocumentViewerOpen && selectedDocumentId && (
+        <DocumentViewer
+          documentId={selectedDocumentId}
+          onClose={() => {
+            setIsDocumentViewerOpen(false);
+            setSelectedDocumentId(null);
+          }}
+        />
       )}
     </div>
   );

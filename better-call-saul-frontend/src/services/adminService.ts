@@ -192,6 +192,83 @@ export interface GenerateCodesRequest {
   notes?: string;
 }
 
+// Document Viewer Interfaces
+export interface DocumentViewerData {
+  documentId: string;
+  fileName: string;
+  fileType: string;
+  fileSize: number;
+  caseId: string;
+  caseNumber: string;
+  isProcessed: boolean;
+  processedAt?: string;
+  extractedText?: string;
+  pageCount: number;
+  pages: DocumentPageData[];
+  annotations: DocumentAnnotationData[];
+}
+
+export interface DocumentPageData {
+  pageNumber: number;
+  text?: string;
+  confidence: number;
+  boundingBoxes: TextBoundingBox[];
+}
+
+export interface TextBoundingBox {
+  text: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  confidence: number;
+}
+
+export interface DocumentAnnotationData {
+  id: string;
+  pageNumber: number;
+  type: string;
+  content: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  color: string;
+  createdBy: string;
+  createdAt: string;
+}
+
+export interface CreateAnnotationRequest {
+  pageNumber: number;
+  type: string;
+  content: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  color: string;
+}
+
+export interface UpdateAnnotationRequest {
+  content: string;
+  color: string;
+}
+
+export interface DocumentSearchResult {
+  documentId: string;
+  query: string;
+  caseSensitive: boolean;
+  totalMatches: number;
+  matches: SearchMatch[];
+}
+
+export interface SearchMatch {
+  pageNumber: number;
+  position: number;
+  context: string;
+  matchText: string;
+}
+
 export const adminService = {
   async getDashboardMetrics(): Promise<DashboardMetrics> {
     const response = await apiClient.get('/api/admin/dashboard/metrics');
@@ -312,6 +389,33 @@ export const adminService = {
 
   async assessViability(caseId: string, request: ViabilityAssessmentRequest): Promise<ViabilityAssessmentResponse> {
     const response = await apiClient.post(`/api/case-analysis/viability/${caseId}`, request);
+    return response.data;
+  },
+
+  // Document Viewer Methods
+  async getDocumentContent(documentId: string): Promise<DocumentViewerData> {
+    const response = await apiClient.get(`/api/documentviewer/document/${documentId}/content`);
+    return response.data;
+  },
+
+  async addAnnotation(documentId: string, request: CreateAnnotationRequest): Promise<DocumentAnnotationData> {
+    const response = await apiClient.post(`/api/documentviewer/document/${documentId}/annotations`, request);
+    return response.data;
+  },
+
+  async updateAnnotation(documentId: string, annotationId: string, request: UpdateAnnotationRequest): Promise<DocumentAnnotationData> {
+    const response = await apiClient.put(`/api/documentviewer/document/${documentId}/annotations/${annotationId}`, request);
+    return response.data;
+  },
+
+  async deleteAnnotation(documentId: string, annotationId: string): Promise<void> {
+    await apiClient.delete(`/api/documentviewer/document/${documentId}/annotations/${annotationId}`);
+  },
+
+  async searchDocument(documentId: string, query: string, caseSensitive: boolean = false): Promise<DocumentSearchResult> {
+    const response = await apiClient.get(`/api/documentviewer/document/${documentId}/search`, {
+      params: { query, caseSensitive }
+    });
     return response.data;
   },
 };
