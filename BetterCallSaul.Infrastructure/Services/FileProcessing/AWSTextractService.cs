@@ -79,7 +79,7 @@ public class AWSTextractService : ITextExtractionService
 
             // Use AWS Textract to extract text
             await using var fileStream = File.OpenRead(filePath);
-            
+
             // Choose processing method based on file size
             TextExtractionResult result;
             if (fileInfo.Length <= MaxSyncFileSize)
@@ -88,7 +88,10 @@ public class AWSTextractService : ITextExtractionService
             }
             else
             {
-                result = await ProcessAsynchronouslyAsync(fileStream, fileName, fileInfo.Length);
+                // For async processing, fall back to sync processing if S3 upload is not configured
+                _logger.LogWarning("Large file {FileName} ({FileSize} bytes) requires async processing. Falling back to sync processing with size limit warning.",
+                    fileName, fileInfo.Length);
+                result = await ProcessSynchronouslyAsync(fileStream, fileName, fileInfo.Length);
             }
 
             result.ProcessingTime = DateTime.UtcNow - startTime;
@@ -163,40 +166,91 @@ public class AWSTextractService : ITextExtractionService
 
     private async Task<TextExtractionResult> ProcessSynchronouslyAsync(Stream documentStream, string fileName, long fileSize)
     {
-        // Read the document stream into a byte array
-        using var memoryStream = new MemoryStream();
-        await documentStream.CopyToAsync(memoryStream);
-        var documentBytes = memoryStream.ToArray();
-
-        var detectDocumentTextRequest = new DetectDocumentTextRequest
+        try
         {
-            Document = new AmazonTextractDocument
+            // Read the document stream into a byte array
+            using var memoryStream = new MemoryStream();
+            documentStream.Position = 0; // Ensure we're at the beginning
+            await documentStream.CopyToAsync(memoryStream);
+            var documentBytes = memoryStream.ToArray();
+
+            if (documentBytes.Length == 0)
             {
-                Bytes = new MemoryStream(documentBytes)
+                return new TextExtractionResult
+                {
+                    Success = false,
+                    ErrorMessage = "Document stream is empty",
+                    Status = TextExtractionStatus.Failed,
+                    FileName = fileName,
+                    FileSize = fileSize
+                };
             }
-        };
 
-        var response = await _textractClient!.DetectDocumentTextAsync(detectDocumentTextRequest);
-
-        var extractedText = ExtractTextFromResponse(response);
-        var pages = ExtractPagesFromResponse(response);
-        var confidence = CalculateOverallConfidence(response);
-
-        return new TextExtractionResult
-        {
-            Success = true,
-            ExtractedText = extractedText,
-            ConfidenceScore = confidence,
-            Status = TextExtractionStatus.Success,
-            Metadata = new Dictionary<string, object>
+            var detectDocumentTextRequest = new DetectDocumentTextRequest
             {
-                ["file_type"] = Path.GetExtension(fileName).ToLowerInvariant(),
-                ["extraction_method"] = "aws_textract_sync",
-                ["aws_operation_type"] = "synchronous_detect_document_text",
-                ["block_count"] = response.Blocks?.Count ?? 0
-            },
-            Pages = pages
-        };
+                Document = new AmazonTextractDocument
+                {
+                    Bytes = new MemoryStream(documentBytes)
+                }
+            };
+
+            _logger.LogInformation("Sending document to AWS Textract: {FileName} ({Size} bytes)", fileName, documentBytes.Length);
+            var response = await _textractClient!.DetectDocumentTextAsync(detectDocumentTextRequest);
+
+            var extractedText = ExtractTextFromResponse(response);
+            var pages = ExtractPagesFromResponse(response);
+            var confidence = CalculateOverallConfidence(response);
+
+            if (string.IsNullOrWhiteSpace(extractedText))
+            {
+                _logger.LogWarning("AWS Textract returned empty text for file: {FileName}", fileName);
+                return new TextExtractionResult
+                {
+                    Success = false,
+                    ErrorMessage = "No text could be extracted from the document",
+                    Status = TextExtractionStatus.Failed,
+                    FileName = fileName,
+                    FileSize = fileSize,
+                    Metadata = new Dictionary<string, object>
+                    {
+                        ["extraction_method"] = "aws_textract_sync",
+                        ["blocks_found"] = response.Blocks?.Count ?? 0,
+                        ["extraction_empty"] = true
+                    }
+                };
+            }
+
+            _logger.LogInformation("AWS Textract successfully extracted {CharCount} characters from {FileName}",
+                extractedText.Length, fileName);
+
+            return new TextExtractionResult
+            {
+                Success = true,
+                ExtractedText = extractedText,
+                ConfidenceScore = confidence,
+                Status = TextExtractionStatus.Success,
+                Metadata = new Dictionary<string, object>
+                {
+                    ["file_type"] = Path.GetExtension(fileName).ToLowerInvariant(),
+                    ["extraction_method"] = "aws_textract_sync",
+                    ["aws_operation_type"] = "synchronous_detect_document_text",
+                    ["block_count"] = response.Blocks?.Count ?? 0
+                },
+                Pages = pages
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error in ProcessSynchronouslyAsync for file: {FileName}", fileName);
+            return new TextExtractionResult
+            {
+                Success = false,
+                ErrorMessage = $"Synchronous processing error: {ex.Message}",
+                Status = TextExtractionStatus.ProcessingError,
+                FileName = fileName,
+                FileSize = fileSize
+            };
+        }
     }
 
     private async Task<TextExtractionResult> ProcessAsynchronouslyAsync(Stream documentStream, string fileName, long fileSize)
