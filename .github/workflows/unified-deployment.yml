@@ -41,7 +41,7 @@ env:
 
 jobs:
   deploy_backend:
-    if: contains(github.event.head_commit.message, 'backend') || contains(github.event.head_commit.message, 'BetterCallSaul') || github.event.inputs.deploy_backend == 'true'
+    if: contains(github.event.head_commit.modified, 'BetterCallSaul.API') || contains(github.event.head_commit.modified, 'BetterCallSaul.Core') || contains(github.event.head_commit.modified, 'BetterCallSaul.Infrastructure') || github.event.inputs.deploy_backend == 'true'
     runs-on: ubuntu-latest
     name: Deploy Backend API
     steps:
@@ -105,7 +105,7 @@ jobs:
           wait-for-service-stability: true
 
   deploy_frontend:
-    if: contains(github.event.head_commit.message, 'frontend') || contains(github.event.head_commit.message, 'better-call-saul-frontend') || github.event.inputs.deploy_frontend == 'true'
+    if: contains(github.event.head_commit.modified, 'better-call-saul-frontend') || github.event.inputs.deploy_frontend == 'true'
     runs-on: ubuntu-latest
     name: Deploy Frontend
     steps:
@@ -150,7 +150,7 @@ jobs:
           aws cloudfront create-invalidation --distribution-id ${{ env.FRONTEND_CLOUDFRONT_ID }} --paths "/*"
 
   deploy_marketing:
-    if: contains(github.event.head_commit.message, 'marketing') || contains(github.event.head_commit.message, 'Marketing') || github.event.inputs.deploy_marketing == 'true'
+    if: contains(github.event.head_commit.modified, 'Marketing') || github.event.inputs.deploy_marketing == 'true'
     runs-on: ubuntu-latest
     name: Deploy Marketing Site
     steps:

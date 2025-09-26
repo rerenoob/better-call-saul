@@ -24,7 +24,7 @@ env:
 
 jobs:
   deploy_frontend:
-    if: contains(github.event.head_commit.message, 'frontend') || contains(github.event.head_commit.message, 'better-call-saul-frontend') || contains(github.event.head_commit.modified, 'better-call-saul-frontend') || github.event_name == 'workflow_dispatch'
+    if: contains(github.event.head_commit.modified, 'better-call-saul-frontend') || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     name: Deploy Frontend
     steps:
@@ -74,7 +74,7 @@ jobs:
           aws cloudfront create-invalidation --distribution-id ${{ env.FRONTEND_CLOUDFRONT_ID }} --paths "/*"
 
   deploy_marketing:
-    if: contains(github.event.head_commit.message, 'marketing') || contains(github.event.head_commit.message, 'Marketing') || contains(github.event.head_commit.modified, 'Marketing') || github.event_name == 'workflow_dispatch'
+    if: contains(github.event.head_commit.modified, 'Marketing') || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     name: Deploy Marketing Site
     steps:
