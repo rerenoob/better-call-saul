@@ -17,7 +17,7 @@ export const caseService = {
     return response.data;
   },
 
-  createCase: async (caseData: Omit<Case, 'id' | 'createdAt' | 'updatedAt'>): Promise<Case> => {
+  createCase: async (caseData: { title: string; description?: string }): Promise<Case> => {
     const response = await apiClient.post<Case>('/api/case', caseData);
     return response.data;
   },
