@@ -40,47 +40,8 @@ env:
   MARKETING_CLOUDFRONT_ID: ESFK92TFOJSWA
 
 jobs:
-  determine_deployments:
-    runs-on: ubuntu-latest
-    outputs:
-      deploy_backend: ${{ steps.check_files.outputs.deploy_backend || github.event.inputs.deploy_backend }}
-      deploy_frontend: ${{ steps.check_files.outputs.deploy_frontend || github.event.inputs.deploy_frontend }}
-      deploy_marketing: ${{ steps.check_files.outputs.deploy_marketing || github.event.inputs.deploy_marketing }}
-    steps:
-      - uses: actions/checkout@v4
-      
-      - name: Check modified files
-        id: check_files
-        run: |
-          echo "Checking modified files for deployment triggers..."
-          
-          # Check for backend changes
-          if [[ "${{ github.event.head_commit.message }}" =~ (backend|BetterCallSaul\.API|BetterCallSaul\.Core|BetterCallSaul\.Infrastructure) ]] || 
-             [[ "${{ contains(github.event.head_commit.modified, 'BetterCallSaul.API') || contains(github.event.head_commit.modified, 'BetterCallSaul.Core') || contains(github.event.head_commit.modified, 'BetterCallSaul.Infrastructure') }}" == 'true' ]]; then
-            echo "deploy_backend=true" >> $GITHUB_OUTPUT
-          else
-            echo "deploy_backend=false" >> $GITHUB_OUTPUT
-          fi
-          
-          # Check for frontend changes
-          if [[ "${{ github.event.head_commit.message }}" =~ (frontend|better-call-saul-frontend) ]] || 
-             [[ "${{ contains(github.event.head_commit.modified, 'better-call-saul-frontend') }}" == 'true' ]]; then
-            echo "deploy_frontend=true" >> $GITHUB_OUTPUT
-          else
-            echo "deploy_frontend=false" >> $GITHUB_OUTPUT
-          fi
-          
-          # Check for marketing changes
-          if [[ "${{ github.event.head_commit.message }}" =~ (marketing|Marketing) ]] || 
-             [[ "${{ contains(github.event.head_commit.modified, 'Marketing') }}" == 'true' ]]; then
-            echo "deploy_marketing=true" >> $GITHUB_OUTPUT
-          else
-            echo "deploy_marketing=false" >> $GITHUB_OUTPUT
-          fi
-
   deploy_backend:
-    needs: determine_deployments
-    if: needs.determine_deployments.outputs.deploy_backend == 'true'
+    if: contains(github.event.head_commit.message, 'backend') || contains(github.event.head_commit.message, 'BetterCallSaul') || github.event.inputs.deploy_backend == 'true'
     runs-on: ubuntu-latest
     name: Deploy Backend API
     steps:
@@ -144,8 +105,7 @@ jobs:
           wait-for-service-stability: true
 
   deploy_frontend:
-    needs: determine_deployments
-    if: needs.determine_deployments.outputs.deploy_frontend == 'true'
+    if: contains(github.event.head_commit.message, 'frontend') || contains(github.event.head_commit.message, 'better-call-saul-frontend') || github.event.inputs.deploy_frontend == 'true'
     runs-on: ubuntu-latest
     name: Deploy Frontend
     steps:
@@ -190,8 +150,7 @@ jobs:
           aws cloudfront create-invalidation --distribution-id ${{ env.FRONTEND_CLOUDFRONT_ID }} --paths "/*"
 
   deploy_marketing:
-    needs: determine_deployments
-    if: needs.determine_deployments.outputs.deploy_marketing == 'true'
+    if: contains(github.event.head_commit.message, 'marketing') || contains(github.event.head_commit.message, 'Marketing') || github.event.inputs.deploy_marketing == 'true'
     runs-on: ubuntu-latest
     name: Deploy Marketing Site
     steps:
