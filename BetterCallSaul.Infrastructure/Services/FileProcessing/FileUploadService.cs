@@ -289,7 +289,8 @@ public class FileUploadService : IFileUploadService, IStorageService
                 IsProcessed = false,
                 UploadedById = document.UploadedById,
                 CreatedAt = document.CreatedAt,
-                Metadata = new Dictionary<string, object>()
+                Metadata = new Dictionary<string, object>(),
+                ProcessingMetadata = new TextProcessingMetadata()
             };
 
             // Check if text extraction is supported for this file type
