@@ -37,27 +37,22 @@ public class FileUploadService : IFileUploadService, IStorageService
 
     public async Task<UploadResult> UploadFileAsync(IFormFile file, Guid userId, string uploadSessionId)
     {
-        var storageResult = await UploadFileToStorageAsync(file, userId, uploadSessionId);
+        var storageResult = await UploadFileToStorageAsync(file, userId, uploadSessionId, null);
         return ConvertToUploadResult(storageResult);
     }
 
     public async Task<UploadResult> UploadFileAsync(IFormFile file, Guid caseId, Guid userId, string uploadSessionId)
     {
-        var storageResult = await UploadFileToStorageAsync(file, userId, uploadSessionId);
-        if (storageResult.Success && caseId != Guid.Empty)
-        {
-            // Link document to case after upload
-            await LinkDocumentToCaseAsync(storageResult.FileId, caseId);
-        }
+        var storageResult = await UploadFileToStorageAsync(file, userId, uploadSessionId, caseId);
         return ConvertToUploadResult(storageResult);
     }
 
     async Task<StorageResult> IStorageService.UploadFileAsync(IFormFile file, Guid caseId, Guid userId, string uploadSessionId)
     {
-        return await UploadFileToStorageAsync(file, userId, uploadSessionId);
+        return await UploadFileToStorageAsync(file, userId, uploadSessionId, caseId);
     }
 
-    public async Task<StorageResult> UploadFileToStorageAsync(IFormFile file, Guid userId, string uploadSessionId)
+    public async Task<StorageResult> UploadFileToStorageAsync(IFormFile file, Guid userId, string uploadSessionId, Guid? caseId = null)
     {
         var result = new StorageResult { UploadSessionId = uploadSessionId };
 
@@ -104,13 +99,13 @@ public class FileUploadService : IFileUploadService, IStorageService
             // Store file using configured storage service (Local or AWS S3)
             var storagePath = await StoreFileAsync(file, uniqueFileName);
 
-            // Create document record without case assignment
+            // Create document record with case assignment if provided
             var document = new Document
             {
                 FileName = uniqueFileName,
                 FileType = Path.GetExtension(file.FileName).ToLowerInvariant(),
                 FileSize = file.Length,
-                CaseId = null, // No case assigned during upload
+                CaseId = caseId, // Assign case if provided, otherwise null
                 UploadedById = userId,
                 Status = Core.Enums.DocumentStatus.Uploaded
             };
@@ -140,7 +135,7 @@ public class FileUploadService : IFileUploadService, IStorageService
                 // Perform text extraction and store everything in NoSQL (NoSQL-first approach)
                 await ProcessDocumentWithTextExtractionAsync(document, file.FileName, storagePath, userId);
 
-                _logger.LogInformation("Document {DocumentId} processed using NoSQL-first approach (no case assigned)", document.Id);
+                _logger.LogInformation("Document {DocumentId} processed using NoSQL-first approach (case assigned: {CaseAssigned})", document.Id, caseId.HasValue && caseId != Guid.Empty);
             }
             catch (Exception ex)
             {
@@ -289,14 +284,15 @@ public class FileUploadService : IFileUploadService, IStorageService
 
             _logger.LogInformation("Starting NoSQL-first text extraction for document: {DocumentId}", document.Id);
 
-            // Create a user-specific document collection for unassigned files
+            // Create or get the appropriate case document collection
             var userDocuments = await _caseDocumentRepository.GetByUserIdAsync(userId);
-            var caseDocument = userDocuments.FirstOrDefault(cd => cd.CaseId == Guid.Empty);
+            var targetCaseId = document.CaseId ?? Guid.Empty; // Use actual case ID or empty for unassigned
+            var caseDocument = userDocuments.FirstOrDefault(cd => cd.CaseId == targetCaseId);
             if (caseDocument == null)
             {
                 caseDocument = new CaseDocument
                 {
-                    CaseId = Guid.Empty, // Special value for unassigned files
+                    CaseId = targetCaseId, // Use actual case ID or empty for unassigned
                     UserId = userId
                 };
             }
@@ -445,7 +441,7 @@ public class FileUploadService : IFileUploadService, IStorageService
                 await _caseDocumentRepository.UpdateAsync(caseDocument);
             }
 
-            _logger.LogInformation("Stored document {DocumentId} with extracted text in NoSQL for case {CaseId}", document.Id, document.CaseId);
+            _logger.LogInformation("Stored document {DocumentId} with extracted text in NoSQL for case {CaseId}", document.Id, targetCaseId);
         }
         catch (Exception ex)
         {
