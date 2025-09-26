@@ -88,6 +88,16 @@ public class FileUploadService : IFileUploadService, IStorageService
                 return result;
             }
 
+            // Validate user exists to prevent foreign key constraint violations
+            var userExists = await _context.Users.AnyAsync(u => u.Id == userId && u.IsActive);
+            if (!userExists)
+            {
+                result.Success = false;
+                result.Message = "Invalid user - user not found or inactive";
+                result.ErrorCode = "INVALID_USER";
+                return result;
+            }
+
             // Generate unique filename
             var uniqueFileName = await GenerateUniqueFileNameAsync(file.FileName);
 
@@ -105,9 +115,25 @@ public class FileUploadService : IFileUploadService, IStorageService
                 Status = Core.Enums.DocumentStatus.Uploaded
             };
 
-            // Create the minimal SQL record
-            _context.Documents.Add(document);
-            await _context.SaveChangesAsync();
+            // Create the minimal SQL record with better error handling
+            try
+            {
+                _context.Documents.Add(document);
+                await _context.SaveChangesAsync();
+            }
+            catch (Exception dbEx)
+            {
+                _logger.LogError(dbEx, "Database error saving document: {FileName}. User ID: {UserId}. Inner Exception: {InnerException}",
+                    file.FileName, userId, dbEx.InnerException?.Message);
+
+                // Clean up uploaded file if database save failed
+                await DeleteFileAsync(storagePath);
+
+                result.Success = false;
+                result.Message = $"Database error: {dbEx.InnerException?.Message ?? dbEx.Message}";
+                result.ErrorCode = "DATABASE_ERROR";
+                return result;
+            }
 
             try
             {
