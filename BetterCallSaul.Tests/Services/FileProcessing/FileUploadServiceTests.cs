@@ -152,7 +152,7 @@ public class FileUploadServiceTests : IDisposable
             CreatedAt = DateTime.UtcNow.AddMinutes(-30),
             CaseId = caseId,
             FileName = "previous_file.pdf",
-            StoragePath = "/path/to/previous_file.pdf",
+            // Note: StoragePath removed - now stored in NoSQL
             FileType = "application/pdf"
         };
         
@@ -266,7 +266,7 @@ public class FileUploadServiceTests : IDisposable
                 CreatedAt = DateTime.UtcNow.AddMinutes(-30),
                 CaseId = Guid.NewGuid(),
                 FileName = "file1.pdf",
-                StoragePath = "/path/to/file1.pdf",
+                // Note: StoragePath removed - now stored in NoSQL
                 FileType = "application/pdf"
             },
             new Document 
@@ -277,7 +277,7 @@ public class FileUploadServiceTests : IDisposable
                 CreatedAt = DateTime.UtcNow.AddMinutes(-45),
                 CaseId = Guid.NewGuid(),
                 FileName = "file2.pdf",
-                StoragePath = "/path/to/file2.pdf",
+                // Note: StoragePath removed - now stored in NoSQL
                 FileType = "application/pdf"
             }
         };

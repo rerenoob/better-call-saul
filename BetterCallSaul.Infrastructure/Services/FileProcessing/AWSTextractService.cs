@@ -160,27 +160,6 @@ public class AWSTextractService : ITextExtractionService
         return Task.FromResult(supportedExtensions.Contains(extension));
     }
 
-    public async Task<DocumentText> ProcessDocumentAsync(string filePath, Guid documentId)
-    {
-        var extractionResult = await ExtractTextAsync(filePath, Path.GetFileName(filePath));
-
-        if (!extractionResult.Success)
-        {
-            throw new InvalidOperationException(extractionResult.ErrorMessage ?? "Text extraction failed");
-        }
-
-        return new DocumentText
-        {
-            DocumentId = documentId,
-            FullText = extractionResult.ExtractedText,
-            ConfidenceScore = extractionResult.ConfidenceScore,
-            PageCount = extractionResult.Pages?.Count ?? 1,
-            CharacterCount = extractionResult.ExtractedText?.Length ?? 0,
-            Language = "en", // AWS Textract can detect language, but we default to English
-            ExtractionMetadata = extractionResult.Metadata,
-            Pages = extractionResult.Pages
-        };
-    }
 
     private async Task<TextExtractionResult> ProcessSynchronouslyAsync(Stream documentStream, string fileName, long fileSize)
     {

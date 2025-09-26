@@ -61,27 +61,6 @@ public class DocumentProcessingController : ControllerBase
         }
     }
 
-    [HttpPost("process-document")]
-    public async Task<ActionResult<DocumentText>> ProcessDocument([FromForm] Guid documentId, [FromForm] string filePath)
-    {
-        try
-        {
-            if (string.IsNullOrEmpty(filePath) || !System.IO.File.Exists(filePath))
-            {
-                return BadRequest(new { error = "File not found or invalid path" });
-            }
-
-            var result = await _textExtractionService.ProcessDocumentAsync(filePath, documentId);
-
-            _logger.LogInformation("Document processed successfully: {DocumentId}", documentId);
-            return Ok(result);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error processing document {DocumentId}", documentId);
-            return StatusCode(500, new { error = $"Internal server error: {ex.Message}" });
-        }
-    }
 
     [HttpGet("supported-formats")]
     public async Task<ActionResult<IEnumerable<string>>> GetSupportedFormats()

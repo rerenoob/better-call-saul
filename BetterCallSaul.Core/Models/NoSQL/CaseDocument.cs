@@ -38,51 +38,62 @@ public class DocumentInfo
 {
     [BsonElement("id")]
     public Guid Id { get; set; }
-    
+
     [BsonElement("fileName")]
     public string FileName { get; set; } = string.Empty;
-    
+
     [BsonElement("originalFileName")]
     public string? OriginalFileName { get; set; }
-    
+
     [BsonElement("fileType")]
     public string FileType { get; set; } = string.Empty;
-    
+
     [BsonElement("fileSize")]
     public long FileSize { get; set; }
-    
+
     [BsonElement("storagePath")]
     public string? StoragePath { get; set; }
-    
+
     [BsonElement("type")]
     public DocumentType Type { get; set; }
-    
+
     [BsonElement("status")]
     public DocumentStatus Status { get; set; }
-    
+
     [BsonElement("description")]
     public string? Description { get; set; }
-    
+
     [BsonElement("isProcessed")]
     public bool IsProcessed { get; set; }
-    
+
     [BsonElement("processedAt")]
     public DateTime? ProcessedAt { get; set; }
-    
+
     [BsonElement("uploadedById")]
     public Guid? UploadedById { get; set; }
-    
+
     [BsonElement("extractedText")]
     public DocumentTextInfo? ExtractedText { get; set; }
-    
+
     [BsonElement("metadata")]
     public Dictionary<string, object>? Metadata { get; set; }
-    
+
+    // AI-specific metadata for enhanced processing
+    [BsonElement("processingMetadata")]
+    public TextProcessingMetadata ProcessingMetadata { get; set; } = new();
+
+    // Text embeddings for semantic search
+    [BsonElement("textEmbeddings")]
+    public float[]? TextEmbeddings { get; set; }
+
     [BsonElement("createdAt")]
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-    
+
     [BsonElement("updatedAt")]
     public DateTime? UpdatedAt { get; set; }
+
+    [BsonElement("isDeleted")]
+    public bool IsDeleted { get; set; } = false;
 }
 
 public class DocumentTextInfo
@@ -275,16 +286,43 @@ public class CaseMetadata
 {
     [BsonElement("tags")]
     public List<string> Tags { get; set; } = new();
-    
+
     [BsonElement("customFields")]
     public Dictionary<string, object> CustomFields { get; set; } = new();
-    
+
     [BsonElement("lastAnalyzedAt")]
     public DateTime? LastAnalyzedAt { get; set; }
-    
+
     [BsonElement("totalDocuments")]
     public int TotalDocuments { get; set; }
-    
+
     [BsonElement("totalAnalyses")]
     public int TotalAnalyses { get; set; }
+}
+
+public class TextProcessingMetadata
+{
+    [BsonElement("extractionMethod")]
+    public string? ExtractionMethod { get; set; }
+
+    [BsonElement("ocrEngine")]
+    public string? OcrEngine { get; set; }
+
+    [BsonElement("processingVersion")]
+    public string? ProcessingVersion { get; set; }
+
+    [BsonElement("qualityScore")]
+    public double QualityScore { get; set; }
+
+    [BsonElement("languageDetected")]
+    public string? LanguageDetected { get; set; }
+
+    [BsonElement("documentClassification")]
+    public string? DocumentClassification { get; set; }
+
+    [BsonElement("processingFlags")]
+    public List<string> ProcessingFlags { get; set; } = new();
+
+    [BsonElement("aiEnhancements")]
+    public Dictionary<string, object> AiEnhancements { get; set; } = new();
 }

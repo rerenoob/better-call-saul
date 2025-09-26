@@ -474,28 +474,33 @@ public class CaseController : ControllerBase
             // Wait a moment for text extraction to complete
             await Task.Delay(TimeSpan.FromSeconds(5));
 
+            // Get document content from NoSQL
+            var caseDocument = await _caseDocumentRepository.GetByIdAsync(caseId);
+            if (caseDocument == null)
+            {
+                _logger.LogWarning("No case document found in NoSQL for case {CaseId}. Skipping analysis.", caseId);
+                return;
+            }
+
             // Get documents with extracted text for this case
-            var documentsWithText = await _context.Documents
-                .Where(d => d.CaseId == caseId && 
-                           d.Status == DocumentStatus.Processed && 
+            var documentsWithText = caseDocument.Documents
+                .Where(d => d.IsProcessed &&
                            d.ExtractedText != null &&
                            !string.IsNullOrEmpty(d.ExtractedText.FullText))
-                .Include(d => d.ExtractedText)
-                .ToListAsync();
+                .ToList();
 
             if (!documentsWithText.Any())
             {
                 _logger.LogWarning("No documents with extracted text found for case {CaseId}. Retrying in 10 seconds...", caseId);
                 await Task.Delay(TimeSpan.FromSeconds(10));
-                
-                // Retry once more
-                documentsWithText = await _context.Documents
-                    .Where(d => d.CaseId == caseId && 
-                               d.Status == DocumentStatus.Processed && 
+
+                // Retry once more - refresh case document from NoSQL
+                caseDocument = await _caseDocumentRepository.GetByIdAsync(caseId);
+                documentsWithText = caseDocument?.Documents
+                    .Where(d => d.IsProcessed &&
                                d.ExtractedText != null &&
                                !string.IsNullOrEmpty(d.ExtractedText.FullText))
-                    .Include(d => d.ExtractedText)
-                    .ToListAsync();
+                    .ToList() ?? new List<BetterCallSaul.Core.Models.NoSQL.DocumentInfo>();
 
                 if (!documentsWithText.Any())
                 {
@@ -504,31 +509,31 @@ public class CaseController : ControllerBase
                 }
             }
 
-            // Analyze each document
+            // Analyze each document using NoSQL content
             CaseAnalysis? latestAnalysis = null;
-            foreach (var document in documentsWithText)
+            foreach (var documentInfo in documentsWithText)
             {
                 try
                 {
                     var analysis = await _caseAnalysisService.AnalyzeCaseAsync(
-                        caseId, 
-                        document.Id, 
-                        document.ExtractedText?.FullText ?? "");
+                        caseId,
+                        documentInfo.Id,
+                        documentInfo.ExtractedText!.FullText!);
 
                     latestAnalysis = analysis;
-                    _logger.LogInformation("Completed analysis for document {DocumentId} in case {CaseId}", document.Id, caseId);
+                    _logger.LogInformation("Completed analysis for document {DocumentId} in case {CaseId}", documentInfo.Id, caseId);
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogError(ex, "Error analyzing document {DocumentId} for case {CaseId}. Exception type: {ExceptionType}", 
-                        document.Id, caseId, ex.GetType().Name);
-                    
+                    _logger.LogError(ex, "Error analyzing document {DocumentId} for case {CaseId}. Exception type: {ExceptionType}",
+                        documentInfo.Id, caseId, ex.GetType().Name);
+
                     // Create audit log for document analysis failure
                     await CreateAuditLogAsync(
                         "DOCUMENT_ANALYSIS_FAILURE",
-                        $"Document analysis failed for document {document.Id} in case {caseId}: {ex.Message}",
+                        $"Document analysis failed for document {documentInfo.Id} in case {caseId}: {ex.Message}",
                         "Document",
-                        document.Id,
+                        documentInfo.Id,
                         AuditLogLevel.Error
                     );
                 }

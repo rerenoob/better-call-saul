@@ -1,6 +1,7 @@
 using BetterCallSaul.Core.Models.Entities;
 using BetterCallSaul.Core.Enums;
 using BetterCallSaul.Core.Interfaces.Services;
+using BetterCallSaul.Core.Interfaces.Repositories;
 using BetterCallSaul.Infrastructure.Data;
 using BetterCallSaul.Infrastructure.Services.FileProcessing;
 using BetterCallSaul.Infrastructure.Validators;
@@ -20,6 +21,7 @@ public class FileUploadController : ControllerBase
 {
     private readonly IFileUploadService _fileUploadService;
     private readonly ICaseAnalysisService _caseAnalysisService;
+    private readonly ICaseDocumentRepository _caseDocumentRepository;
     private readonly ILogger<FileUploadController> _logger;
     private readonly BetterCallSaulContext _context;
     private readonly IServiceProvider _serviceProvider;
@@ -27,12 +29,14 @@ public class FileUploadController : ControllerBase
     public FileUploadController(
         IFileUploadService fileUploadService,
         ICaseAnalysisService caseAnalysisService,
+        ICaseDocumentRepository caseDocumentRepository,
         ILogger<FileUploadController> logger,
         BetterCallSaulContext context,
         IServiceProvider serviceProvider)
     {
         _fileUploadService = fileUploadService;
         _caseAnalysisService = caseAnalysisService;
+        _caseDocumentRepository = caseDocumentRepository;
         _logger = logger;
         _context = context;
         _serviceProvider = serviceProvider;
@@ -251,20 +255,29 @@ public class FileUploadController : ControllerBase
             var context = scope.ServiceProvider.GetRequiredService<BetterCallSaulContext>();
             var caseAnalysisService = scope.ServiceProvider.GetRequiredService<ICaseAnalysisService>();
 
-            // With database transactions, text extraction is guaranteed to be complete
-            // Get the document with extracted text directly
+            // Get document from SQL for basic info
             var document = await context.Documents
-                .Include(d => d.ExtractedText)
                 .FirstOrDefaultAsync(d => d.Id == documentId);
 
-            if (document?.ExtractedText?.FullText == null)
+            if (document == null)
+            {
+                _logger.LogWarning("Document {DocumentId} not found, skipping analysis", documentId);
+                return;
+            }
+
+            // Get document content from NoSQL
+            var caseDocumentRepo = scope.ServiceProvider.GetRequiredService<ICaseDocumentRepository>();
+            var caseDocument = await caseDocumentRepo.GetByIdAsync(caseId);
+            var documentInfo = caseDocument?.Documents.FirstOrDefault(d => d.Id == documentId);
+
+            if (documentInfo?.ExtractedText?.FullText == null)
             {
                 _logger.LogWarning("No extracted text available for document {DocumentId}, skipping analysis", documentId);
                 return;
             }
 
             // Trigger the case analysis
-            await caseAnalysisService.AnalyzeCaseAsync(caseId, documentId, document.ExtractedText.FullText);
+            await caseAnalysisService.AnalyzeCaseAsync(caseId, documentId, documentInfo.ExtractedText.FullText);
 
             _logger.LogInformation("Successfully triggered automatic case analysis for case {CaseId}, document {DocumentId}", caseId, documentId);
         }

@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using BetterCallSaul.Core.Models.Entities;
+using BetterCallSaul.Core.Interfaces.Repositories;
 using BetterCallSaul.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authorization;
@@ -12,11 +13,16 @@ namespace BetterCallSaul.API.Controllers;
 public class DocumentViewerController : ControllerBase
 {
     private readonly BetterCallSaulContext _context;
+    private readonly ICaseDocumentRepository _caseDocumentRepository;
     private readonly ILogger<DocumentViewerController> _logger;
 
-    public DocumentViewerController(BetterCallSaulContext context, ILogger<DocumentViewerController> logger)
+    public DocumentViewerController(
+        BetterCallSaulContext context,
+        ICaseDocumentRepository caseDocumentRepository,
+        ILogger<DocumentViewerController> logger)
     {
         _context = context;
+        _caseDocumentRepository = caseDocumentRepository;
         _logger = logger;
     }
 
@@ -25,9 +31,8 @@ public class DocumentViewerController : ControllerBase
     {
         try
         {
+            // Get basic document info from SQL (lightweight tracking)
             var document = await _context.Documents
-                .Include(d => d.ExtractedText)
-                .ThenInclude(et => et!.Pages)
                 .Include(d => d.Case)
                 .FirstOrDefaultAsync(d => d.Id == documentId);
 
@@ -35,6 +40,10 @@ public class DocumentViewerController : ControllerBase
             {
                 return NotFound(new { error = "Document not found" });
             }
+
+            // Get document content from NoSQL (primary storage)
+            var caseDocument = await _caseDocumentRepository.GetByIdAsync(document.CaseId);
+            var documentInfo = caseDocument?.Documents.FirstOrDefault(d => d.Id == documentId);
 
             var annotations = await _context.DocumentAnnotations
                 .Where(a => a.DocumentId == documentId)
@@ -50,20 +59,20 @@ public class DocumentViewerController : ControllerBase
                 FileSize = document.FileSize,
                 CaseId = document.CaseId,
                 CaseNumber = document.Case?.CaseNumber ?? "",
-                IsProcessed = document.IsProcessed,
-                ProcessedAt = document.ProcessedAt,
-                ExtractedText = document.ExtractedText?.FullText,
-                PageCount = document.ExtractedText?.PageCount ?? 0,
-                Pages = document.ExtractedText?.Pages?.Select(p => new DocumentPageData
+                IsProcessed = documentInfo?.IsProcessed ?? false,
+                ProcessedAt = documentInfo?.ProcessedAt,
+                ExtractedText = documentInfo?.ExtractedText?.FullText,
+                PageCount = documentInfo?.ExtractedText?.PageCount ?? 0,
+                Pages = documentInfo?.ExtractedText?.Pages?.Select(p => new DocumentPageData
                 {
                     PageNumber = p.PageNumber,
                     Text = p.Text,
                     Confidence = p.Confidence,
-                    BoundingBoxes = p.TextBlocks?.Select(tb => new TextBoundingBox
+                    BoundingBoxes = p.Blocks?.Select(tb => new TextBoundingBox
                     {
-                        Text = tb.Text,
-                        X = tb.BoundingBox?.X ?? 0,
-                        Y = tb.BoundingBox?.Y ?? 0,
+                        Text = tb.Text ?? "",
+                        X = tb.BoundingBox?.Left ?? 0,
+                        Y = tb.BoundingBox?.Top ?? 0,
                         Width = tb.BoundingBox?.Width ?? 0,
                         Height = tb.BoundingBox?.Height ?? 0,
                         Confidence = tb.Confidence
@@ -238,10 +247,8 @@ public class DocumentViewerController : ControllerBase
     {
         try
         {
-            var document = await _context.Documents
-                .Include(d => d.ExtractedText)
-                .ThenInclude(et => et!.Pages)
-                .FirstOrDefaultAsync(d => d.Id == documentId);
+            // Get basic document info from SQL to verify it exists
+            var document = await _context.Documents.FirstOrDefaultAsync(d => d.Id == documentId);
 
             if (document == null)
             {
@@ -253,13 +260,29 @@ public class DocumentViewerController : ControllerBase
                 return BadRequest(new { error = "Search query cannot be empty" });
             }
 
+            // Get document content from NoSQL for text search
+            var caseDocument = await _caseDocumentRepository.GetByIdAsync(document.CaseId);
+            var documentInfo = caseDocument?.Documents.FirstOrDefault(d => d.Id == documentId);
+
+            if (documentInfo?.ExtractedText == null)
+            {
+                return Ok(new DocumentSearchResult
+                {
+                    DocumentId = documentId,
+                    Query = query,
+                    CaseSensitive = caseSensitive,
+                    TotalMatches = 0,
+                    Matches = Array.Empty<SearchMatch>()
+                });
+            }
+
             var results = new List<SearchMatch>();
             var stringComparison = caseSensitive ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase;
 
             // Search in full text
-            if (!string.IsNullOrEmpty(document.ExtractedText?.FullText))
+            if (!string.IsNullOrEmpty(documentInfo.ExtractedText.FullText))
             {
-                var text = document.ExtractedText.FullText;
+                var text = documentInfo.ExtractedText.FullText;
                 var index = 0;
                 while ((index = text.IndexOf(query, index, stringComparison)) != -1)
                 {
@@ -280,9 +303,9 @@ public class DocumentViewerController : ControllerBase
             }
 
             // Search in individual pages for more precise page numbers
-            if (document.ExtractedText?.Pages != null)
+            if (documentInfo.ExtractedText.Pages != null)
             {
-                foreach (var page in document.ExtractedText.Pages)
+                foreach (var page in documentInfo.ExtractedText.Pages)
                 {
                     if (string.IsNullOrEmpty(page.Text)) continue;
 

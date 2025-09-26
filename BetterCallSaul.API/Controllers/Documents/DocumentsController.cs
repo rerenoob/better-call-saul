@@ -1,4 +1,5 @@
 using BetterCallSaul.Core.Models.Entities;
+using BetterCallSaul.Core.Interfaces.Repositories;
 using BetterCallSaul.Infrastructure.Data;
 using BetterCallSaul.Infrastructure.Services.FileProcessing;
 using Microsoft.AspNetCore.Authorization;
@@ -13,15 +14,18 @@ namespace BetterCallSaul.API.Controllers;
 public class DocumentsController : ControllerBase
 {
     private readonly IFileUploadService _fileUploadService;
+    private readonly ICaseDocumentRepository _caseDocumentRepository;
     private readonly BetterCallSaulContext _context;
     private readonly ILogger<DocumentsController> _logger;
 
     public DocumentsController(
         IFileUploadService fileUploadService,
+        ICaseDocumentRepository caseDocumentRepository,
         BetterCallSaulContext context,
         ILogger<DocumentsController> logger)
     {
         _fileUploadService = fileUploadService;
+        _caseDocumentRepository = caseDocumentRepository;
         _context = context;
         _logger = logger;
     }
@@ -32,7 +36,6 @@ public class DocumentsController : ControllerBase
         try
         {
             var document = await _context.Documents
-                .Include(d => d.ExtractedText)
                 .FirstOrDefaultAsync(d => d.Id == id);
 
             if (document == null)
@@ -47,21 +50,35 @@ public class DocumentsController : ControllerBase
                 return Unauthorized(new { message = "Unauthorized to delete this document" });
             }
 
+            // Get document info from NoSQL to get storage path
+            var caseDocument = await _caseDocumentRepository.GetByIdAsync(document.CaseId);
+            var documentInfo = caseDocument?.Documents.FirstOrDefault(d => d.Id == id);
+
             // Delete the file from storage
-            var deleteResult = await _fileUploadService.DeleteFileAsync(document.StoragePath ?? "");
-            if (!deleteResult)
+            if (documentInfo?.StoragePath != null)
             {
-                _logger.LogWarning("Failed to delete file from storage: {StoragePath}", document.StoragePath);
-                // Continue with database deletion anyway
+                var deleteResult = await _fileUploadService.DeleteFileAsync(documentInfo.StoragePath);
+                if (!deleteResult)
+                {
+                    _logger.LogWarning("Failed to delete file from storage: {StoragePath}", documentInfo.StoragePath);
+                    // Continue with database deletion anyway
+                }
             }
 
-            // Delete extracted text if it exists
-            if (document.ExtractedText != null)
+            // Delete from NoSQL first
+            if (caseDocument != null)
             {
-                _context.Set<DocumentText>().Remove(document.ExtractedText);
+                var docToRemove = caseDocument.Documents.FirstOrDefault(d => d.Id == id);
+                if (docToRemove != null)
+                {
+                    caseDocument.Documents.Remove(docToRemove);
+                    caseDocument.UpdatedAt = DateTime.UtcNow;
+                    caseDocument.Metadata.TotalDocuments = caseDocument.Documents.Count;
+                    await _caseDocumentRepository.UpdateAsync(caseDocument);
+                }
             }
 
-            // Delete the document
+            // Delete from SQL
             _context.Documents.Remove(document);
             await _context.SaveChangesAsync();
 
@@ -81,7 +98,6 @@ public class DocumentsController : ControllerBase
         try
         {
             var document = await _context.Documents
-                .Include(d => d.ExtractedText)
                 .FirstOrDefaultAsync(d => d.Id == id);
 
             if (document == null)
@@ -96,6 +112,10 @@ public class DocumentsController : ControllerBase
                 return Unauthorized(new { message = "Unauthorized to access this document" });
             }
 
+            // Get document info from NoSQL for text status
+            var caseDocument = await _caseDocumentRepository.GetByIdAsync(document.CaseId);
+            var documentInfo = caseDocument?.Documents.FirstOrDefault(d => d.Id == id);
+
             return Ok(new
             {
                 Id = document.Id,
@@ -105,7 +125,9 @@ public class DocumentsController : ControllerBase
                 Status = document.Status.ToString(),
                 CreatedAt = document.CreatedAt,
                 UpdatedAt = document.UpdatedAt,
-                HasExtractedText = document.ExtractedText != null
+                HasExtractedText = documentInfo?.ExtractedText != null,
+                IsProcessed = documentInfo?.IsProcessed ?? false,
+                ProcessedAt = documentInfo?.ProcessedAt
             });
         }
         catch (Exception ex)

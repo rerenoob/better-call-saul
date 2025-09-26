@@ -1,4 +1,5 @@
 using BetterCallSaul.Core.Models.Entities;
+using BetterCallSaul.Core.Interfaces.Repositories;
 using BetterCallSaul.Core.Enums;
 using BetterCallSaul.Infrastructure.Data;
 using Microsoft.AspNetCore.Authorization;
@@ -16,11 +17,16 @@ namespace BetterCallSaul.API.Controllers;
 public class AdminController : ControllerBase
 {
     private readonly BetterCallSaulContext _context;
+    private readonly ICaseDocumentRepository _caseDocumentRepository;
     private readonly UserManager<User> _userManager;
 
-    public AdminController(BetterCallSaulContext context, UserManager<User> userManager)
+    public AdminController(
+        BetterCallSaulContext context,
+        ICaseDocumentRepository caseDocumentRepository,
+        UserManager<User> userManager)
     {
         _context = context;
+        _caseDocumentRepository = caseDocumentRepository;
         _userManager = userManager;
     }
 
@@ -277,14 +283,15 @@ public class AdminController : ControllerBase
         var caseItem = await _context.Cases
             .Include(c => c.User)
             .Include(c => c.Documents.Where(d => !d.IsDeleted))
-            .ThenInclude(d => d.ExtractedText)
             .FirstOrDefaultAsync(c => c.Id == id);
 
         if (caseItem == null)
             return NotFound();
 
+        // Get document content from NoSQL
+        var caseDocument = await _caseDocumentRepository.GetByIdAsync(id);
+
         // Get case analyses from NoSQL (if available)
-        // This would require integration with the NoSQL repository
         var analyses = new List<object>(); // Placeholder for analysis data
 
         var result = new
@@ -301,15 +308,21 @@ public class AdminController : ControllerBase
             caseItem.HearingDate,
             caseItem.CreatedAt,
             caseItem.UpdatedAt,
-            Documents = caseItem.Documents.Select(d => new
-            {
-                d.Id,
-                d.FileName,
-                d.FileSize,
-                FileType = d.FileType.ToString(),
-                Status = d.Status.ToString(),
-                d.CreatedAt,
-                ExtractedText = d.ExtractedText != null ? d.ExtractedText.FullText : null
+            Documents = caseItem.Documents.Select(d => {
+                var docInfo = caseDocument?.Documents.FirstOrDefault(nosqlDoc => nosqlDoc.Id == d.Id);
+                return new
+                {
+                    d.Id,
+                    d.FileName,
+                    d.FileSize,
+                    FileType = d.FileType.ToString(),
+                    Status = d.Status.ToString(),
+                    d.CreatedAt,
+                    ExtractedText = docInfo?.ExtractedText?.FullText,
+                    HasExtractedText = docInfo?.ExtractedText != null,
+                    IsProcessed = docInfo?.IsProcessed ?? false,
+                    ProcessedAt = docInfo?.ProcessedAt
+                };
             }),
             Analyses = analyses
         };
@@ -362,8 +375,10 @@ public class AdminController : ControllerBase
         var updatedCase = await _context.Cases
             .Include(c => c.User)
             .Include(c => c.Documents.Where(d => !d.IsDeleted))
-            .ThenInclude(d => d.ExtractedText)
             .FirstOrDefaultAsync(c => c.Id == id);
+
+        // Get document content from NoSQL
+        var caseDocument = await _caseDocumentRepository.GetByIdAsync(id);
 
         var result = new
         {
@@ -379,15 +394,21 @@ public class AdminController : ControllerBase
             updatedCase.HearingDate,
             updatedCase.CreatedAt,
             updatedCase.UpdatedAt,
-            Documents = updatedCase.Documents.Select(d => new
-            {
-                d.Id,
-                d.FileName,
-                d.FileSize,
-                FileType = d.FileType.ToString(),
-                Status = d.Status.ToString(),
-                d.CreatedAt,
-                ExtractedText = d.ExtractedText != null ? d.ExtractedText.FullText : null
+            Documents = updatedCase.Documents.Select(d => {
+                var docInfo = caseDocument?.Documents.FirstOrDefault(nosqlDoc => nosqlDoc.Id == d.Id);
+                return new
+                {
+                    d.Id,
+                    d.FileName,
+                    d.FileSize,
+                    FileType = d.FileType.ToString(),
+                    Status = d.Status.ToString(),
+                    d.CreatedAt,
+                    ExtractedText = docInfo?.ExtractedText?.FullText,
+                    HasExtractedText = docInfo?.ExtractedText != null,
+                    IsProcessed = docInfo?.IsProcessed ?? false,
+                    ProcessedAt = docInfo?.ProcessedAt
+                };
             }),
             Analyses = new List<object>() // Placeholder for analysis data
         };

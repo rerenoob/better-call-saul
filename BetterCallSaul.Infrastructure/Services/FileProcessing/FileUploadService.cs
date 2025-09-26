@@ -83,53 +83,41 @@ public class FileUploadService : IFileUploadService, IStorageService
             // Store file using configured storage service (Local or AWS S3)
             var storagePath = await StoreFileAsync(file, uniqueFileName);
 
-            // Use database transaction to ensure atomicity between document creation and text extraction
-            using var transaction = await _context.Database.BeginTransactionAsync();
-            Document document;
+            // Create minimal document record in SQL for relational integrity
+            var document = new Document
+            {
+                FileName = uniqueFileName,
+                FileType = Path.GetExtension(file.FileName).ToLowerInvariant(),
+                FileSize = file.Length,
+                CaseId = caseId,
+                UploadedById = userId,
+                Status = Core.Enums.DocumentStatus.Uploaded
+            };
+
+            // Create the minimal SQL record
+            _context.Documents.Add(document);
+            await _context.SaveChangesAsync();
 
             try
             {
-                // Create document record in SQL (lightweight tracking)
-                document = new Document
-                {
-                    FileName = uniqueFileName,
-                    OriginalFileName = file.FileName,
-                    FileType = Path.GetExtension(file.FileName).ToLowerInvariant(),
-                    FileSize = file.Length,
-                    StoragePath = storagePath,
-                    CaseId = caseId,
-                    UploadedById = userId,
-                    Status = Core.Enums.DocumentStatus.Uploaded,
-                    Type = Core.Enums.DocumentType.Other
-                };
+                // Perform text extraction and store everything in NoSQL (NoSQL-first approach)
+                await ProcessDocumentWithTextExtractionAsync(document, file.FileName, storagePath, userId);
 
-                _context.Documents.Add(document);
-                await _context.SaveChangesAsync();
-
-                // Perform text extraction within the same transaction
-                await ExtractTextFromDocumentInTransactionAsync(document, storagePath);
-
-                // Commit transaction only if both document creation and text extraction succeed
-                await transaction.CommitAsync();
-
-                _logger.LogInformation("Document {DocumentId} and text extraction completed atomically", document.Id);
+                _logger.LogInformation("Document {DocumentId} processed using NoSQL-first approach", document.Id);
             }
             catch (Exception ex)
             {
-                await transaction.RollbackAsync();
-                _logger.LogError(ex, "Transaction rolled back due to error during document processing: {FileName}", file.FileName);
+                _logger.LogError(ex, "Error during NoSQL-first document processing: {FileName}", file.FileName);
 
-                // Clean up uploaded file if transaction failed
+                // Update SQL status to failed for tracking
+                document.Status = Core.Enums.DocumentStatus.Failed;
+                await _context.SaveChangesAsync();
+
+                // Clean up uploaded file if processing failed
                 await DeleteFileAsync(storagePath);
 
                 throw;
             }
-
-            // Store document in NoSQL after successful transaction (dual-write pattern)
-            await StoreDocumentInNoSQLAsync(document, userId);
-
-            // Update NoSQL with text extraction results after transaction commit
-            await UpdateDocumentTextInNoSQLAsync(document);
 
             result.Success = true;
             result.FileName = document.FileName;
@@ -253,106 +241,16 @@ public class FileUploadService : IFileUploadService, IStorageService
             .SumAsync(d => d.FileSize);
     }
 
-    private async Task ExtractTextFromDocumentInTransactionAsync(Document document, string storagePath)
+    private async Task ProcessDocumentWithTextExtractionAsync(Document document, string originalFileName, string storagePath, Guid userId)
     {
         try
         {
-            // Update document status to processing
+            // Update SQL document status to processing
             document.Status = Core.Enums.DocumentStatus.Processing;
             await _context.SaveChangesAsync();
 
-            _logger.LogInformation("Starting text extraction for document: {DocumentId}", document.Id);
+            _logger.LogInformation("Starting NoSQL-first text extraction for document: {DocumentId}", document.Id);
 
-            // Check if text extraction is supported for this file type
-            if (!await _textExtractionService.SupportsFileTypeAsync(document.OriginalFileName ?? ""))
-            {
-                _logger.LogWarning("Text extraction not supported for file type: {FileType}", document.FileType);
-                document.Status = Core.Enums.DocumentStatus.Failed;
-                await _context.SaveChangesAsync();
-                return;
-            }
-
-            // Extract text using the text extraction service
-            var extractionResult = await _textExtractionService.ExtractTextAsync(storagePath, document.OriginalFileName ?? "");
-
-            if (extractionResult.Success && !string.IsNullOrEmpty(extractionResult.ExtractedText))
-            {
-                // Create DocumentText record
-                var documentText = new DocumentText
-                {
-                    DocumentId = document.Id,
-                    FullText = extractionResult.ExtractedText,
-                    ConfidenceScore = extractionResult.ConfidenceScore,
-                    PageCount = extractionResult.Pages?.Count ?? 1,
-                    CharacterCount = extractionResult.ExtractedText.Length,
-                    Language = "en", // Default to English
-                    ExtractionMetadata = extractionResult.Metadata,
-                    Pages = extractionResult.Pages
-                };
-
-                // Link the extracted text to the document
-                document.ExtractedText = documentText;
-                document.Status = Core.Enums.DocumentStatus.Processed;
-
-                _logger.LogInformation("Text extraction completed for document: {DocumentId}. Extracted {CharCount} characters.", 
-                    document.Id, extractionResult.ExtractedText.Length);
-            }
-            else
-            {
-                _logger.LogError("Text extraction failed for document: {DocumentId}. Error: {Error}. Status: {Status}, ProcessingTime: {ProcessingTime}ms", 
-                    document.Id, extractionResult.ErrorMessage, extractionResult.Status, extractionResult.ProcessingTime.TotalMilliseconds);
-                document.Status = Core.Enums.DocumentStatus.Failed;
-                document.Metadata = new Dictionary<string, object>
-                {
-                    ["extraction_error"] = extractionResult.ErrorMessage ?? "Unknown error",
-                    ["extraction_status"] = extractionResult.Status.ToString(),
-                    ["processing_time_ms"] = extractionResult.ProcessingTime.TotalMilliseconds,
-                    ["failed_at"] = DateTime.UtcNow
-                };
-                
-                // Create audit log for OCR failure
-                await CreateAuditLogAsync(
-                    "OCR_FAILURE",
-                    $"Text extraction failed for document {document.Id}: {extractionResult.ErrorMessage}",
-                    "Document",
-                    document.Id,
-                    AuditLogLevel.Error
-                );
-            }
-
-            // Save changes within the transaction - NoSQL update will happen after transaction commits
-            await _context.SaveChangesAsync();
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Critical error during text extraction for document: {DocumentId}. Exception type: {ExceptionType}", 
-                document.Id, ex.GetType().Name);
-            document.Status = Core.Enums.DocumentStatus.Failed;
-            document.Metadata = new Dictionary<string, object>
-            {
-                ["extraction_error"] = $"Critical error: {ex.Message}",
-                ["exception_type"] = ex.GetType().Name,
-                ["exception_stack_trace"] = ex.StackTrace ?? "No stack trace",
-                ["failed_at"] = DateTime.UtcNow
-            };
-            
-            // Create audit log for critical OCR failure
-            await CreateAuditLogAsync(
-                "OCR_CRITICAL_FAILURE",
-                $"Critical text extraction error for document {document.Id}: {ex.Message}",
-                "Document",
-                document.Id,
-                AuditLogLevel.Critical
-            );
-            
-            await _context.SaveChangesAsync();
-        }
-    }
-
-    private async Task StoreDocumentInNoSQLAsync(Document document, Guid userId)
-    {
-        try
-        {
             // Get or create case document
             var caseDocument = await _caseDocumentRepository.GetByIdAsync(document.CaseId);
             if (caseDocument == null)
@@ -364,25 +262,123 @@ public class FileUploadService : IFileUploadService, IStorageService
                 };
             }
 
-            // Create document info for NoSQL
+            // Create comprehensive document info for NoSQL with all details
             var documentInfo = new DocumentInfo
             {
                 Id = document.Id,
                 FileName = document.FileName,
-                OriginalFileName = document.OriginalFileName,
+                OriginalFileName = originalFileName,
                 FileType = document.FileType,
                 FileSize = document.FileSize,
-                StoragePath = document.StoragePath,
-                Type = document.Type,
-                Status = document.Status,
-                Description = document.Description,
+                StoragePath = storagePath,
+                Type = DocumentType.Other,
+                Status = DocumentStatus.Processing,
                 IsProcessed = false,
                 UploadedById = document.UploadedById,
                 CreatedAt = document.CreatedAt,
-                Metadata = document.Metadata
+                Metadata = new Dictionary<string, object>()
             };
 
-            // Add or update document in the case document
+            // Check if text extraction is supported for this file type
+            if (!await _textExtractionService.SupportsFileTypeAsync(originalFileName))
+            {
+                _logger.LogWarning("Text extraction not supported for file type: {FileType}", document.FileType);
+
+                documentInfo.Status = DocumentStatus.Processed; // Mark as processed since we can't extract text
+                documentInfo.IsProcessed = true;
+                documentInfo.ProcessedAt = DateTime.UtcNow;
+                documentInfo.ProcessingMetadata.ProcessingFlags.Add("text_extraction_not_supported");
+
+                document.Status = DocumentStatus.Processed;
+                await _context.SaveChangesAsync();
+            }
+            else
+            {
+                // Extract text using the text extraction service
+                var extractionResult = await _textExtractionService.ExtractTextAsync(storagePath, originalFileName);
+
+                if (extractionResult.Success && !string.IsNullOrEmpty(extractionResult.ExtractedText))
+                {
+                    // Store extracted text directly in NoSQL
+                    documentInfo.ExtractedText = new DocumentTextInfo
+                    {
+                        Id = Guid.NewGuid(),
+                        FullText = extractionResult.ExtractedText,
+                        ConfidenceScore = extractionResult.ConfidenceScore,
+                        PageCount = extractionResult.Pages?.Count ?? 1,
+                        CharacterCount = extractionResult.ExtractedText.Length,
+                        Language = "en", // Default to English
+                        ExtractionMetadata = extractionResult.Metadata,
+                        Pages = extractionResult.Pages?.Select(p => new TextPageInfo
+                        {
+                            PageNumber = p.PageNumber,
+                            Text = p.Text,
+                            Confidence = p.Confidence,
+                            Blocks = p.TextBlocks?.Select(b => new TextBlockInfo
+                            {
+                                BlockType = b.Type.ToString(),
+                                Text = b.Text,
+                                Confidence = b.Confidence,
+                                BoundingBox = b.BoundingBox != null ? new BoundingBoxInfo
+                                {
+                                    Left = b.BoundingBox.X,
+                                    Top = b.BoundingBox.Y,
+                                    Width = b.BoundingBox.Width,
+                                    Height = b.BoundingBox.Height
+                                } : null
+                            }).ToList()
+                        }).ToList(),
+                        CreatedAt = DateTime.UtcNow
+                    };
+
+                    // Set processing metadata
+                    documentInfo.ProcessingMetadata.ExtractionMethod = "AWS_Textract";
+                    documentInfo.ProcessingMetadata.QualityScore = extractionResult.ConfidenceScore;
+                    documentInfo.ProcessingMetadata.ProcessingVersion = "1.0";
+                    documentInfo.ProcessingMetadata.LanguageDetected = "en";
+
+                    documentInfo.Status = DocumentStatus.Processed;
+                    documentInfo.IsProcessed = true;
+                    documentInfo.ProcessedAt = DateTime.UtcNow;
+
+                    document.Status = DocumentStatus.Processed;
+                    await _context.SaveChangesAsync();
+
+                    _logger.LogInformation("Text extraction completed for document: {DocumentId}. Extracted {CharCount} characters.",
+                        document.Id, extractionResult.ExtractedText.Length);
+                }
+                else
+                {
+                    _logger.LogError("Text extraction failed for document: {DocumentId}. Error: {Error}. Status: {Status}, ProcessingTime: {ProcessingTime}ms",
+                        document.Id, extractionResult.ErrorMessage, extractionResult.Status, extractionResult.ProcessingTime.TotalMilliseconds);
+
+                    // Store failure information in NoSQL
+                    documentInfo.Status = DocumentStatus.Failed;
+                    documentInfo.Metadata = new Dictionary<string, object>
+                    {
+                        ["extraction_error"] = extractionResult.ErrorMessage ?? "Unknown error",
+                        ["extraction_status"] = extractionResult.Status.ToString(),
+                        ["processing_time_ms"] = extractionResult.ProcessingTime.TotalMilliseconds,
+                        ["failed_at"] = DateTime.UtcNow
+                    };
+
+                    documentInfo.ProcessingMetadata.ProcessingFlags.Add("extraction_failed");
+
+                    document.Status = DocumentStatus.Failed;
+                    await _context.SaveChangesAsync();
+
+                    // Create audit log for OCR failure
+                    await CreateAuditLogAsync(
+                        "OCR_FAILURE",
+                        $"Text extraction failed for document {document.Id}: {extractionResult.ErrorMessage}",
+                        "Document",
+                        document.Id,
+                        AuditLogLevel.Error
+                    );
+                }
+            }
+
+            // Store in NoSQL (primary storage for document content)
             var existingDocIndex = caseDocument.Documents.FindIndex(d => d.Id == document.Id);
             if (existingDocIndex >= 0)
             {
@@ -406,80 +402,29 @@ public class FileUploadService : IFileUploadService, IStorageService
                 await _caseDocumentRepository.UpdateAsync(caseDocument);
             }
 
-            _logger.LogInformation("Stored document {DocumentId} in NoSQL for case {CaseId}", document.Id, document.CaseId);
+            _logger.LogInformation("Stored document {DocumentId} with extracted text in NoSQL for case {CaseId}", document.Id, document.CaseId);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to store document {DocumentId} in NoSQL", document.Id);
-            // Don't throw - this is a secondary storage operation
+            _logger.LogError(ex, "Critical error during NoSQL-first processing for document: {DocumentId}. Exception type: {ExceptionType}",
+                document.Id, ex.GetType().Name);
+
+            document.Status = DocumentStatus.Failed;
+            await _context.SaveChangesAsync();
+
+            // Create audit log for critical processing failure
+            await CreateAuditLogAsync(
+                "DOCUMENT_PROCESSING_CRITICAL_FAILURE",
+                $"Critical document processing error for document {document.Id}: {ex.Message}",
+                "Document",
+                document.Id,
+                AuditLogLevel.Critical
+            );
+
+            throw; // Re-throw to trigger cleanup in calling method
         }
     }
 
-    private async Task UpdateDocumentTextInNoSQLAsync(Document document)
-    {
-        try
-        {
-            var caseDocument = await _caseDocumentRepository.GetByIdAsync(document.CaseId);
-            if (caseDocument != null)
-            {
-                var documentInfo = caseDocument.Documents.FirstOrDefault(d => d.Id == document.Id);
-                if (documentInfo != null)
-                {
-                    // Update document status and processing flag
-                    documentInfo.Status = document.Status;
-                    documentInfo.IsProcessed = document.Status == DocumentStatus.Processed;
-                    documentInfo.ProcessedAt = document.Status == DocumentStatus.Processed ? DateTime.UtcNow : null;
-                    documentInfo.UpdatedAt = DateTime.UtcNow;
-
-                    // Update extracted text information
-                    if (document.ExtractedText != null)
-                    {
-                        documentInfo.ExtractedText = new DocumentTextInfo
-                        {
-                            Id = document.ExtractedText.Id,
-                            FullText = document.ExtractedText.FullText,
-                            ConfidenceScore = document.ExtractedText.ConfidenceScore,
-                            PageCount = document.ExtractedText.PageCount,
-                            CharacterCount = document.ExtractedText.CharacterCount,
-                            Language = document.ExtractedText.Language,
-                            ExtractionMetadata = document.ExtractedText.ExtractionMetadata,
-                            Pages = document.ExtractedText.Pages?.Select(p => new TextPageInfo
-                            {
-                                PageNumber = p.PageNumber,
-                                Text = p.Text,
-                                Confidence = p.Confidence,
-                                Blocks = p.TextBlocks?.Select(b => new TextBlockInfo
-                                {
-                                    BlockType = b.Type.ToString(),
-                                    Text = b.Text,
-                                    Confidence = b.Confidence,
-                                    BoundingBox = b.BoundingBox != null ? new BoundingBoxInfo
-                                    {
-                                        Left = b.BoundingBox.X,
-                                        Top = b.BoundingBox.Y,
-                                        Width = b.BoundingBox.Width,
-                                        Height = b.BoundingBox.Height
-                                    } : null
-                                }).ToList()
-                            }).ToList(),
-                            CreatedAt = document.ExtractedText.CreatedAt,
-                            UpdatedAt = DateTime.UtcNow
-                        };
-                    }
-
-                    caseDocument.UpdatedAt = DateTime.UtcNow;
-                    await _caseDocumentRepository.UpdateAsync(caseDocument);
-
-                    _logger.LogInformation("Updated document {DocumentId} text extraction in NoSQL", document.Id);
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to update document {DocumentId} text extraction in NoSQL", document.Id);
-            // Don't throw - this is a secondary storage operation
-        }
-    }
 
     private async Task CreateAuditLogAsync(string action, string description, string entityType, Guid entityId, AuditLogLevel level)
     {

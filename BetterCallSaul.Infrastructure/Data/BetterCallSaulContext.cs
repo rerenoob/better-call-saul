@@ -45,13 +45,6 @@ public class BetterCallSaulContext : IdentityDbContext<User, Role, Guid>
                 v => System.Text.Json.JsonSerializer.Serialize(v, (System.Text.Json.JsonSerializerOptions?)null),
                 v => System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, object>>(v, (System.Text.Json.JsonSerializerOptions?)null));
 
-        // Configure Document Metadata property
-        modelBuilder.Entity<Document>()
-            .Property(e => e.Metadata)
-            .HasConversion(
-                v => System.Text.Json.JsonSerializer.Serialize(v, (System.Text.Json.JsonSerializerOptions?)null),
-                v => System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, object>>(v, (System.Text.Json.JsonSerializerOptions?)null));
-
         // Configure ViabilityAssessment Metadata property
         modelBuilder.Entity<ViabilityAssessment>()
             .Property(e => e.Metadata)
@@ -89,20 +82,6 @@ public class BetterCallSaulContext : IdentityDbContext<User, Role, Guid>
             .HasConversion(
                 v => System.Text.Json.JsonSerializer.Serialize(v, (System.Text.Json.JsonSerializerOptions?)null),
                 v => System.Text.Json.JsonSerializer.Deserialize<TimelineAnalysis>(v, (System.Text.Json.JsonSerializerOptions?)null) ?? new TimelineAnalysis());
-
-        // Configure DocumentText ExtractionMetadata property
-        modelBuilder.Entity<DocumentText>()
-            .Property(e => e.ExtractionMetadata)
-            .HasConversion(
-                v => System.Text.Json.JsonSerializer.Serialize(v, (System.Text.Json.JsonSerializerOptions?)null),
-                v => System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, object>>(v, (System.Text.Json.JsonSerializerOptions?)null));
-
-        // Configure DocumentText Pages property
-        modelBuilder.Entity<DocumentText>()
-            .Property(e => e.Pages)
-            .HasConversion(
-                v => System.Text.Json.JsonSerializer.Serialize(v, (System.Text.Json.JsonSerializerOptions?)null),
-                v => System.Text.Json.JsonSerializer.Deserialize<List<TextPage>>(v, (System.Text.Json.JsonSerializerOptions?)null) ?? new List<TextPage>());
 
         // Configure RegistrationCode
         modelBuilder.Entity<RegistrationCode>()

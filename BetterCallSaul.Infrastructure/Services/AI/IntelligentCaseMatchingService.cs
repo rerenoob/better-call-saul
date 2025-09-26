@@ -1,5 +1,6 @@
 using BetterCallSaul.Core.Models.Entities;
 using BetterCallSaul.Core.Interfaces.Services;
+using BetterCallSaul.Core.Interfaces.Repositories;
 using BetterCallSaul.Infrastructure.Data;
 using BetterCallSaul.Infrastructure.ML;
 using Microsoft.EntityFrameworkCore;
@@ -11,6 +12,7 @@ namespace BetterCallSaul.Infrastructure.Services.AI;
 public class IntelligentCaseMatchingService : ICaseMatchingService
 {
     private readonly BetterCallSaulContext _context;
+    private readonly ICaseDocumentRepository _caseDocumentRepository;
     private readonly LegalTextSimilarity _textSimilarity;
     private readonly ICourtListenerService _courtListenerService;
     private readonly IMemoryCache _cache;
@@ -19,12 +21,14 @@ public class IntelligentCaseMatchingService : ICaseMatchingService
 
     public IntelligentCaseMatchingService(
         BetterCallSaulContext context,
+        ICaseDocumentRepository caseDocumentRepository,
         LegalTextSimilarity textSimilarity,
         ICourtListenerService courtListenerService,
         IMemoryCache cache,
         ILogger<IntelligentCaseMatchingService> logger)
     {
         _context = context;
+        _caseDocumentRepository = caseDocumentRepository;
         _textSimilarity = textSimilarity;
         _courtListenerService = courtListenerService;
         _cache = cache;
@@ -267,15 +271,21 @@ public class IntelligentCaseMatchingService : ICaseMatchingService
 
     private async Task<string> GetCaseTextAsync(Case legalCase)
     {
-        // Extract text from case documents
-        var documentTexts = legalCase.Documents
-            .Where(d => d.Status == Core.Enums.DocumentStatus.Processed)
-            .Select(d => d.ExtractedText?.FullText ?? string.Empty)
-            .ToList();
+        // Get document texts from NoSQL
+        var caseDocument = await _caseDocumentRepository.GetByIdAsync(legalCase.Id);
+        var documentTexts = new List<string>();
+
+        if (caseDocument?.Documents != null)
+        {
+            documentTexts = caseDocument.Documents
+                .Where(d => d.IsProcessed && d.ExtractedText?.FullText != null)
+                .Select(d => d.ExtractedText!.FullText!)
+                .ToList();
+        }
 
         // Combine with case description
         var combinedText = $"{legalCase.Description} {string.Join(" ", documentTexts)}";
-        return await Task.FromResult(combinedText);
+        return combinedText;
     }
 
     private async Task<List<CaseMatch>> FindExternalSimilarCasesAsync(

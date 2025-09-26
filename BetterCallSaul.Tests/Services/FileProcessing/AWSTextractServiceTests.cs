@@ -122,28 +122,7 @@ public class AWSTextractServiceTests
         }
     }
 
-    [Fact]
-    public async Task ProcessDocumentAsync_AWSNotConfigured_ThrowsException()
-    {
-        // Arrange
-        var tempFilePath = Path.GetTempFileName();
-        await File.WriteAllTextAsync(tempFilePath, "Test content");
-        var documentId = Guid.NewGuid();
-
-        try
-        {
-            // Act & Assert
-            await Assert.ThrowsAsync<InvalidOperationException>(() =>
-                _awsTextractService.ProcessDocumentAsync(tempFilePath, documentId));
-        }
-        finally
-        {
-            if (File.Exists(tempFilePath))
-            {
-                File.Delete(tempFilePath);
-            }
-        }
-    }
+    // Note: ProcessDocumentAsync method removed as part of NoSQL-first architecture optimization
 
     [Fact]
     public async Task ExtractTextAsync_UnsupportedFileType_ReturnsUnsupportedFormatError()

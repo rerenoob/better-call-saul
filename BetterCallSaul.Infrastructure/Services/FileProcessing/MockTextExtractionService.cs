@@ -154,27 +154,6 @@ public class MockTextExtractionService : ITextExtractionService
         return Task.FromResult(supportedExtensions.Contains(extension));
     }
 
-    public async Task<DocumentText> ProcessDocumentAsync(string filePath, Guid documentId)
-    {
-        var extractionResult = await ExtractTextAsync(filePath, Path.GetFileName(filePath));
-
-        if (!extractionResult.Success)
-        {
-            throw new InvalidOperationException(extractionResult.ErrorMessage ?? "Text extraction failed");
-        }
-
-        return new DocumentText
-        {
-            DocumentId = documentId,
-            FullText = extractionResult.ExtractedText,
-            ConfidenceScore = extractionResult.ConfidenceScore,
-            PageCount = extractionResult.Pages?.Count ?? 1,
-            CharacterCount = extractionResult.ExtractedText?.Length ?? 0,
-            Language = "en", // Default to English for mock
-            ExtractionMetadata = extractionResult.Metadata,
-            Pages = extractionResult.Pages
-        };
-    }
 
     private string SimulatePdfExtraction(string filePath)
     {

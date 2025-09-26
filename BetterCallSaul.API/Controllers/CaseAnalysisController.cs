@@ -46,27 +46,30 @@ public class CaseAnalysisController : ControllerBase
                 return NotFound(new { error = "Case not found" });
             }
 
-            // Get document for analysis with extracted text
+            // Get document for analysis from SQL (basic info)
             var document = await _context.Documents
-                .Include(d => d.ExtractedText)
                 .FirstOrDefaultAsync(d => d.Id == request.DocumentId && d.CaseId == caseId);
-            
+
             if (document == null)
             {
                 return NotFound(new { error = "Document not found" });
             }
 
+            // Get document content from NoSQL
+            var caseDocument = await _caseDocumentRepository.GetByIdAsync(caseId);
+            var documentInfo = caseDocument?.Documents.FirstOrDefault(d => d.Id == request.DocumentId);
+
             // Check if document has extracted text
-            if (document.ExtractedText?.FullText == null)
+            if (documentInfo?.ExtractedText?.FullText == null)
             {
                 return BadRequest(new { error = "Document text extraction not completed. Please wait for text extraction to finish." });
             }
 
             // Start analysis
             var analysis = await _caseAnalysisService.AnalyzeCaseAsync(
-                caseId, 
-                request.DocumentId, 
-                document.ExtractedText.FullText);
+                caseId,
+                request.DocumentId,
+                documentInfo.ExtractedText.FullText);
 
             var response = new 
             {

@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using BetterCallSaul.Core.Models.Entities;
+using BetterCallSaul.Core.Interfaces.Repositories;
 using BetterCallSaul.Core.Enums;
 using BetterCallSaul.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
@@ -14,11 +15,16 @@ namespace BetterCallSaul.API.Controllers;
 public class ReportsController : ControllerBase
 {
     private readonly BetterCallSaulContext _context;
+    private readonly ICaseDocumentRepository _caseDocumentRepository;
     private readonly ILogger<ReportsController> _logger;
 
-    public ReportsController(BetterCallSaulContext context, ILogger<ReportsController> logger)
+    public ReportsController(
+        BetterCallSaulContext context,
+        ICaseDocumentRepository caseDocumentRepository,
+        ILogger<ReportsController> logger)
     {
         _context = context;
+        _caseDocumentRepository = caseDocumentRepository;
         _logger = logger;
     }
 
@@ -29,13 +35,15 @@ public class ReportsController : ControllerBase
         {
             var caseItem = await _context.Cases
                 .Include(c => c.Documents)
-                .ThenInclude(d => d.ExtractedText)
                 .FirstOrDefaultAsync(c => c.Id == caseId);
 
             if (caseItem == null)
             {
                 return NotFound(new { error = "Case not found" });
             }
+
+            // Get document content from NoSQL
+            var caseDocument = await _caseDocumentRepository.GetByIdAsync(caseId);
 
             var analyses = await _context.CaseAnalyses
                 .Where(a => a.CaseId == caseId && a.Status == AnalysisStatus.Completed)
@@ -70,9 +78,11 @@ public class ReportsController : ControllerBase
                 }).ToArray(),
                 DocumentSummary = new DocumentSummarySection
                 {
-                    TotalDocuments = caseItem.Documents?.Count ?? 0,
-                    ProcessedDocuments = caseItem.Documents?.Count(d => d.IsProcessed) ?? 0,
-                    DocumentTypes = caseItem.Documents?.GroupBy(d => d.Type.ToString())
+                    TotalDocuments = caseDocument?.Documents?.Count ?? caseItem.Documents?.Count ?? 0,
+                    ProcessedDocuments = caseDocument?.Documents?.Count(d => d.IsProcessed) ?? 0,
+                    DocumentTypes = caseDocument?.Documents?.GroupBy(d => d.Type.ToString())
+                        .ToDictionary(g => g.Key, g => g.Count()) ??
+                        caseItem.Documents?.GroupBy(d => d.Type.ToString())
                         .ToDictionary(g => g.Key, g => g.Count()) ?? new Dictionary<string, int>()
                 }
             };
