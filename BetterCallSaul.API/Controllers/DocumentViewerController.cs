@@ -42,7 +42,11 @@ public class DocumentViewerController : ControllerBase
             }
 
             // Get document content from NoSQL (primary storage)
-            var caseDocument = await _caseDocumentRepository.GetByIdAsync(document.CaseId);
+            if (document.CaseId == null)
+            {
+                return NotFound(new { error = "Document is not associated with a case" });
+            }
+            var caseDocument = await _caseDocumentRepository.GetByIdAsync(document.CaseId.Value);
             var documentInfo = caseDocument?.Documents.FirstOrDefault(d => d.Id == documentId);
 
             var annotations = await _context.DocumentAnnotations
@@ -57,7 +61,7 @@ public class DocumentViewerController : ControllerBase
                 FileName = document.FileName,
                 FileType = document.FileType,
                 FileSize = document.FileSize,
-                CaseId = document.CaseId,
+                CaseId = document.CaseId ?? Guid.Empty,
                 CaseNumber = document.Case?.CaseNumber ?? "",
                 IsProcessed = documentInfo?.IsProcessed ?? false,
                 ProcessedAt = documentInfo?.ProcessedAt,
@@ -261,7 +265,16 @@ public class DocumentViewerController : ControllerBase
             }
 
             // Get document content from NoSQL for text search
-            var caseDocument = await _caseDocumentRepository.GetByIdAsync(document.CaseId);
+            if (document.CaseId == null)
+            {
+                return Ok(new DocumentSearchResult
+                {
+                    Query = query,
+                    Matches = Array.Empty<SearchMatch>(),
+                    TotalMatches = 0
+                });
+            }
+            var caseDocument = await _caseDocumentRepository.GetByIdAsync(document.CaseId.Value);
             var documentInfo = caseDocument?.Documents.FirstOrDefault(d => d.Id == documentId);
 
             if (documentInfo?.ExtractedText == null)

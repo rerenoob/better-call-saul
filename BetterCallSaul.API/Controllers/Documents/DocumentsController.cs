@@ -51,7 +51,11 @@ public class DocumentsController : ControllerBase
             }
 
             // Get document info from NoSQL to get storage path
-            var caseDocument = await _caseDocumentRepository.GetByIdAsync(document.CaseId);
+            if (document.CaseId == null)
+            {
+                return BadRequest(new { message = "Document is not associated with a case" });
+            }
+            var caseDocument = await _caseDocumentRepository.GetByIdAsync(document.CaseId.Value);
             var documentInfo = caseDocument?.Documents.FirstOrDefault(d => d.Id == id);
 
             // Delete the file from storage
@@ -113,7 +117,11 @@ public class DocumentsController : ControllerBase
             }
 
             // Get document info from NoSQL for text status
-            var caseDocument = await _caseDocumentRepository.GetByIdAsync(document.CaseId);
+            if (document.CaseId == null)
+            {
+                return BadRequest(new { message = "Document is not associated with a case" });
+            }
+            var caseDocument = await _caseDocumentRepository.GetByIdAsync(document.CaseId.Value);
             var documentInfo = caseDocument?.Documents.FirstOrDefault(d => d.Id == id);
 
             return Ok(new

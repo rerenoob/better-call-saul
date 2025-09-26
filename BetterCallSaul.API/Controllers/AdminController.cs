@@ -377,6 +377,11 @@ public class AdminController : ControllerBase
             .Include(c => c.Documents.Where(d => !d.IsDeleted))
             .FirstOrDefaultAsync(c => c.Id == id);
 
+        if (updatedCase == null)
+        {
+            return NotFound(new { message = "Case not found after update" });
+        }
+
         // Get document content from NoSQL
         var caseDocument = await _caseDocumentRepository.GetByIdAsync(id);
 
