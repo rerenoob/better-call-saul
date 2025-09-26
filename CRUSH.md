@@ -240,12 +240,18 @@ const connection = new HubConnectionBuilder()
   .build();
 ```
 
+## Infrastructure Management
+- **All infrastructure is managed by AWS CloudFormation** - Do not create or modify AWS resources manually
+- **CloudFormation templates** define and provision all AWS resources (ECS, S3, CloudFront, etc.)
+- **Infrastructure changes** must be made through CloudFormation stack updates
+- **Manual resource modifications** are prohibited and will be overwritten by CloudFormation
+
 ## Deployment Configuration
-- **Backend**: Azure App Service with Application Insights
-- **Frontend**: Azure Static Web Apps with CDN
-- **Database**: Azure SQL Database with automatic backups
-- **CI/CD**: GitHub Actions or Azure DevOps pipelines
-- **Monitoring**: Application Insights + frontend telemetry
+- **Backend**: AWS ECS Fargate (managed via CloudFormation)
+- **Frontend**: AWS S3 + CloudFront (managed via CloudFormation)
+- **Database**: SQL Server (production) / SQLite (development)
+- **CI/CD**: GitHub Actions with CloudFormation deployment workflows
+- **Monitoring**: AWS CloudWatch (managed via CloudFormation)
 
 💘 Generated with Crush
 Co-Authored-By: Crush <crush@charm.land>

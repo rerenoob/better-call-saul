@@ -183,11 +183,17 @@ The solution follows clean architecture principles with clear separation between
 - Data encryption at rest and in transit
 - Comprehensive audit logging
 
+### Infrastructure Management
+- **All infrastructure is managed by AWS CloudFormation** - AWS resources should not be created or modified manually
+- **CloudFormation templates** define and provision all AWS resources (ECS, S3, CloudFront, etc.)
+- **Infrastructure changes** must be made through CloudFormation stack updates
+- **Manual resource modifications** are prohibited and will be overwritten by CloudFormation
+
 ### Deployment
-- Backend: AWS ECS Fargate
-- Frontend: AWS S3 + CloudFront
-- CI/CD: GitHub Actions with AWS deployment workflows
-- Monitoring: AWS CloudWatch
+- Backend: AWS ECS Fargate (managed via CloudFormation)
+- Frontend: AWS S3 + CloudFront (managed via CloudFormation)
+- CI/CD: GitHub Actions with CloudFormation deployment workflows
+- Monitoring: AWS CloudWatch (managed via CloudFormation)
 
 ### Available CLI tools
 - AWS CLI and GH CLI are installed and configured. Use them when troubleshooting.
@@ -215,10 +221,20 @@ aws ecs register-task-definition --cli-input-json file://task-definition.json
 # AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, CLOUDFRONT_DISTRIBUTION_ID, API_BASE_URL
 ```
 
-**Infrastructure Deployment:**
+**Infrastructure Deployment (CloudFormation):**
 ```bash
+# Deploy infrastructure using CloudFormation
 cd .aws
 ./deploy-infrastructure.sh
+
+# View CloudFormation stack status
+aws cloudformation describe-stacks --stack-name better-call-saul
+
+# Update CloudFormation stack
+aws cloudformation update-stack --stack-name better-call-saul --template-body file://cloudformation-stack.yml
+
+# Delete CloudFormation stack (use with caution)
+aws cloudformation delete-stack --stack-name better-call-saul
 ```
 
 ### Development Workflow
