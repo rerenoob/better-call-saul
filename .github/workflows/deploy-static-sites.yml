@@ -18,7 +18,7 @@ on:
 env:
   AWS_REGION: us-east-1
   FRONTEND_S3_BUCKET: better-call-saul-frontend-production
-  MARKETING_S3_BUCKET: better-call-saul-marketing
+  MARKETING_S3_BUCKET: better-call-saul-marketing-production
   FRONTEND_CLOUDFRONT_ID: E31UK0DRGK6P2Y
   MARKETING_CLOUDFRONT_ID: ESFK92TFOJSWA
 
