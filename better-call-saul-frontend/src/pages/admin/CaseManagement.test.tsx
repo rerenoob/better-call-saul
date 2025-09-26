@@ -38,11 +38,19 @@ vi.mock('../../hooks/useCaseManagement', () => ({
       totalPages: 1
     },
     filters: {},
+    isAnalyzing: false,
+    analysisProgress: 0,
+    currentAnalysis: null,
+    analysisError: null,
     fetchCaseDetails: vi.fn(),
     updateCase: vi.fn(),
     deleteCase: vi.fn(),
     updateFilters: vi.fn(),
-    goToPage: vi.fn()
+    goToPage: vi.fn(),
+    analyzeCase: vi.fn(),
+    assessViability: vi.fn(),
+    getCaseAnalyses: vi.fn(),
+    clearAnalysis: vi.fn()
   })
 }));
 

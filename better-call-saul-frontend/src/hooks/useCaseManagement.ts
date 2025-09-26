@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { adminService, type Case, type CaseDetails, type CasesResponse, type CaseStatistics } from '../services/adminService';
+import { adminService, type Case, type CaseDetails, type CasesResponse, type CaseStatistics, type AnalyzeCaseRequest, type CaseAnalysisResponse, type ViabilityAssessmentRequest, type ViabilityAssessmentResponse } from '../services/adminService';
 
 export interface CaseManagementData {
   cases: Case[];
@@ -13,6 +13,10 @@ export interface CaseManagementData {
     totalCount: number;
     totalPages: number;
   };
+  isAnalyzing: boolean;
+  analysisProgress: number;
+  currentAnalysis: CaseAnalysisResponse | null;
+  analysisError: string | null;
 }
 
 export interface CaseFilters {
@@ -41,6 +45,10 @@ export const useCaseManagement = (
     totalPages: 0,
   });
   const [filters, setFilters] = useState<CaseFilters>(initialFilters);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [analysisProgress, setAnalysisProgress] = useState(0);
+  const [currentAnalysis, setCurrentAnalysis] = useState<CaseAnalysisResponse | null>(null);
+  const [analysisError, setAnalysisError] = useState<string | null>(null);
 
   const fetchCases = useCallback(async (page: number = pagination.page, pageSize: number = pagination.pageSize) => {
     try {
@@ -150,6 +158,94 @@ export const useCaseManagement = (
     setPagination(prev => ({ ...prev, page }));
   };
 
+  const analyzeCase = async (caseId: string, request: AnalyzeCaseRequest) => {
+    try {
+      setIsAnalyzing(true);
+      setAnalysisProgress(0);
+      setAnalysisError(null);
+      
+      // Start analysis
+      const response = await adminService.analyzeCase(caseId, request);
+      
+      if (response.success) {
+        // Poll for analysis progress
+        const pollAnalysis = async (analysisId: string) => {
+          let attempts = 0;
+          const maxAttempts = 60; // 5 minutes max
+          
+          while (attempts < maxAttempts) {
+            try {
+              const analysis = await adminService.getAnalysis(analysisId);
+              
+              if (analysis.status === 'Completed') {
+                setCurrentAnalysis(analysis);
+                setAnalysisProgress(100);
+                setIsAnalyzing(false);
+                
+                // Refresh case details to show new analysis
+                await fetchCaseDetails(caseId);
+                return;
+              } else if (analysis.status === 'Failed') {
+                setAnalysisError('Analysis failed');
+                setIsAnalyzing(false);
+                return;
+              }
+              
+              // Update progress (simulate progress since we don't have real progress updates)
+              setAnalysisProgress(Math.min(90, attempts * 2));
+              
+              // Wait before next poll
+              await new Promise(resolve => setTimeout(resolve, 5000));
+              attempts++;
+            } catch (err) {
+              console.error('Error polling analysis:', err);
+              attempts++;
+            }
+          }
+          
+          // Timeout
+          setAnalysisError('Analysis timed out');
+          setIsAnalyzing(false);
+        };
+        
+        await pollAnalysis(response.analysisId);
+      } else {
+        setAnalysisError(response.message || 'Failed to start analysis');
+        setIsAnalyzing(false);
+      }
+    } catch (err) {
+      setAnalysisError('Failed to analyze case');
+      console.error('Error analyzing case:', err);
+      setIsAnalyzing(false);
+    }
+  };
+
+  const assessViability = async (caseId: string, request: ViabilityAssessmentRequest): Promise<ViabilityAssessmentResponse> => {
+    try {
+      setAnalysisError(null);
+      return await adminService.assessViability(caseId, request);
+    } catch (err) {
+      setAnalysisError('Failed to assess viability');
+      console.error('Error assessing viability:', err);
+      throw err;
+    }
+  };
+
+  const getCaseAnalyses = async (caseId: string): Promise<CaseAnalysisResponse[]> => {
+    try {
+      return await adminService.getCaseAnalyses(caseId);
+    } catch (err) {
+      console.error('Error getting case analyses:', err);
+      return [];
+    }
+  };
+
+  const clearAnalysis = () => {
+    setCurrentAnalysis(null);
+    setAnalysisError(null);
+    setAnalysisProgress(0);
+  };
+
   useEffect(() => {
     fetchCases();
     fetchStatistics();
@@ -163,6 +259,10 @@ export const useCaseManagement = (
     error,
     pagination,
     filters,
+    isAnalyzing,
+    analysisProgress,
+    currentAnalysis,
+    analysisError,
     fetchCases,
     fetchCaseDetails,
     fetchStatistics,
@@ -171,6 +271,10 @@ export const useCaseManagement = (
     deleteCase,
     updateFilters,
     goToPage,
+    analyzeCase,
+    assessViability,
+    getCaseAnalyses,
+    clearAnalysis,
     setSelectedCase,
   };
 };

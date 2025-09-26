@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useCaseManagement } from '../../hooks/useCaseManagement';
 import { CaseDetails } from '../../services/adminService';
 
@@ -11,18 +11,33 @@ export const CaseManagement: React.FC = () => {
     error,
     pagination,
     filters,
+    isAnalyzing,
+    analysisProgress,
+    currentAnalysis,
+    analysisError,
     fetchCaseDetails,
     updateCase,
     deleteCase,
     updateFilters,
     goToPage,
+    analyzeCase,
+    clearAnalysis,
   } = useCaseManagement();
 
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [isAnalysisModalOpen, setIsAnalysisModalOpen] = useState(false);
   const [selectedCaseId, setSelectedCaseId] = useState<string | null>(null);
   const [editingCase, setEditingCase] = useState<CaseDetails | null>(null);
+  const [selectedDocumentId, setSelectedDocumentId] = useState<string | null>(null);
+
+  // Load case details when analysis modal opens
+  useEffect(() => {
+    if (isAnalysisModalOpen && selectedCaseId && !selectedCase) {
+      fetchCaseDetails(selectedCaseId);
+    }
+  }, [isAnalysisModalOpen, selectedCaseId, selectedCase, fetchCaseDetails]);
 
   const handleSearch = (searchTerm: string) => {
     updateFilters({ ...filters, search: searchTerm });
@@ -272,6 +287,18 @@ export const CaseManagement: React.FC = () => {
                         </svg>
                       </button>
                       <button
+                        onClick={() => {
+                          setSelectedCaseId(caseItem.id);
+                          setIsAnalysisModalOpen(true);
+                        }}
+                        className="text-purple-600 hover:text-purple-900 dark:text-purple-400 dark:hover:text-purple-300"
+                        title="Analyze with AI"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                        </svg>
+                      </button>
+                      <button
                         onClick={() => handleEditCase(caseItem.id)}
                         className="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300"
                         title="Edit Case"
@@ -396,9 +423,21 @@ export const CaseManagement: React.FC = () => {
                               {doc.fileType} • {(doc.fileSize / 1024 / 1024).toFixed(2)} MB • {doc.status}
                             </p>
                           </div>
-                          <span className="text-xs text-gray-500 dark:text-gray-400">
-                            {new Date(doc.uploadedAt).toLocaleDateString()}
-                          </span>
+                          <div className="flex items-center space-x-2">
+                            <span className="text-xs text-gray-500 dark:text-gray-400">
+                              {new Date(doc.uploadedAt).toLocaleDateString()}
+                            </span>
+                            <button
+                              onClick={() => {
+                                setSelectedDocumentId(doc.id);
+                                setIsAnalysisModalOpen(true);
+                              }}
+                              className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 text-xs font-medium"
+                              title="Analyze with AI"
+                            >
+                              Analyze with AI
+                            </button>
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -564,6 +603,255 @@ export const CaseManagement: React.FC = () => {
                   className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600"
                 >
                   Delete Case
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* AI Analysis Modal */}
+      {isAnalysisModalOpen && selectedCaseId && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-2/3 shadow-lg rounded-md bg-white dark:bg-gray-800">
+            <div className="mt-3">
+              <div className="flex justify-between items-center pb-3 border-b">
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white">AI Case Analysis</h3>
+                <button
+                  onClick={() => {
+                    setIsAnalysisModalOpen(false);
+                    setSelectedDocumentId(null);
+                    clearAnalysis();
+                  }}
+                  className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              
+              <div className="mt-4 space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Case</label>
+                    <p className="mt-1 text-sm text-gray-900 dark:text-white">
+                      {selectedCase ? selectedCase.title : cases.find(c => c.id === selectedCaseId)?.title}
+                    </p>
+                  </div>
+                  {selectedDocumentId && selectedCase && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Document</label>
+                      <p className="mt-1 text-sm text-gray-900 dark:text-white">
+                        {selectedCase.documents.find(d => d.id === selectedDocumentId)?.fileName}
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {!selectedDocumentId && selectedCase && selectedCase.documents.length > 0 && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Select Document</label>
+                    <select
+                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white sm:text-sm"
+                      value={selectedDocumentId || ''}
+                      onChange={(e) => setSelectedDocumentId(e.target.value)}
+                    >
+                      <option value="">Choose a document...</option>
+                      {selectedCase.documents.map((doc) => (
+                        <option key={doc.id} value={doc.id}>
+                          {doc.fileName} ({doc.fileType})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
+                {isAnalyzing ? (
+                  <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                    <div className="flex items-center space-x-3">
+                      <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                      <div>
+                        <p className="text-sm font-medium text-blue-800 dark:text-blue-300">Analyzing Document...</p>
+                        <p className="text-xs text-blue-600 dark:text-blue-400">
+                          AI is analyzing the document content. This may take a few minutes.
+                        </p>
+                        <div className="mt-2 w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                          <div 
+                            className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                            style={{ width: `${analysisProgress}%` }}
+                          ></div>
+                        </div>
+                        <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">{analysisProgress}% complete</p>
+                      </div>
+                    </div>
+                  </div>
+                ) : currentAnalysis ? (
+                  <div className="space-y-4">
+                    <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
+                      <div className="flex items-center space-x-2">
+                        <svg className="w-5 h-5 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                        </svg>
+                        <p className="text-sm font-medium text-green-800 dark:text-green-300">Analysis Complete</p>
+                      </div>
+                    </div>
+
+                    {currentAnalysis.viabilityScore && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Viability Score</label>
+                        <div className="mt-1">
+                          <div className="flex items-center space-x-2">
+                            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-4">
+                              <div 
+                                className="bg-gradient-to-r from-red-500 via-yellow-500 to-green-500 h-4 rounded-full"
+                                style={{ width: `${currentAnalysis.viabilityScore}%` }}
+                              ></div>
+                            </div>
+                            <span className="text-sm font-medium text-gray-900 dark:text-white">
+                              {currentAnalysis.viabilityScore}%
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+
+                    {currentAnalysis.keyIssues && currentAnalysis.keyIssues.length > 0 && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Key Legal Issues</label>
+                        <ul className="mt-1 space-y-1">
+                          {currentAnalysis.keyIssues.map((issue, index) => (
+                            <li key={index} className="text-sm text-gray-900 dark:text-white">• {issue}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {currentAnalysis.potentialDefenses && currentAnalysis.potentialDefenses.length > 0 && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Potential Defenses</label>
+                        <ul className="mt-1 space-y-1">
+                          {currentAnalysis.potentialDefenses.map((defense, index) => (
+                            <li key={index} className="text-sm text-gray-900 dark:text-white">• {defense}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {currentAnalysis.recommendedActions && currentAnalysis.recommendedActions.length > 0 && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Recommended Actions</label>
+                        <ul className="mt-1 space-y-1">
+                          {currentAnalysis.recommendedActions.map((action, index) => (
+                            <li key={index} className="text-sm text-gray-900 dark:text-white">• {action}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {currentAnalysis.summary && (
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Analysis Summary</label>
+                        <p className="mt-1 text-sm text-gray-900 dark:text-white whitespace-pre-wrap">{currentAnalysis.summary}</p>
+                      </div>
+                    )}
+                  </div>
+                ) : analysisError ? (
+                  <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+                    <div className="flex items-center space-x-2">
+                      <svg className="w-5 h-5 text-red-600" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                      </svg>
+                      <p className="text-sm font-medium text-red-800 dark:text-red-300">Analysis Failed</p>
+                    </div>
+                    <p className="mt-1 text-sm text-red-700 dark:text-red-400">{analysisError}</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Analysis Options</label>
+                      <div className="mt-2 space-y-2">
+                        <div className="flex items-center">
+                          <input
+                            type="checkbox"
+                            id="includeViability"
+                            defaultChecked
+                            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                          />
+                          <label htmlFor="includeViability" className="ml-2 block text-sm text-gray-900 dark:text-gray-300">
+                            Include viability assessment
+                          </label>
+                        </div>
+                        <div className="flex items-center">
+                          <input
+                            type="checkbox"
+                            id="includeSimilarCases"
+                            defaultChecked
+                            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                          />
+                          <label htmlFor="includeSimilarCases" className="ml-2 block text-sm text-gray-900 dark:text-gray-300">
+                            Search for similar cases
+                          </label>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                      <div className="flex items-center space-x-2">
+                        <svg className="w-5 h-5 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                        </svg>
+                        <p className="text-sm font-medium text-blue-800 dark:text-blue-300">What to Expect</p>
+                      </div>
+                      <ul className="mt-2 text-sm text-blue-700 dark:text-blue-400 space-y-1">
+                        <li>• AI will analyze the document content for legal issues</li>
+                        <li>• Generate viability score and confidence assessment</li>
+                        <li>• Identify potential defenses and legal strategies</li>
+                        <li>• Provide actionable recommendations</li>
+                      </ul>
+                    </div>
+                  </div>
+                )}
+              </div>
+              
+              <div className="mt-6 flex justify-end space-x-3">
+                {!isAnalyzing && !currentAnalysis && !analysisError && (
+                  <button
+                    onClick={async () => {
+                      if (selectedCaseId && selectedDocumentId) {
+                        await analyzeCase(selectedCaseId, {
+                          documentId: selectedDocumentId,
+                          analysisType: 'comprehensive',
+                          includeViabilityAssessment: true,
+                          includeSimilarCases: true,
+                        });
+                      } else if (selectedCaseId && !selectedDocumentId && selectedCase && selectedCase.documents.length > 0) {
+                        // Auto-select first document if none selected
+                        const firstDoc = selectedCase.documents[0];
+                        setSelectedDocumentId(firstDoc.id);
+                        await analyzeCase(selectedCaseId, {
+                          documentId: firstDoc.id,
+                          analysisType: 'comprehensive',
+                          includeViabilityAssessment: true,
+                          includeSimilarCases: true,
+                        });
+                      }
+                    }}
+                    disabled={!selectedDocumentId && (!selectedCase || selectedCase.documents.length === 0)}
+                    className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed dark:bg-blue-500 dark:hover:bg-blue-600"
+                  >
+                    Start AI Analysis
+                  </button>
+                )}
+                <button
+                  onClick={() => {
+                    setIsAnalysisModalOpen(false);
+                    setSelectedDocumentId(null);
+                    clearAnalysis();
+                  }}
+                  className="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400 dark:bg-gray-600 dark:text-gray-300 dark:hover:bg-gray-500"
+                >
+                  {currentAnalysis || analysisError ? 'Close' : 'Cancel'}
                 </button>
               </div>
             </div>

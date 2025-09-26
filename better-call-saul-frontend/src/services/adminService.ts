@@ -107,6 +107,46 @@ export interface CaseDetails extends Case {
   }>;
 }
 
+export interface AnalyzeCaseRequest {
+  documentId: string;
+  analysisType?: string;
+  includeViabilityAssessment?: boolean;
+  includeSimilarCases?: boolean;
+}
+
+export interface CaseAnalysisResponse {
+  analysisId: string;
+  caseId: string;
+  status: string;
+  viabilityScore?: number;
+  confidenceScore?: number;
+  summary?: string;
+  keyIssues?: string[];
+  potentialDefenses?: string[];
+  evidenceGaps?: string[];
+  recommendedActions?: string[];
+  similarCases?: string[];
+  createdAt: string;
+  completedAt?: string;
+}
+
+export interface ViabilityAssessmentRequest {
+  caseFacts: string;
+  charges: string[];
+  evidence: string[];
+}
+
+export interface ViabilityAssessmentResponse {
+  caseId: string;
+  viabilityScore: number;
+  confidenceLevel: string;
+  reasoning: string;
+  strengthFactors: string[];
+  weaknessFactors: string[];
+  recommendedStrategy: string;
+  assessedAt: string;
+}
+
 export interface CasesResponse {
   cases: Case[];
   totalCount: number;
@@ -252,5 +292,26 @@ export const adminService = {
 
   async deleteCase(id: string): Promise<void> {
     await apiClient.delete(`/api/admin/cases/${id}`);
+  },
+
+  // AI Analysis Methods
+  async analyzeCase(caseId: string, request: AnalyzeCaseRequest): Promise<{ success: boolean; analysisId: string; message: string }> {
+    const response = await apiClient.post(`/api/case-analysis/analyze/${caseId}`, request);
+    return response.data;
+  },
+
+  async getAnalysis(analysisId: string): Promise<CaseAnalysisResponse> {
+    const response = await apiClient.get(`/api/case-analysis/analysis/${analysisId}`);
+    return response.data;
+  },
+
+  async getCaseAnalyses(caseId: string): Promise<CaseAnalysisResponse[]> {
+    const response = await apiClient.get(`/api/case-analysis/case/${caseId}/analyses`);
+    return response.data;
+  },
+
+  async assessViability(caseId: string, request: ViabilityAssessmentRequest): Promise<ViabilityAssessmentResponse> {
+    const response = await apiClient.post(`/api/case-analysis/viability/${caseId}`, request);
+    return response.data;
   },
 };
