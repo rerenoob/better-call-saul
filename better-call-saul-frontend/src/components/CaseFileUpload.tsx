@@ -35,7 +35,7 @@ export const CaseFileUpload: React.FC = () => {
 
       try {
         const caseInfo = await caseService.getCase(caseId);
-        setCaseData(caseInfo);
+        setCaseData(caseInfo.case);
       } catch (error) {
         console.error('Error loading case:', error);
         setError('Failed to load case information');
