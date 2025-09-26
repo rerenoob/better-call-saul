@@ -215,13 +215,17 @@ else
     // Production environment - use AWS services
     builder.Services.AddScoped<IFileUploadService, FileUploadService>(); // TODO: Replace with AWS implementation when available
     builder.Services.AddScoped<IStorageService, AWSS3StorageService>();
-    builder.Services.AddScoped<ITextExtractionService, AWSTextractService>();
+
+    // Register AWS Textract service as dependency for composite service
+    builder.Services.AddScoped<AWSTextractService>();
+    builder.Services.AddScoped<ITextExtractionService, CompositeTextExtractionService>();
+
     builder.Services.AddScoped<IAIService, AWSBedrockService>();
-    
+
     Log.Information("Production environment: Registered AWS services");
     Log.Information("  IFileUploadService -> FileUploadService");
     Log.Information("  IStorageService -> AWSS3StorageService");
-    Log.Information("  ITextExtractionService -> AWSTextractService");
+    Log.Information("  ITextExtractionService -> CompositeTextExtractionService");
     Log.Information("  IAIService -> AWSBedrockService");
 }
 

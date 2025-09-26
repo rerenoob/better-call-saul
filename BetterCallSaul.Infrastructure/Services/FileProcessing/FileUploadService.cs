@@ -362,8 +362,8 @@ public class FileUploadService : IFileUploadService, IStorageService
                 }
                 else
                 {
-                    _logger.LogError("Text extraction failed for document: {DocumentId}. Error: {Error}. Status: {Status}, ProcessingTime: {ProcessingTime}ms",
-                        document.Id, extractionResult.ErrorMessage, extractionResult.Status, extractionResult.ProcessingTime.TotalMilliseconds);
+                    _logger.LogError("CRITICAL: Text extraction failed for document: {DocumentId} (File: {FileName}). Error: {Error}. Status: {Status}, ProcessingTime: {ProcessingTime}ms. This will cause AI analysis to fail.",
+                        document.Id, document.FileName, extractionResult.ErrorMessage, extractionResult.Status, extractionResult.ProcessingTime.TotalMilliseconds);
 
                     // Store failure information in NoSQL
                     documentInfo.Status = DocumentStatus.Failed;
@@ -372,10 +372,13 @@ public class FileUploadService : IFileUploadService, IStorageService
                         ["extraction_error"] = extractionResult.ErrorMessage ?? "Unknown error",
                         ["extraction_status"] = extractionResult.Status.ToString(),
                         ["processing_time_ms"] = extractionResult.ProcessingTime.TotalMilliseconds,
-                        ["failed_at"] = DateTime.UtcNow
+                        ["failed_at"] = DateTime.UtcNow,
+                        ["file_type"] = document.FileType,
+                        ["file_size"] = document.FileSize
                     };
 
                     documentInfo.ProcessingMetadata.ProcessingFlags.Add("extraction_failed");
+                    documentInfo.ProcessingMetadata.ProcessingFlags.Add("ai_analysis_will_fail");
 
                     document.Status = DocumentStatus.Failed;
                     await _context.SaveChangesAsync();

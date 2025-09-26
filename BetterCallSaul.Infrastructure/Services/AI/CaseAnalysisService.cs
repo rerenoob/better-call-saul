@@ -32,6 +32,29 @@ public class CaseAnalysisService : ICaseAnalysisService
 
     public async Task<CaseAnalysis> AnalyzeCaseAsync(Guid caseId, Guid documentId, string documentText, CancellationToken cancellationToken = default)
     {
+        // Validate that we have document text to analyze
+        if (string.IsNullOrWhiteSpace(documentText))
+        {
+            _logger.LogError("Cannot analyze case {CaseId} - document {DocumentId} has no extracted text", caseId, documentId);
+
+            var failedAnalysis = new CaseAnalysis
+            {
+                CaseId = caseId,
+                DocumentId = documentId,
+                Status = AnalysisStatus.Failed,
+                AnalysisText = "Analysis failed: No text content available from document. Text extraction may have failed.",
+                ViabilityScore = 0,
+                ConfidenceScore = 0,
+                Metadata = new Dictionary<string, object> { ["error"] = "Text extraction failed - no content available for analysis" },
+                CompletedAt = DateTime.UtcNow
+            };
+
+            _context.CaseAnalyses.Add(failedAnalysis);
+            await _context.SaveChangesAsync(cancellationToken);
+
+            return failedAnalysis;
+        }
+
         // Create SQL record for tracking
         var analysis = new CaseAnalysis
         {
