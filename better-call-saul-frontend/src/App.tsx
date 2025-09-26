@@ -8,6 +8,8 @@ import { RegisterForm } from './components/auth/RegisterForm';
 import { CaseDetail } from './components/CaseDetail';
 import { Dashboard } from './components/Dashboard';
 import { CaseUpload } from './components/CaseUpload';
+import { CaseCreate } from './components/CaseCreate';
+import { CaseFileUpload } from './components/CaseFileUpload';
 import { AdminLayout } from './components/admin/AdminLayout';
 import { AdminDashboard } from './pages/admin/AdminDashboard';
 import { UserManagement } from './pages/admin/UserManagement';
@@ -145,6 +147,22 @@ function App() {
             />
             <Route
               path="/cases/new"
+              element={
+                <ProtectedRoute>
+                  <CaseCreate />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/cases/:id/upload"
+              element={
+                <ProtectedRoute>
+                  <CaseFileUpload />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/cases/legacy-upload"
               element={
                 <ProtectedRoute>
                   <CaseUpload />

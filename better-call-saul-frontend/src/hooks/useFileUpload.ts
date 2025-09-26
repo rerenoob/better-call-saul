@@ -46,7 +46,7 @@ export const useFileUpload = () => {
     []
   );
 
-  const uploadFiles = useCallback(async () => {
+  const uploadFiles = useCallback(async (caseId?: string) => {
     if (files.length === 0) return { success: true, fileIds: [] };
 
     setIsUploading(true);
@@ -61,7 +61,8 @@ export const useFileUpload = () => {
         updateFileProgress(file.id, 0, UploadStatus.UPLOADING);
 
         const result = await fileUploadService.uploadFile(file.file, progress =>
-          updateFileProgress(file.id, progress, UploadStatus.UPLOADING)
+          updateFileProgress(file.id, progress, UploadStatus.UPLOADING),
+          caseId
         );
 
         if (result.success && result.fileId) {
@@ -85,14 +86,15 @@ export const useFileUpload = () => {
     }
   }, [files, updateFileProgress]);
 
-  const retryFailedUploads = useCallback(async () => {
+  const retryFailedUploads = useCallback(async (caseId?: string) => {
     const failedFiles = files.filter(f => f.status === UploadStatus.ERROR);
 
     for (const file of failedFiles) {
       updateFileProgress(file.id, 0, UploadStatus.UPLOADING);
 
       const result = await fileUploadService.uploadFile(file.file, progress =>
-        updateFileProgress(file.id, progress, UploadStatus.UPLOADING)
+        updateFileProgress(file.id, progress, UploadStatus.UPLOADING),
+        caseId
       );
 
       if (result.success) {
