@@ -1,5 +1,7 @@
 using BetterCallSaul.Core.Models.Entities;
 using Microsoft.Extensions.Logging;
+using UglyToad.PdfPig;
+using UglyToad.PdfPig.Content;
 
 namespace BetterCallSaul.Infrastructure.Services.FileProcessing;
 
@@ -260,10 +262,43 @@ public class CompositeTextExtractionService : ITextExtractionService
 
     private async Task<string> ExtractTextFromDocxAsync(string filePath)
     {
-        // For now, return a placeholder. In production, implement proper DOCX parsing
-        // or add DocumentFormat.OpenXml NuGet package for proper DOCX text extraction
+        try
+        {
+            // DOCX files are ZIP archives containing XML files
+            // We'll extract text from the main document part
+            using var archive = System.IO.Compression.ZipFile.OpenRead(filePath);
+            
+            // Find the main document part
+            var documentEntry = archive.Entries.FirstOrDefault(e => 
+                e.FullName.Equals("word/document.xml", StringComparison.OrdinalIgnoreCase));
 
-        return await Task.FromResult($"[DOCX content extraction not yet implemented for: {Path.GetFileName(filePath)}]");
+            if (documentEntry == null)
+            {
+                _logger.LogWarning("Could not find document.xml in DOCX file: {FilePath}", filePath);
+                return string.Empty;
+            }
+
+            using var stream = documentEntry.Open();
+            using var reader = new StreamReader(stream);
+            var xmlContent = await reader.ReadToEndAsync();
+
+            // Simple XML text extraction - remove tags and extract text content
+            var text = System.Text.RegularExpressions.Regex.Replace(xmlContent, "<[^>]+>", " ");
+            text = System.Text.RegularExpressions.Regex.Replace(text, "\\s+", " ").Trim();
+
+            if (string.IsNullOrWhiteSpace(text))
+            {
+                _logger.LogWarning("No text content found in DOCX file: {FilePath}", filePath);
+                return string.Empty;
+            }
+
+            return text;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error extracting text from DOCX file: {FilePath}", filePath);
+            return string.Empty;
+        }
     }
 
     private async Task<TextExtractionResult> AttemptFallbackPdfExtractionAsync(string filePath, string fileName)
@@ -272,48 +307,58 @@ public class CompositeTextExtractionService : ITextExtractionService
 
         try
         {
-            // Simple fallback: try to read as text if PDF contains readable text
-            // This is a basic fallback - in production, consider using a PDF library like iTextSharp or PdfSharp
+            _logger.LogInformation("Attempting fallback PDF text extraction using PdfPig for: {FileName}", fileName);
 
-            _logger.LogInformation("Attempting fallback PDF text extraction for: {FileName}", fileName);
+            var fileInfo = new FileInfo(filePath);
+            var extractedText = await ExtractTextFromPdfAsync(filePath);
 
-            // For now, return a placeholder indicating fallback was attempted
-            // In production, implement actual PDF text extraction using a library
-            var fallbackText = $"[Fallback PDF extraction attempted for: {fileName}]\n" +
-                             $"[AWS Textract failed - this would contain extracted PDF text using fallback library]\n" +
-                             $"[File: {fileName}]\n" +
-                             $"[Size: {new FileInfo(filePath).Length} bytes]\n" +
-                             $"[Extraction time: {DateTime.UtcNow:yyyy-MM-dd HH:mm:ss}]";
+            if (string.IsNullOrWhiteSpace(extractedText))
+            {
+                _logger.LogWarning("Fallback PDF extraction returned empty text for: {FileName}", fileName);
+                return new TextExtractionResult
+                {
+                    Success = false,
+                    ErrorMessage = "No text could be extracted from the PDF using fallback method",
+                    Status = TextExtractionStatus.Failed,
+                    FileName = fileName,
+                    FileSize = fileInfo.Length,
+                    ProcessingTime = DateTime.UtcNow - startTime,
+                    Metadata = new Dictionary<string, object>
+                    {
+                        ["extraction_method"] = "fallback_pdf_pig",
+                        ["aws_textract_failed"] = true,
+                        ["fallback_used"] = true,
+                        ["extraction_empty"] = true
+                    }
+                };
+            }
+
+            _logger.LogInformation("Fallback PDF extraction successful for {FileName}: {CharCount} characters extracted",
+                fileName, extractedText.Length);
 
             return new TextExtractionResult
             {
                 Success = true,
-                ExtractedText = fallbackText,
+                ExtractedText = extractedText,
                 FileName = fileName,
-                FileSize = new FileInfo(filePath).Length,
+                FileSize = fileInfo.Length,
                 ConfidenceScore = 0.7, // Lower confidence for fallback
                 Status = TextExtractionStatus.Success,
                 ProcessingTime = DateTime.UtcNow - startTime,
                 Metadata = new Dictionary<string, object>
                 {
-                    ["extraction_method"] = "fallback_pdf",
+                    ["extraction_method"] = "fallback_pdf_pig",
                     ["aws_textract_failed"] = true,
-                    ["fallback_used"] = true
+                    ["fallback_used"] = true,
+                    ["character_count"] = extractedText.Length,
+                    ["file_size_bytes"] = fileInfo.Length
                 },
-                Pages = new List<TextPage>
-                {
-                    new TextPage
-                    {
-                        PageNumber = 1,
-                        Text = fallbackText,
-                        Confidence = 0.7
-                    }
-                }
+                Pages = ExtractPagesFromPdf(filePath)
             };
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Fallback PDF extraction also failed for: {FileName}", fileName);
+            _logger.LogError(ex, "Fallback PDF extraction failed for: {FileName}", fileName);
             return new TextExtractionResult
             {
                 Success = false,
@@ -323,5 +368,78 @@ public class CompositeTextExtractionService : ITextExtractionService
                 ProcessingTime = DateTime.UtcNow - startTime
             };
         }
+    }
+
+    private async Task<string> ExtractTextFromPdfAsync(string filePath)
+    {
+        try
+        {
+            using var document = PdfDocument.Open(filePath);
+            var pages = new List<string>();
+
+            foreach (var page in document.GetPages())
+            {
+                var pageText = page.Text;
+                if (!string.IsNullOrWhiteSpace(pageText))
+                {
+                    pages.Add(pageText.Trim());
+                }
+            }
+
+            return string.Join("\n\n", pages);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error extracting text from PDF using PdfPig: {FilePath}", filePath);
+            throw;
+        }
+    }
+
+    private List<TextPage> ExtractPagesFromPdf(string filePath)
+    {
+        var pages = new List<TextPage>();
+
+        try
+        {
+            using var document = PdfDocument.Open(filePath);
+            var pageNumber = 1;
+
+            foreach (var page in document.GetPages())
+            {
+                var pageText = page.Text?.Trim() ?? string.Empty;
+                
+                pages.Add(new TextPage
+                {
+                    PageNumber = pageNumber,
+                    Text = pageText,
+                    Confidence = 0.7, // Lower confidence for fallback extraction
+                    PageMetadata = new Dictionary<string, object>
+                    {
+                        ["word_count"] = pageText.Split(' ', StringSplitOptions.RemoveEmptyEntries).Length,
+                        ["character_count"] = pageText.Length,
+                        ["extraction_method"] = "pdfpig_fallback"
+                    }
+                });
+
+                pageNumber++;
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Error extracting page information from PDF: {FilePath}", filePath);
+            // Return at least one page with empty text if extraction fails
+            pages.Add(new TextPage
+            {
+                PageNumber = 1,
+                Text = string.Empty,
+                Confidence = 0.1,
+                PageMetadata = new Dictionary<string, object>
+                {
+                    ["extraction_error"] = ex.Message
+                }
+            });
+        }
+
+        return pages;
     }
 }
