@@ -63,6 +63,7 @@ public class AWSBedrockService : IAIService
     {
         if (_bedrockClient == null)
         {
+            _logger.LogError("Bedrock client is null - service not configured");
             return new AIResponse
             {
                 Success = false,
@@ -72,6 +73,7 @@ public class AWSBedrockService : IAIService
         }
 
         var startTime = DateTime.UtcNow;
+        _logger.LogInformation("Starting Bedrock analysis with primary model: {ModelId}", _options.ModelId);
 
         // Try primary model first
         var modelsToTry = new List<string> { _options.ModelId };
@@ -81,14 +83,22 @@ public class AWSBedrockService : IAIService
         {
             try
             {
-                _logger.LogDebug("Attempting to use model: {ModelId}", modelId);
+                _logger.LogInformation("Attempting to use model: {ModelId}", modelId);
 
                 var bedrockRequest = CreateBedrockRequest(request, modelId);
+                _logger.LogInformation("Created Bedrock request for model: {ModelId}, ContentType: {ContentType}",
+                    modelId, bedrockRequest.ContentType);
+
                 var response = await _bedrockClient.InvokeModelAsync(bedrockRequest, cancellationToken);
+                _logger.LogInformation("Received Bedrock response for model: {ModelId}, ContentType: {ContentType}",
+                    modelId, response.ContentType);
 
                 var result = ProcessBedrockResponse(response);
                 result.ProcessingTime = DateTime.UtcNow - startTime;
                 result.Model = modelId;
+
+                _logger.LogInformation("Successfully processed Bedrock response: Success={Success}, TextLength={TextLength}",
+                    result.Success, result.GeneratedText?.Length ?? 0);
 
                 if (modelId != _options.ModelId)
                 {
@@ -100,13 +110,13 @@ public class AWSBedrockService : IAIService
             }
             catch (Exception ex)
             {
-                _logger.LogWarning(ex, "Model {ModelId} failed with error: {ErrorMessage}. Exception Type: {ExceptionType}",
+                _logger.LogError(ex, "Model {ModelId} failed with error: {ErrorMessage}. Exception Type: {ExceptionType}",
                     modelId, ex.Message, ex.GetType().Name);
 
                 // Log AWS-specific error details
                 if (ex is Amazon.Runtime.AmazonServiceException awsEx)
                 {
-                    _logger.LogWarning("AWS Service Exception Details - ErrorCode: {ErrorCode}, StatusCode: {StatusCode}",
+                    _logger.LogError("AWS Service Exception Details - ErrorCode: {ErrorCode}, StatusCode: {StatusCode}",
                         awsEx.ErrorCode, awsEx.StatusCode);
                 }
                 else if (ex is Amazon.Runtime.AmazonClientException awsClientEx)
@@ -380,12 +390,17 @@ public class AWSBedrockService : IAIService
         using var streamReader = new System.IO.StreamReader(response.Body);
         var responseText = streamReader.ReadToEnd();
 
+        _logger.LogInformation("Processing Bedrock response - Raw response length: {Length}, First 200 chars: {Preview}",
+            responseText.Length, responseText.Length > 200 ? responseText.Substring(0, 200) : responseText);
+
         try
         {
             // Try Claude 3 format first
             var claude3Response = JsonSerializer.Deserialize<Claude3Response>(responseText);
             if (claude3Response?.Content != null && claude3Response.Content.Length > 0)
             {
+                _logger.LogInformation("Successfully parsed Claude 3 response with {ContentCount} content items",
+                    claude3Response.Content.Length);
                 return new AIResponse
                 {
                     Success = true,
@@ -395,19 +410,34 @@ public class AWSBedrockService : IAIService
                 };
             }
 
+            _logger.LogWarning("Claude 3 parsing failed or no content, trying Claude 2 format");
+
             // Fallback to Claude 2 format
             var bedrockResponse = JsonSerializer.Deserialize<BedrockCompletionResponse>(responseText);
 
+            if (bedrockResponse != null)
+            {
+                _logger.LogInformation("Successfully parsed Claude 2 response");
+                return new AIResponse
+                {
+                    Success = true,
+                    GeneratedText = bedrockResponse.Completion?.Trim(),
+                    TokensUsed = bedrockResponse.Completion?.Length / 4 ?? 0, // Rough estimate
+                    ConfidenceScore = 0.85
+                };
+            }
+
+            _logger.LogError("Failed to parse both Claude 3 and Claude 2 formats");
             return new AIResponse
             {
-                Success = true,
-                GeneratedText = bedrockResponse?.Completion?.Trim(),
-                TokensUsed = bedrockResponse?.Completion?.Length / 4 ?? 0, // Rough estimate
-                ConfidenceScore = 0.85
+                Success = false,
+                ErrorMessage = "Failed to parse response from AWS Bedrock",
+                ProcessingTime = TimeSpan.Zero
             };
         }
-        catch (JsonException)
+        catch (JsonException ex)
         {
+            _logger.LogError(ex, "JSON parsing failed, using raw response fallback");
             // Fallback: return raw response if JSON parsing fails
             return new AIResponse
             {
