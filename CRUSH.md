@@ -15,6 +15,7 @@
 - **Styling**: Tailwind CSS
 - **Real-time**: SignalR for progress updates
 - **Testing**: xUnit (backend), Jest/Vitest (frontend), Playwright (E2E)
+- **PDF Text Extraction**: PdfPig library for fallback extraction when AWS Textract fails
 
 ## Backend Development Commands
 ```bash

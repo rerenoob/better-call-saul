@@ -370,7 +370,7 @@ public class CompositeTextExtractionService : ITextExtractionService
         }
     }
 
-    private async Task<string> ExtractTextFromPdfAsync(string filePath)
+    private Task<string> ExtractTextFromPdfAsync(string filePath)
     {
         try
         {
@@ -386,7 +386,7 @@ public class CompositeTextExtractionService : ITextExtractionService
                 }
             }
 
-            return string.Join("\n\n", pages);
+            return Task.FromResult(string.Join("\n\n", pages));
         }
         catch (Exception ex)
         {
