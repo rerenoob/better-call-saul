@@ -337,6 +337,64 @@ public class AdminController : ControllerBase
         return Ok(new { message = "Case status updated successfully" });
     }
 
+    [HttpPut("cases/{id}")]
+    public async Task<IActionResult> UpdateCase(Guid id, [FromBody] UpdateCaseRequest request)
+    {
+        var caseItem = await _context.Cases.FindAsync(id);
+        if (caseItem == null)
+            return NotFound();
+
+        // Update allowed fields
+        if (!string.IsNullOrEmpty(request.Title))
+            caseItem.Title = request.Title;
+        
+        if (!string.IsNullOrEmpty(request.Description))
+            caseItem.Description = request.Description;
+        
+        if (request.Status.HasValue)
+            caseItem.Status = request.Status.Value;
+
+        caseItem.UpdatedAt = DateTime.UtcNow;
+
+        await _context.SaveChangesAsync();
+
+        // Return updated case details
+        var updatedCase = await _context.Cases
+            .Include(c => c.User)
+            .Include(c => c.Documents.Where(d => !d.IsDeleted))
+            .ThenInclude(d => d.ExtractedText)
+            .FirstOrDefaultAsync(c => c.Id == id);
+
+        var result = new
+        {
+            updatedCase.Id,
+            updatedCase.CaseNumber,
+            updatedCase.Title,
+            updatedCase.Description,
+            Status = updatedCase.Status.ToString(),
+            updatedCase.UserId,
+            UserName = updatedCase.User.FullName,
+            UserEmail = updatedCase.User.Email,
+            updatedCase.SuccessProbability,
+            updatedCase.HearingDate,
+            updatedCase.CreatedAt,
+            updatedCase.UpdatedAt,
+            Documents = updatedCase.Documents.Select(d => new
+            {
+                d.Id,
+                d.FileName,
+                d.FileSize,
+                FileType = d.FileType.ToString(),
+                Status = d.Status.ToString(),
+                d.CreatedAt,
+                ExtractedText = d.ExtractedText != null ? d.ExtractedText.FullText : null
+            }),
+            Analyses = new List<object>() // Placeholder for analysis data
+        };
+
+        return Ok(result);
+    }
+
     [HttpDelete("cases/{id}")]
     public async Task<IActionResult> DeleteCase(Guid id)
     {

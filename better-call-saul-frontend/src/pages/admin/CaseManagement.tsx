@@ -1,17 +1,28 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useCaseManagement } from '../../hooks/useCaseManagement';
+import { CaseDetails } from '../../services/adminService';
 
 export const CaseManagement: React.FC = () => {
   const {
     cases,
+    selectedCase,
     statistics,
     isLoading,
     error,
     pagination,
     filters,
+    fetchCaseDetails,
+    updateCase,
+    deleteCase,
     updateFilters,
     goToPage,
   } = useCaseManagement();
+
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+  const [selectedCaseId, setSelectedCaseId] = useState<string | null>(null);
+  const [editingCase, setEditingCase] = useState<CaseDetails | null>(null);
 
   const handleSearch = (searchTerm: string) => {
     updateFilters({ ...filters, search: searchTerm });
@@ -20,6 +31,38 @@ export const CaseManagement: React.FC = () => {
   const handleStatusFilter = (status: string) => {
     updateFilters({ ...filters, status: status || undefined });
   };
+
+  const handleViewCase = async (caseId: string) => {
+    setSelectedCaseId(caseId);
+    await fetchCaseDetails(caseId);
+    setIsDetailModalOpen(true);
+  };
+
+  const handleEditCase = async (caseId: string) => {
+    setSelectedCaseId(caseId);
+    await fetchCaseDetails(caseId);
+    setEditingCase(selectedCase);
+    setIsEditModalOpen(true);
+  };
+
+  const handleDeleteCase = (caseId: string) => {
+    setSelectedCaseId(caseId);
+    setIsDeleteModalOpen(true);
+  };
+
+  const confirmDeleteCase = async () => {
+    if (selectedCaseId) {
+      try {
+        await deleteCase(selectedCaseId);
+        setIsDeleteModalOpen(false);
+        setSelectedCaseId(null);
+      } catch (err) {
+        console.error('Error deleting case:', err);
+      }
+    }
+  };
+
+
 
   if (isLoading && cases.length === 0) {
     return (
@@ -177,6 +220,9 @@ export const CaseManagement: React.FC = () => {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                   Created
                 </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                  Actions
+                </th>
               </tr>
             </thead>
             <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
@@ -212,6 +258,38 @@ export const CaseManagement: React.FC = () => {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                     {new Date(caseItem.createdAt).toLocaleDateString()}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <div className="flex space-x-2">
+                      <button
+                        onClick={() => handleViewCase(caseItem.id)}
+                        className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300"
+                        title="View Case Details"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        </svg>
+                      </button>
+                      <button
+                        onClick={() => handleEditCase(caseItem.id)}
+                        className="text-green-600 hover:text-green-900 dark:text-green-400 dark:hover:text-green-300"
+                        title="Edit Case"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                      </button>
+                      <button
+                        onClick={() => handleDeleteCase(caseItem.id)}
+                        className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300"
+                        title="Delete Case"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -249,6 +327,249 @@ export const CaseManagement: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Case Detail Modal */}
+      {isDetailModalOpen && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-2/3 shadow-lg rounded-md bg-white dark:bg-gray-800">
+            <div className="mt-3">
+              <div className="flex justify-between items-center pb-3 border-b">
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white">Case Details</h3>
+                <button
+                  onClick={() => setIsDetailModalOpen(false)}
+                  className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              
+              {selectedCase && (
+                <div className="mt-4 space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Case Number</label>
+                      <p className="mt-1 text-sm text-gray-900 dark:text-white">{selectedCase.caseNumber}</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Title</label>
+                      <p className="mt-1 text-sm text-gray-900 dark:text-white">{selectedCase.title}</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Status</label>
+                      <p className="mt-1 text-sm text-gray-900 dark:text-white capitalize">{selectedCase.status}</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">User</label>
+                      <p className="mt-1 text-sm text-gray-900 dark:text-white">{selectedCase.userName} ({selectedCase.userEmail})</p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Success Probability</label>
+                      <p className="mt-1 text-sm text-gray-900 dark:text-white">
+                        {selectedCase.successProbability ? `${(selectedCase.successProbability * 100).toFixed(1)}%` : 'N/A'}
+                      </p>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Created</label>
+                      <p className="mt-1 text-sm text-gray-900 dark:text-white">
+                        {new Date(selectedCase.createdAt).toLocaleString()}
+                      </p>
+                    </div>
+                  </div>
+                  
+                  {selectedCase.description && (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Description</label>
+                      <p className="mt-1 text-sm text-gray-900 dark:text-white whitespace-pre-wrap">{selectedCase.description}</p>
+                    </div>
+                  )}
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Documents ({selectedCase.documents.length})</label>
+                    <div className="mt-2 space-y-2">
+                      {selectedCase.documents.map((doc) => (
+                        <div key={doc.id} className="flex justify-between items-center p-2 bg-gray-50 dark:bg-gray-700 rounded">
+                          <div>
+                            <p className="text-sm font-medium text-gray-900 dark:text-white">{doc.fileName}</p>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">
+                              {doc.fileType} • {(doc.fileSize / 1024 / 1024).toFixed(2)} MB • {doc.status}
+                            </p>
+                          </div>
+                          <span className="text-xs text-gray-500 dark:text-gray-400">
+                            {new Date(doc.uploadedAt).toLocaleDateString()}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Analyses ({selectedCase.analyses.length})</label>
+                    <div className="mt-2 space-y-2">
+                      {selectedCase.analyses.map((analysis) => (
+                        <div key={analysis.id} className="p-2 bg-gray-50 dark:bg-gray-700 rounded">
+                          <div className="flex justify-between items-center">
+                            <span className="text-sm font-medium text-gray-900 dark:text-white capitalize">{analysis.status}</span>
+                            <span className="text-xs text-gray-500 dark:text-gray-400">
+                              {new Date(analysis.createdAt).toLocaleString()}
+                            </span>
+                          </div>
+                          {analysis.viabilityScore && (
+                            <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                              Viability Score: {analysis.viabilityScore}%
+                            </p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+              
+              <div className="mt-6 flex justify-end space-x-3">
+                <button
+                  onClick={() => setIsDetailModalOpen(false)}
+                  className="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400 dark:bg-gray-600 dark:text-gray-300 dark:hover:bg-gray-500"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Case Modal */}
+      {isEditModalOpen && editingCase && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-11/12 md:w-1/2 lg:w-1/3 shadow-lg rounded-md bg-white dark:bg-gray-800">
+            <div className="mt-3">
+              <div className="flex justify-between items-center pb-3 border-b">
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white">Edit Case</h3>
+                <button
+                  onClick={() => setIsEditModalOpen(false)}
+                  className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              
+              <div className="mt-4 space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Status</label>
+                  <select
+                    value={editingCase.status}
+                    onChange={(e) => setEditingCase({...editingCase, status: e.target.value})}
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white sm:text-sm"
+                  >
+                    <option value="draft">Draft</option>
+                    <option value="new">New</option>
+                    <option value="investigation">Investigation</option>
+                    <option value="discovery">Discovery</option>
+                    <option value="preTrial">Pre-Trial</option>
+                    <option value="trial">Trial</option>
+                    <option value="settlement">Settlement</option>
+                    <option value="closed">Closed</option>
+                    <option value="appealed">Appealed</option>
+                    <option value="dismissed">Dismissed</option>
+                  </select>
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Title</label>
+                  <input
+                    type="text"
+                    value={editingCase.title}
+                    onChange={(e) => setEditingCase({...editingCase, title: e.target.value})}
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white sm:text-sm"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Description</label>
+                  <textarea
+                    value={editingCase.description || ''}
+                    onChange={(e) => setEditingCase({...editingCase, description: e.target.value})}
+                    rows={3}
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white sm:text-sm"
+                  />
+                </div>
+              </div>
+              
+              <div className="mt-6 flex justify-end space-x-3">
+                <button
+                  onClick={() => setIsEditModalOpen(false)}
+                  className="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400 dark:bg-gray-600 dark:text-gray-300 dark:hover:bg-gray-500"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={async () => {
+                    try {
+                      await updateCase(editingCase.id, {
+                        title: editingCase.title,
+                        description: editingCase.description,
+                        status: editingCase.status
+                      });
+                      setIsEditModalOpen(false);
+                    } catch (err) {
+                      console.error('Error updating case:', err);
+                    }
+                  }}
+                  className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
+                >
+                  Save Changes
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {isDeleteModalOpen && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-11/12 md:w-1/3 shadow-lg rounded-md bg-white dark:bg-gray-800">
+            <div className="mt-3">
+              <div className="flex justify-between items-center pb-3 border-b">
+                <h3 className="text-xl font-bold text-gray-900 dark:text-white">Confirm Delete</h3>
+                <button
+                  onClick={() => setIsDeleteModalOpen(false)}
+                  className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+              
+              <div className="mt-4">
+                <p className="text-sm text-gray-700 dark:text-gray-300">
+                  Are you sure you want to delete this case? This action cannot be undone.
+                </p>
+              </div>
+              
+              <div className="mt-6 flex justify-end space-x-3">
+                <button
+                  onClick={() => setIsDeleteModalOpen(false)}
+                  className="px-4 py-2 bg-gray-300 text-gray-700 rounded hover:bg-gray-400 dark:bg-gray-600 dark:text-gray-300 dark:hover:bg-gray-500"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmDeleteCase}
+                  className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-600"
+                >
+                  Delete Case
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

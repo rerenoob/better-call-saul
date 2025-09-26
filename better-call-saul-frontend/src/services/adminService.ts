@@ -245,6 +245,11 @@ export const adminService = {
     await apiClient.put(`/api/admin/cases/${id}/status`, { status });
   },
 
+  async updateCase(id: string, updates: Partial<CaseDetails>): Promise<CaseDetails> {
+    const response = await apiClient.put(`/api/admin/cases/${id}`, updates);
+    return response.data;
+  },
+
   async deleteCase(id: string): Promise<void> {
     await apiClient.delete(`/api/admin/cases/${id}`);
   },

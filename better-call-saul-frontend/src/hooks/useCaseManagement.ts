@@ -107,6 +107,23 @@ export const useCaseManagement = (
     }
   };
 
+  const updateCase = async (id: string, updates: Partial<CaseDetails>) => {
+    try {
+      const updatedCase = await adminService.updateCase(id, updates);
+      // Refresh the cases list
+      await fetchCases();
+      // If the updated case is currently selected, update it
+      if (selectedCase?.id === id) {
+        setSelectedCase(updatedCase);
+      }
+      return updatedCase;
+    } catch (err) {
+      setError('Failed to update case');
+      console.error('Error updating case:', err);
+      throw err;
+    }
+  };
+
   const deleteCase = async (id: string) => {
     try {
       await adminService.deleteCase(id);
@@ -150,6 +167,7 @@ export const useCaseManagement = (
     fetchCaseDetails,
     fetchStatistics,
     updateCaseStatus,
+    updateCase,
     deleteCase,
     updateFilters,
     goToPage,
