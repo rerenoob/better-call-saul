@@ -78,10 +78,20 @@ if (builder.Environment.IsDevelopment())
 }
 else
 {
-    // Use PostgreSQL for production
+    // Use PostgreSQL for production - read environment variables directly
     builder.Services.AddDbContext<BetterCallSaulContext>(options =>
     {
-        options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection"));
+        var rdsHost = Environment.GetEnvironmentVariable("RDS_HOST");
+        var rdsUsername = Environment.GetEnvironmentVariable("RDS_USERNAME");
+        var rdsPassword = Environment.GetEnvironmentVariable("RDS_PASSWORD");
+        
+        if (string.IsNullOrEmpty(rdsHost) || string.IsNullOrEmpty(rdsUsername) || string.IsNullOrEmpty(rdsPassword))
+        {
+            throw new InvalidOperationException("RDS environment variables (RDS_HOST, RDS_USERNAME, RDS_PASSWORD) are not configured for production.");
+        }
+        
+        var connectionString = $"Host={rdsHost};Port=5432;Database=BetterCallSaul;Username={rdsUsername};Password={rdsPassword}";
+        options.UseNpgsql(connectionString);
         options.EnableSensitiveDataLogging(false);
         options.EnableDetailedErrors(false);
     });
