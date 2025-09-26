@@ -46,8 +46,8 @@ public class FileUploadController : ControllerBase
     [RequestSizeLimit(50 * 1024 * 1024)] // 50MB
     public async Task<ActionResult<UploadResult>> UploadFile(
         IFormFile file,
-        [FromForm] Guid caseId,
-        [FromForm] string uploadSessionId)
+        [FromForm] Guid? caseId = null,
+        [FromForm] string uploadSessionId = "")
     {
         try
         {
@@ -71,36 +71,36 @@ public class FileUploadController : ControllerBase
                 });
             }
 
-            // File upload is now decoupled from case creation
+            // File upload is now decoupled from case creation - NoSQL-first approach
 
             // Validate file
             var validationResult = FileUploadValidator.ValidateFile(file);
             if (!validationResult.IsValid)
             {
-                return BadRequest(new UploadResult 
-                { 
-                    Success = false, 
+                return BadRequest(new UploadResult
+                {
+                    Success = false,
                     Message = "File validation failed",
                     ValidationErrors = validationResult.Errors
                 });
             }
 
-            // Upload file without case assignment
+            // Upload file without case assignment using NoSQL-first approach
             UploadResult result;
-            if (caseId != Guid.Empty)
+            if (caseId.HasValue && caseId != Guid.Empty)
             {
                 // Upload and immediately link to case
-                result = await _fileUploadService.UploadFileAsync(file, caseId, userId, uploadSessionId);
+                result = await _fileUploadService.UploadFileAsync(file, caseId.Value, userId, uploadSessionId);
 
                 if (result.Success)
                 {
                     // Trigger automatic case analysis for assigned documents
-                    _ = Task.Run(async () => await TriggerCaseAnalysisAsync(caseId, result.FileId, file.FileName));
+                    _ = Task.Run(async () => await TriggerCaseAnalysisAsync(caseId.Value, result.FileId, file.FileName));
                 }
             }
             else
             {
-                // Upload without case assignment
+                // Upload without case assignment (NoSQL-first approach)
                 result = await _fileUploadService.UploadFileAsync(file, userId, uploadSessionId);
             }
 

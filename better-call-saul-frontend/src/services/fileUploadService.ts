@@ -14,10 +14,8 @@ export const fileUploadService = {
     // Use default values if not provided
     if (caseId) {
       formData.append('caseId', caseId);
-    } else {
-      // Use a temporary GUID for standalone uploads
-      formData.append('caseId', '00000000-0000-0000-0000-000000000000');
     }
+    // Don't append caseId parameter if not provided - this triggers temporary case creation in backend
 
     if (uploadSessionId) {
       formData.append('uploadSessionId', uploadSessionId);
