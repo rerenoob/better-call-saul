@@ -163,17 +163,18 @@ public class AWSTextractService : ITextExtractionService
 
     private async Task<TextExtractionResult> ProcessSynchronouslyAsync(Stream documentStream, string fileName, long fileSize)
     {
+        // Read the document stream into a byte array
+        using var memoryStream = new MemoryStream();
+        await documentStream.CopyToAsync(memoryStream);
+        var documentBytes = memoryStream.ToArray();
+
         var detectDocumentTextRequest = new DetectDocumentTextRequest
         {
             Document = new AmazonTextractDocument
             {
-                Bytes = new MemoryStream()
+                Bytes = new MemoryStream(documentBytes)
             }
         };
-
-        // Copy the stream to the request
-        await documentStream.CopyToAsync(detectDocumentTextRequest.Document.Bytes);
-        detectDocumentTextRequest.Document.Bytes.Position = 0;
 
         var response = await _textractClient!.DetectDocumentTextAsync(detectDocumentTextRequest);
 
