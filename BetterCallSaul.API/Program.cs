@@ -247,6 +247,8 @@ builder.Services.AddScoped<ILegalResearchRepository, LegalResearchRepository>();
 // Register case management services
 builder.Services.AddScoped<ICaseManagementService, CaseManagementService>();
 builder.Services.AddScoped<AWSBedrockService>();
+
+// Background services can be added here as needed
 builder.Services.AddScoped<ICaseAnalysisService, CaseAnalysisService>();
 
 

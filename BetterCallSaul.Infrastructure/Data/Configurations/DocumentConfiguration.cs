@@ -33,7 +33,8 @@ public class DocumentConfiguration : IEntityTypeConfiguration<Document>
         builder.HasOne(d => d.Case)
             .WithMany(c => c.Documents)
             .HasForeignKey(d => d.CaseId)
-            .OnDelete(DeleteBehavior.Cascade);
+            .OnDelete(DeleteBehavior.SetNull)
+            .IsRequired(false);
 
         builder.HasOne(d => d.UploadedBy)
             .WithMany()

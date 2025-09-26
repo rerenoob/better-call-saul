@@ -35,18 +35,29 @@ public class FileUploadService : IFileUploadService, IStorageService
         _logger = logger;
     }
 
+    public async Task<UploadResult> UploadFileAsync(IFormFile file, Guid userId, string uploadSessionId)
+    {
+        var storageResult = await UploadFileToStorageAsync(file, userId, uploadSessionId);
+        return ConvertToUploadResult(storageResult);
+    }
+
     public async Task<UploadResult> UploadFileAsync(IFormFile file, Guid caseId, Guid userId, string uploadSessionId)
     {
-        var storageResult = await UploadFileToStorageAsync(file, caseId, userId, uploadSessionId);
+        var storageResult = await UploadFileToStorageAsync(file, userId, uploadSessionId);
+        if (storageResult.Success && caseId != Guid.Empty)
+        {
+            // Link document to case after upload
+            await LinkDocumentToCaseAsync(storageResult.FileId, caseId);
+        }
         return ConvertToUploadResult(storageResult);
     }
 
     async Task<StorageResult> IStorageService.UploadFileAsync(IFormFile file, Guid caseId, Guid userId, string uploadSessionId)
     {
-        return await UploadFileToStorageAsync(file, caseId, userId, uploadSessionId);
+        return await UploadFileToStorageAsync(file, userId, uploadSessionId);
     }
 
-    public async Task<StorageResult> UploadFileToStorageAsync(IFormFile file, Guid caseId, Guid userId, string uploadSessionId)
+    public async Task<StorageResult> UploadFileToStorageAsync(IFormFile file, Guid userId, string uploadSessionId)
     {
         var result = new StorageResult { UploadSessionId = uploadSessionId };
 
@@ -83,13 +94,13 @@ public class FileUploadService : IFileUploadService, IStorageService
             // Store file using configured storage service (Local or AWS S3)
             var storagePath = await StoreFileAsync(file, uniqueFileName);
 
-            // Create minimal document record in SQL for relational integrity
+            // Create document record without case assignment
             var document = new Document
             {
                 FileName = uniqueFileName,
                 FileType = Path.GetExtension(file.FileName).ToLowerInvariant(),
                 FileSize = file.Length,
-                CaseId = caseId,
+                CaseId = null, // No case assigned during upload
                 UploadedById = userId,
                 Status = Core.Enums.DocumentStatus.Uploaded
             };
@@ -103,7 +114,7 @@ public class FileUploadService : IFileUploadService, IStorageService
                 // Perform text extraction and store everything in NoSQL (NoSQL-first approach)
                 await ProcessDocumentWithTextExtractionAsync(document, file.FileName, storagePath, userId);
 
-                _logger.LogInformation("Document {DocumentId} processed using NoSQL-first approach", document.Id);
+                _logger.LogInformation("Document {DocumentId} processed using NoSQL-first approach (no case assigned)", document.Id);
             }
             catch (Exception ex)
             {
@@ -129,6 +140,7 @@ public class FileUploadService : IFileUploadService, IStorageService
             result.Metadata ??= new Dictionary<string, string>();
             result.Metadata["FileId"] = document.Id.ToString();
             result.Metadata["TextExtractionComplete"] = "true"; // Flag for AI analysis
+            result.FileId = document.Id; // Set FileId for linking to cases later
 
             _logger.LogInformation("File uploaded and processed successfully: {FileName} (ID: {FileId})", file.FileName, document.Id);
         }
@@ -251,13 +263,14 @@ public class FileUploadService : IFileUploadService, IStorageService
 
             _logger.LogInformation("Starting NoSQL-first text extraction for document: {DocumentId}", document.Id);
 
-            // Get or create case document
-            var caseDocument = await _caseDocumentRepository.GetByIdAsync(document.CaseId);
+            // Create a user-specific document collection for unassigned files
+            var userDocuments = await _caseDocumentRepository.GetByUserIdAsync(userId);
+            var caseDocument = userDocuments.FirstOrDefault(cd => cd.CaseId == Guid.Empty);
             if (caseDocument == null)
             {
                 caseDocument = new CaseDocument
                 {
-                    CaseId = document.CaseId,
+                    CaseId = Guid.Empty, // Special value for unassigned files
                     UserId = userId
                 };
             }
@@ -446,6 +459,103 @@ public class FileUploadService : IFileUploadService, IStorageService
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to create audit log for {Action}", action);
+        }
+    }
+
+    /// <summary>
+    /// Links an uploaded document to a case after upload
+    /// </summary>
+    public async Task<bool> LinkDocumentToCaseAsync(Guid documentId, Guid caseId)
+    {
+        try
+        {
+            // Update SQL document
+            var document = await _context.Documents.FindAsync(documentId);
+            if (document == null)
+            {
+                _logger.LogWarning("Document {DocumentId} not found for case linking", documentId);
+                return false;
+            }
+
+            // Verify case exists
+            var caseExists = await _context.Cases.AnyAsync(c => c.Id == caseId);
+            if (!caseExists)
+            {
+                _logger.LogWarning("Case {CaseId} not found for document linking", caseId);
+                return false;
+            }
+
+            document.CaseId = caseId;
+            document.UpdatedAt = DateTime.UtcNow;
+            await _context.SaveChangesAsync();
+
+            // Move document in NoSQL from unassigned to case-specific collection
+            await MoveDocumentToCase(documentId, caseId, document.UploadedById ?? Guid.Empty);
+
+            _logger.LogInformation("Successfully linked document {DocumentId} to case {CaseId}", documentId, caseId);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error linking document {DocumentId} to case {CaseId}", documentId, caseId);
+            return false;
+        }
+    }
+
+    private async Task MoveDocumentToCase(Guid documentId, Guid caseId, Guid userId)
+    {
+        try
+        {
+            // Get document from unassigned collection
+            var userDocuments = await _caseDocumentRepository.GetByUserIdAsync(userId);
+            var unassignedCollection = userDocuments.FirstOrDefault(cd => cd.CaseId == Guid.Empty);
+            if (unassignedCollection == null)
+            {
+                _logger.LogWarning("No unassigned document collection found for user {UserId}", userId);
+                return;
+            }
+
+            var documentInfo = unassignedCollection.Documents.FirstOrDefault(d => d.Id == documentId);
+            if (documentInfo == null)
+            {
+                _logger.LogWarning("Document {DocumentId} not found in unassigned collection", documentId);
+                return;
+            }
+
+            // Remove from unassigned collection
+            unassignedCollection.Documents.Remove(documentInfo);
+            unassignedCollection.Metadata.TotalDocuments = unassignedCollection.Documents.Count;
+            await _caseDocumentRepository.UpdateAsync(unassignedCollection);
+
+            // Add to case collection
+            var caseDocument = await _caseDocumentRepository.GetByIdAsync(caseId);
+            if (caseDocument == null)
+            {
+                caseDocument = new CaseDocument
+                {
+                    CaseId = caseId,
+                    UserId = userId
+                };
+            }
+
+            caseDocument.Documents.Add(documentInfo);
+            caseDocument.Metadata.TotalDocuments = caseDocument.Documents.Count;
+            caseDocument.UpdatedAt = DateTime.UtcNow;
+
+            if (caseDocument.Id == default)
+            {
+                await _caseDocumentRepository.CreateAsync(caseDocument);
+            }
+            else
+            {
+                await _caseDocumentRepository.UpdateAsync(caseDocument);
+            }
+
+            _logger.LogInformation("Moved document {DocumentId} from unassigned to case {CaseId}", documentId, caseId);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error moving document {DocumentId} to case {CaseId}", documentId, caseId);
         }
     }
 }

@@ -379,48 +379,32 @@ public class CaseController : ControllerBase
 
             _context.Cases.Add(caseItem);
 
-            // If files are provided, associate them with the case
+            // If files are provided, link them to the case
             if (request.FileIds != null && request.FileIds.Count > 0)
             {
+                // Verify all documents exist and belong to the current user
+                var documentIds = request.FileIds.Select(Guid.Parse).ToList();
                 var documents = await _context.Documents
-                    .Where(d => request.FileIds.Contains(d.Id.ToString()))
+                    .Where(d => documentIds.Contains(d.Id) &&
+                               d.UploadedById == userId &&
+                               d.CaseId == null) // Only unassigned documents
                     .ToListAsync();
 
-                var temporaryCaseIds = new HashSet<Guid>();
+                if (documents.Count != request.FileIds.Count)
+                {
+                    var foundIds = documents.Select(d => d.Id.ToString()).ToList();
+                    var missingIds = request.FileIds.Except(foundIds).ToList();
+                    _logger.LogWarning("Some documents not found or already assigned: {MissingIds}", string.Join(", ", missingIds));
+                }
+
+                // Link documents to the case
                 foreach (var document in documents)
                 {
-                    // Track the original case ID if it was temporary
-                    if (document.CaseId != Guid.Empty)
-                    {
-                        var originalCase = await _context.Cases
-                            .Where(c => c.Id == document.CaseId && c.Title == "TEMPORARY_UPLOAD_CASE")
-                            .FirstOrDefaultAsync();
-                        if (originalCase != null)
-                        {
-                            temporaryCaseIds.Add(originalCase.Id);
-                        }
-                    }
-
                     document.CaseId = caseItem.Id;
                     document.UpdatedAt = DateTime.UtcNow;
                 }
 
-                // Clean up empty temporary cases
-                foreach (var tempCaseId in temporaryCaseIds)
-                {
-                    var hasRemainingDocuments = await _context.Documents
-                        .AnyAsync(d => d.CaseId == tempCaseId && !d.IsDeleted);
-
-                    if (!hasRemainingDocuments)
-                    {
-                        var tempCase = await _context.Cases.FindAsync(tempCaseId);
-                        if (tempCase != null)
-                        {
-                            _context.Cases.Remove(tempCase);
-                            _logger.LogInformation("Cleaned up empty temporary case {TempCaseId}", tempCaseId);
-                        }
-                    }
-                }
+                _logger.LogInformation("Linked {Count} documents to case {CaseId}", documents.Count, caseItem.Id);
             }
 
             await _context.SaveChangesAsync();

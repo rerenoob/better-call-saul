@@ -72,11 +72,29 @@ public class FileUploadServiceTests : IDisposable
         _textExtractionServiceMock.Setup(s => s.ExtractTextAsync(It.IsAny<string>(), It.IsAny<string>()))
             .ReturnsAsync(extractionResult);
 
-        // Mock case document repository to return null (case doesn't exist yet)
-        _caseDocumentRepositoryMock.Setup(r => r.GetByIdAsync(It.IsAny<Guid>()))
-            .ReturnsAsync((BetterCallSaul.Core.Models.NoSQL.CaseDocument?)null);
+        // Mock case document repository for user document collection
+        _caseDocumentRepositoryMock.Setup(r => r.GetByUserIdAsync(userId))
+            .ReturnsAsync(new List<BetterCallSaul.Core.Models.NoSQL.CaseDocument>());
         _caseDocumentRepositoryMock.Setup(r => r.CreateAsync(It.IsAny<BetterCallSaul.Core.Models.NoSQL.CaseDocument>()))
             .ReturnsAsync((BetterCallSaul.Core.Models.NoSQL.CaseDocument document) => document);
+        _caseDocumentRepositoryMock.Setup(r => r.UpdateAsync(It.IsAny<BetterCallSaul.Core.Models.NoSQL.CaseDocument>()))
+            .ReturnsAsync((BetterCallSaul.Core.Models.NoSQL.CaseDocument document) => document);
+        _caseDocumentRepositoryMock.Setup(r => r.GetByIdAsync(It.IsAny<Guid>()))
+            .ReturnsAsync((BetterCallSaul.Core.Models.NoSQL.CaseDocument?)null);
+
+        // Add a case to the database for linking
+        var testCase = new Case
+        {
+            Id = caseId,
+            Title = "Test Case",
+            UserId = userId,
+            CaseNumber = "TEST-001",
+            Status = BetterCallSaul.Core.Enums.CaseStatus.New,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
+        };
+        _context.Cases.Add(testCase);
+        await _context.SaveChangesAsync();
 
         // Act
         var result = await _fileUploadService.UploadFileAsync(fileMock.Object, caseId, userId, uploadSessionId);
@@ -91,7 +109,7 @@ public class FileUploadServiceTests : IDisposable
         // Verify the document was saved to the database
         var savedDocument = await _context.Documents.FirstOrDefaultAsync(d => d.Id == result.FileId);
         Assert.NotNull(savedDocument);
-        Assert.Equal(caseId, savedDocument.CaseId);
+        Assert.Equal(caseId, savedDocument.CaseId); // In new architecture, this should be set via linking
         Assert.Equal(userId, savedDocument.UploadedById);
         Assert.Equal(1024, savedDocument.FileSize);
     }

@@ -71,11 +71,7 @@ public class FileUploadController : ControllerBase
                 });
             }
 
-            // Handle temporary case uploads - create a temporary case if needed
-            if (caseId == Guid.Empty)
-            {
-                caseId = await GetOrCreateTemporaryCaseAsync(userId);
-            }
+            // File upload is now decoupled from case creation
 
             // Validate file
             var validationResult = FileUploadValidator.ValidateFile(file);
@@ -89,18 +85,27 @@ public class FileUploadController : ControllerBase
                 });
             }
 
-            // Upload file
-            var result = await _fileUploadService.UploadFileAsync(file, caseId, userId, uploadSessionId);
+            // Upload file without case assignment
+            UploadResult result;
+            if (caseId != Guid.Empty)
+            {
+                // Upload and immediately link to case
+                result = await _fileUploadService.UploadFileAsync(file, caseId, userId, uploadSessionId);
+
+                if (result.Success)
+                {
+                    // Trigger automatic case analysis for assigned documents
+                    _ = Task.Run(async () => await TriggerCaseAnalysisAsync(caseId, result.FileId, file.FileName));
+                }
+            }
+            else
+            {
+                // Upload without case assignment
+                result = await _fileUploadService.UploadFileAsync(file, userId, uploadSessionId);
+            }
 
             if (result.Success)
             {
-                // Trigger automatic case analysis if we have a document ID and it's not a temporary case
-                // Analysis will check if text is available and proceed accordingly
-                if (result.FileId != Guid.Empty && !await IsTemporaryCaseAsync(caseId))
-                {
-                    _ = Task.Run(async () => await TriggerCaseAnalysisAsync(caseId, result.FileId, file.FileName));
-                }
-
                 return Ok(result);
             }
             else
@@ -203,46 +208,6 @@ public class FileUploadController : ControllerBase
         return Guid.Empty;
     }
 
-    private async Task<Guid> GetOrCreateTemporaryCaseAsync(Guid userId)
-    {
-        // Try to find existing temporary case for this user created in the last hour
-        var temporaryCase = await _context.Cases
-            .Where(c => c.UserId == userId &&
-                       c.Title == "TEMPORARY_UPLOAD_CASE" &&
-                       c.CreatedAt > DateTime.UtcNow.AddHours(-1))
-            .FirstOrDefaultAsync();
-
-        if (temporaryCase != null)
-        {
-            return temporaryCase.Id;
-        }
-
-        // Create new temporary case
-        var newTempCase = new Case
-        {
-            Id = Guid.NewGuid(),
-            Title = "TEMPORARY_UPLOAD_CASE",
-            Description = "Temporary case for file uploads before case creation",
-            UserId = userId,
-            CaseNumber = $"TEMP-{DateTime.UtcNow:yyyyMMdd}-{Guid.NewGuid().ToString()[..8].ToUpper()}",
-            Status = CaseStatus.Draft,
-            CreatedAt = DateTime.UtcNow,
-            UpdatedAt = DateTime.UtcNow
-        };
-
-        _context.Cases.Add(newTempCase);
-        await _context.SaveChangesAsync();
-
-        _logger.LogInformation("Created temporary case {CaseId} for user {UserId}", newTempCase.Id, userId);
-
-        return newTempCase.Id;
-    }
-
-    private async Task<bool> IsTemporaryCaseAsync(Guid caseId)
-    {
-        var caseItem = await _context.Cases.FirstOrDefaultAsync(c => c.Id == caseId);
-        return caseItem?.Title == "TEMPORARY_UPLOAD_CASE";
-    }
 
     private async Task TriggerCaseAnalysisAsync(Guid caseId, Guid documentId, string fileName)
     {

@@ -24,12 +24,12 @@ public class Document : IAuditableEntity
     public bool IsProcessed { get; set; } = false;
 
     // Foreign keys
-    public Guid CaseId { get; set; }
+    public Guid? CaseId { get; set; }
     public Guid? UploadedById { get; set; }
 
     // Navigation properties
     [JsonIgnore]
-    public virtual Case Case { get; set; } = null!;
+    public virtual Case? Case { get; set; }
     [JsonIgnore]
     public virtual User? UploadedBy { get; set; }
 
