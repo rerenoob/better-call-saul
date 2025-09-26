@@ -82,6 +82,18 @@ public class FileUploadServiceTests : IDisposable
         _caseDocumentRepositoryMock.Setup(r => r.GetByIdAsync(It.IsAny<Guid>()))
             .ReturnsAsync((BetterCallSaul.Core.Models.NoSQL.CaseDocument?)null);
 
+        // Add a user to the database for validation
+        var testUser = new BetterCallSaul.Core.Models.Entities.User
+        {
+            Id = userId,
+            Email = "test@example.com",
+            FirstName = "Test",
+            LastName = "User",
+            IsActive = true,
+            CreatedAt = DateTime.UtcNow
+        };
+        _context.Users.Add(testUser);
+
         // Add a case to the database for linking
         var testCase = new Case
         {
