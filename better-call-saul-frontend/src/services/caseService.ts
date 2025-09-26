@@ -1,6 +1,12 @@
 import { apiClient } from './apiClient';
 import { Case, CaseStatistics, CaseFilters } from '../types/case';
 
+export interface CaseWithDocuments {
+  case: Case;
+  documents: Array<{ id: string; name: string }>;
+  analyses: Array<{ id: string; status: string }>;
+}
+
 export const caseService = {
   getCases: async (filters?: CaseFilters): Promise<Case[]> => {
     const params = new URLSearchParams();
@@ -12,8 +18,8 @@ export const caseService = {
     return response.data;
   },
 
-  getCase: async (id: string): Promise<Case> => {
-    const response = await apiClient.get<Case>(`/api/case/${id}`);
+  getCase: async (id: string): Promise<CaseWithDocuments> => {
+    const response = await apiClient.get<CaseWithDocuments>(`/api/case/${id}`);
     return response.data;
   },
 

@@ -4,12 +4,6 @@ import { Case } from '../types/case';
 import { caseService } from '../services/caseService';
 import { useAuth } from '../hooks/useAuth';
 
-interface CaseWithDocuments {
-  case: Case;
-  documents: Array<{ id: string; name: string }>;
-  analyses: Array<{ id: string; status: string }>;
-}
-
 interface ChatMessage {
   id: string;
   message: string;
@@ -42,7 +36,7 @@ export const CaseDetail: React.FC = () => {
     try {
       setLoading(true);
       setError(null);
-      const response = await caseService.getCase(caseId) as unknown as CaseWithDocuments;
+      const response = await caseService.getCase(caseId);
       setCaseData(response.case);
       setDocuments(response.documents || []);
 

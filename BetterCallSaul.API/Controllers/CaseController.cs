@@ -397,12 +397,15 @@ public class CaseController : ControllerBase
                     _logger.LogWarning("Some documents not found or already assigned: {MissingIds}", string.Join(", ", missingIds));
                 }
 
-                // Link documents to the case
+                // Link documents to the case in SQL database
                 foreach (var document in documents)
                 {
                     document.CaseId = caseItem.Id;
                     document.UpdatedAt = DateTime.UtcNow;
                 }
+
+                // Update NoSQL documents to link them to the case
+                await UpdateNoSQLDocumentsForCaseAsync(caseItem.Id, documentIds, userId);
 
                 _logger.LogInformation("Linked {Count} documents to case {CaseId}", documents.Count, caseItem.Id);
             }
@@ -576,6 +579,80 @@ public class CaseController : ControllerBase
         {
             _logger.LogError(ex, "Error updating case {CaseId} with analysis results. Exception type: {ExceptionType}", 
                 caseId, ex.GetType().Name);
+        }
+    }
+
+    private async Task UpdateNoSQLDocumentsForCaseAsync(Guid caseId, List<Guid> documentIds, Guid userId)
+    {
+        try
+        {
+            _logger.LogInformation("Updating NoSQL documents for case {CaseId} with {DocumentCount} documents", caseId, documentIds.Count);
+
+            // Get all user's case documents from NoSQL
+            var userCaseDocuments = await _caseDocumentRepository.GetByUserIdAsync(userId);
+            
+            // Find the case document with empty case ID (where unassigned documents are stored)
+            var unassignedCaseDocument = userCaseDocuments.FirstOrDefault(cd => cd.CaseId == Guid.Empty);
+            
+            if (unassignedCaseDocument != null)
+            {
+                // Find documents that need to be moved to the new case
+                var documentsToMove = unassignedCaseDocument.Documents
+                    .Where(d => documentIds.Contains(d.Id))
+                    .ToList();
+
+                if (documentsToMove.Any())
+                {
+                    // Remove documents from unassigned case
+                    unassignedCaseDocument.Documents = unassignedCaseDocument.Documents
+                        .Where(d => !documentIds.Contains(d.Id))
+                        .ToList();
+
+                    // Create or get the target case document
+                    var targetCaseDocument = userCaseDocuments.FirstOrDefault(cd => cd.CaseId == caseId);
+                    if (targetCaseDocument == null)
+                    {
+                        targetCaseDocument = new BetterCallSaul.Core.Models.NoSQL.CaseDocument
+                        {
+                            CaseId = caseId,
+                            UserId = userId,
+                            Documents = new List<BetterCallSaul.Core.Models.NoSQL.DocumentInfo>(),
+                            Analyses = new List<BetterCallSaul.Core.Models.NoSQL.CaseAnalysisResult>()
+                        };
+                        await _caseDocumentRepository.CreateAsync(targetCaseDocument);
+                    }
+
+                    // Add documents to target case
+                    targetCaseDocument.Documents.AddRange(documentsToMove);
+                    await _caseDocumentRepository.UpdateAsync(targetCaseDocument);
+
+                    // Update unassigned case document if it still has documents
+                    if (unassignedCaseDocument.Documents.Any())
+                    {
+                        await _caseDocumentRepository.UpdateAsync(unassignedCaseDocument);
+                    }
+                    else
+                    {
+                        // Delete empty unassigned case document
+                        await _caseDocumentRepository.DeleteAsync(Guid.Empty);
+                    }
+
+                    _logger.LogInformation("Successfully moved {Count} documents to case {CaseId} in NoSQL", documentsToMove.Count, caseId);
+                }
+                else
+                {
+                    _logger.LogWarning("No documents found in NoSQL to move for case {CaseId}", caseId);
+                }
+            }
+            else
+            {
+                _logger.LogWarning("No unassigned case document found in NoSQL for user {UserId}", userId);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error updating NoSQL documents for case {CaseId}", caseId);
+            // Don't throw - we want case creation to succeed even if NoSQL update fails
         }
     }
 

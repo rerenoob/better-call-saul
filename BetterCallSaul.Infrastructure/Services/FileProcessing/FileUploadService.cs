@@ -18,6 +18,7 @@ public class FileUploadService : IFileUploadService, IStorageService
     private readonly ICaseDocumentRepository _caseDocumentRepository;
     private readonly IFileValidationService _fileValidationService;
     private readonly ITextExtractionService _textExtractionService;
+    private readonly IStorageService _storageService;
     private readonly ILogger<FileUploadService> _logger;
     private const long MaxUserUploadSizePerHour = 500 * 1024 * 1024; // 500MB per hour
 
@@ -26,12 +27,14 @@ public class FileUploadService : IFileUploadService, IStorageService
         ICaseDocumentRepository caseDocumentRepository,
         IFileValidationService fileValidationService,
         ITextExtractionService textExtractionService,
+        IStorageService storageService,
         ILogger<FileUploadService> logger)
     {
         _context = context;
         _caseDocumentRepository = caseDocumentRepository;
         _fileValidationService = fileValidationService;
         _textExtractionService = textExtractionService;
+        _storageService = storageService;
         _logger = logger;
     }
 
@@ -97,7 +100,7 @@ public class FileUploadService : IFileUploadService, IStorageService
             var uniqueFileName = await GenerateUniqueFileNameAsync(file.FileName);
 
             // Store file using configured storage service (Local or AWS S3)
-            var storagePath = await StoreFileAsync(file, uniqueFileName);
+            var storagePath = await StoreFileToStorageAsync(file, uniqueFileName, caseId ?? Guid.Empty, userId);
 
             // Create document record with case assignment if provided
             var document = new Document
@@ -228,23 +231,39 @@ public class FileUploadService : IFileUploadService, IStorageService
 
     public async Task<string> StoreFileAsync(IFormFile file, string fileName)
     {
-        // For development: store in local temp directory
-        // In production, this uses AWS S3 integration
+        // Fallback method for local storage (development)
         var uploadsDirectory = Path.Combine(Directory.GetCurrentDirectory(), "uploads", "temp");
-        
+
         if (!Directory.Exists(uploadsDirectory))
         {
             Directory.CreateDirectory(uploadsDirectory);
         }
 
         var filePath = Path.Combine(uploadsDirectory, fileName);
-        
+
         using (var stream = new FileStream(filePath, FileMode.Create))
         {
             await file.CopyToAsync(stream);
         }
 
         return filePath;
+    }
+
+    private async Task<string> StoreFileToStorageAsync(IFormFile file, string fileName, Guid caseId, Guid userId)
+    {
+        // Delegate to the configured storage service (Local in dev, S3 in production)
+        if (_storageService != this) // Avoid circular dependency
+        {
+            var storageResult = await _storageService.UploadFileAsync(file, caseId, userId, "");
+            if (storageResult.Success)
+            {
+                return storageResult.StoragePath ?? fileName;
+            }
+            throw new InvalidOperationException($"Storage service failed: {storageResult.Message}");
+        }
+
+        // Fallback to local storage method
+        return await StoreFileAsync(file, fileName);
     }
 
     public Task<bool> DeleteFileAsync(string filePath)

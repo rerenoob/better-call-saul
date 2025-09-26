@@ -24,11 +24,17 @@ public class StorageServiceTests
         var fileValidationServiceMock = new Mock<BetterCallSaul.Infrastructure.Services.FileProcessing.IFileValidationService>();
         var textExtractionServiceMock = new Mock<BetterCallSaul.Infrastructure.Services.FileProcessing.ITextExtractionService>();
 
+        // Mock storage service to avoid circular dependency in tests
+        var storageServiceMock = new Mock<IStorageService>();
+        storageServiceMock.Setup(s => s.UploadFileAsync(It.IsAny<IFormFile>(), It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<string>()))
+            .ReturnsAsync(new StorageResult { Success = true, StoragePath = "test/path" });
+
         _fileUploadService = new FileUploadService(
             contextMock.Object,
             caseDocumentRepositoryMock.Object,
             fileValidationServiceMock.Object,
             textExtractionServiceMock.Object,
+            storageServiceMock.Object,
             _fileUploadLoggerMock.Object);
     }
 

@@ -1,5 +1,7 @@
 using BetterCallSaul.Core.Models.Entities;
 using BetterCallSaul.Core.Interfaces.Repositories;
+using BetterCallSaul.Core.Interfaces.Services;
+using BetterCallSaul.Core.Models.ServiceResponses;
 using BetterCallSaul.Infrastructure.Services.FileProcessing;
 using BetterCallSaul.Infrastructure.Data;
 using Microsoft.AspNetCore.Http;
@@ -38,11 +40,17 @@ public class FileUploadServiceTests : IDisposable
         _textExtractionServiceMock = new Mock<ITextExtractionService>();
         _loggerMock = new Mock<ILogger<FileUploadService>>();
 
+        // Mock storage service to avoid circular dependency in tests
+        var storageServiceMock = new Mock<IStorageService>();
+        storageServiceMock.Setup(s => s.UploadFileAsync(It.IsAny<IFormFile>(), It.IsAny<Guid>(), It.IsAny<Guid>(), It.IsAny<string>()))
+            .ReturnsAsync(new StorageResult { Success = true, StoragePath = "test/path" });
+
         _fileUploadService = new FileUploadService(
             _context,
             _caseDocumentRepositoryMock.Object,
             _fileValidationServiceMock.Object,
             _textExtractionServiceMock.Object,
+            storageServiceMock.Object,
             _loggerMock.Object);
     }
 
