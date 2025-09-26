@@ -1,0 +1,122 @@
+name: Deploy Static Sites to AWS
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'better-call-saul-frontend/**'
+      - 'Marketing/**'
+      - '.github/workflows/deploy-static-sites.yml'
+  pull_request:
+    types: [opened, synchronize, reopened, closed]
+    branches: [ main ]
+    paths:
+      - 'better-call-saul-frontend/**'
+      - 'Marketing/**'
+  workflow_dispatch:
+
+env:
+  AWS_REGION: us-east-1
+  FRONTEND_S3_BUCKET: better-call-saul-frontend-production
+  MARKETING_S3_BUCKET: better-call-saul-marketing
+  FRONTEND_CLOUDFRONT_ID: E31UK0DRGK6P2Y
+  MARKETING_CLOUDFRONT_ID: ESFK92TFOJSWA
+
+jobs:
+  deploy_frontend:
+    if: contains(github.event.head_commit.message, 'frontend') || contains(github.event.head_commit.message, 'better-call-saul-frontend') || contains(github.event.head_commit.modified, 'better-call-saul-frontend') || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    name: Deploy Frontend
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+          lfs: false
+          
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: better-call-saul-frontend/package-lock.json
+
+      - name: Install dependencies
+        run: |
+          cd better-call-saul-frontend
+          npm ci
+
+      - name: Run frontend type check
+        run: |
+          cd better-call-saul-frontend
+          npm run type-check
+
+      - name: Build application
+        run: |
+          cd better-call-saul-frontend
+          npm run build
+        env:
+          VITE_API_BASE_URL: https://d2by2olohivk43.cloudfront.net
+          VITE_BUILD_TIME: ${{ github.run_id }}
+
+      - name: Deploy to S3
+        run: |
+          aws s3 sync better-call-saul-frontend/dist/ s3://${{ env.FRONTEND_S3_BUCKET }} --delete
+
+      - name: Invalidate CloudFront cache
+        run: |
+          aws cloudfront create-invalidation --distribution-id ${{ env.FRONTEND_CLOUDFRONT_ID }} --paths "/*"
+
+  deploy_marketing:
+    if: contains(github.event.head_commit.message, 'marketing') || contains(github.event.head_commit.message, 'Marketing') || contains(github.event.head_commit.modified, 'Marketing') || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    name: Deploy Marketing Site
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+          lfs: false
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Deploy to S3
+        run: |
+          aws s3 sync Marketing/ s3://${{ env.MARKETING_S3_BUCKET }} --delete
+
+      - name: Invalidate CloudFront cache
+        run: |
+          if [ -n "${{ env.MARKETING_CLOUDFRONT_ID }}" ]; then
+            aws cloudfront create-invalidation --distribution-id ${{ env.MARKETING_CLOUDFRONT_ID }} --paths "/*"
+          else
+            echo "CloudFront distribution ID not set - skipping cache invalidation"
+          fi
+
+  close_pull_request:
+    if: github.event_name == 'pull_request' && github.event.action == 'closed'
+    runs-on: ubuntu-latest
+    name: Close Pull Request Job
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Delete preview deployments
+        run: |
+          # Delete frontend preview deployment
+          aws s3 rm s3://${{ env.FRONTEND_S3_BUCKET }}/previews/${{ github.event.pull_request.number }} --recursive || echo "No frontend preview to delete"
+          # Delete marketing preview deployment  
+          aws s3 rm s3://${{ env.MARKETING_S3_BUCKET }}/previews/${{ github.event.pull_request.number }} --recursive || echo "No marketing preview to delete"

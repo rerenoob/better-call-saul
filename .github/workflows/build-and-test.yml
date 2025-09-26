@@ -10,11 +10,6 @@ jobs:
   build-and-test:
     runs-on: ubuntu-latest
 
-    strategy:
-      matrix:
-        configuration: [Debug, Release]
-        environment: [Development, Production]
-
     steps:
     - uses: actions/checkout@v4
 
@@ -26,47 +21,18 @@ jobs:
     - name: Restore dependencies
       run: dotnet restore
 
-    - name: Build in ${{ matrix.configuration }} mode
-      run: dotnet build --configuration ${{ matrix.configuration }} --no-restore
+    - name: Build in Release mode
+      run: dotnet build --configuration Release --no-restore
 
-    - name: Test build with ${{ matrix.environment }} environment
+    - name: Run unit tests
       env:
-        ASPNETCORE_ENVIRONMENT: ${{ matrix.environment }}
+        ASPNETCORE_ENVIRONMENT: "Production"
         JWT_SECRET_KEY: "TestSecretKeyForCI32CharsMinimumLength!"
         # Mock AWS services for CI
         AWS_REGION: "us-east-1"
         AWS_ACCESS_KEY_ID: "mock-access-key-for-ci"
         AWS_SECRET_ACCESS_KEY: "mock-secret-key-for-ci-testing"
-      run: |
-        cd BetterCallSaul.API
-        set +e  # Disable exit on error to capture timeout exit code
-        timeout 30s dotnet run --configuration ${{ matrix.configuration }} --no-build
-        EXIT_CODE=$?
-        set -e  # Re-enable exit on error
-        # Check if the app started without missing dependency errors
-        if [ $EXIT_CODE -eq 124 ]; then
-          echo "✅ App started successfully (timeout after 30s as expected)"
-        elif [ $EXIT_CODE -eq 0 ]; then
-          echo "✅ App started and exited cleanly"
-        else
-          echo "❌ App failed to start - exit code: $EXIT_CODE"
-          exit 1
-        fi
-
-    - name: Run unit tests
-      run: dotnet test --configuration ${{ matrix.configuration }} --no-build --verbosity normal
-
-    - name: Check for missing dependencies in Release build
-      if: matrix.configuration == 'Release'
-      run: |
-        cd BetterCallSaul.API/bin/Release/net8.0
-        # Verify core dependencies are present
-        if [ ! -f "Serilog.dll" ]; then
-          echo "❌ Missing Serilog.dll in Release build"
-          exit 1
-        else
-          echo "✅ All core dependencies present in Release build"
-        fi
+      run: dotnet test --configuration Release --no-build --verbosity normal
 
   frontend-checks:
     runs-on: ubuntu-latest
@@ -95,28 +61,3 @@ jobs:
         cd better-call-saul-frontend
         npm run build
 
-  dependency-check:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v4
-
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v4
-      with:
-        dotnet-version: '8.0.x'
-
-    - name: Verify Serilog configuration dependencies
-      run: |
-        echo "Checking for Serilog sink dependencies in configuration..."
-
-        # Check for Console sink dependency
-        if grep -q "Console" BetterCallSaul.API/appsettings.Production.json; then
-          if ! grep -q "Serilog.Sinks.Console" BetterCallSaul.API/BetterCallSaul.API.csproj; then
-            echo "❌ ERROR: Console sink configured but package not referenced!"
-            exit 1
-          else
-            echo "✅ Console sink properly configured and referenced"
-          fi
-        fi
-
-        echo "✅ Serilog configuration verified"

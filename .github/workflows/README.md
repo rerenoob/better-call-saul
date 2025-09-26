@@ -1,35 +1,56 @@
 # GitHub Actions Workflows
 
-This directory contains automated deployment workflows for the Better Call Saul AI Lawyer application.
+This directory contains automated CI/CD workflows for the Better Call Saul AI Lawyer application.
 
 ## Workflows
 
-### 🔧 Backend API Deployment (`deploy-backend.yml`)
-Deploys the .NET Web API to Azure App Service.
+### 🔧 Build and Test (`build-and-test.yml`)
+Validates code quality for both backend and frontend.
 
 **Triggers:**
-- Push to `main` branch (backend files changed)
-- Manual dispatch
+- Push to `main` or `develop` branches
+- Pull requests to `main` branch
 
-**Requirements:**
-- `AZURE_CREDENTIALS` secret configured
+**Purpose:**
+- Backend .NET build and unit tests
+- Frontend TypeScript type checking and build validation
 
-### 🎨 Frontend Deployment (`deploy-frontend.yml`)
-Deploys the React frontend to Azure Static Web Apps.
+### 🚀 Unified Deployment (`unified-deployment.yml`)
+Deploys all components to AWS with intelligent path-based triggers.
 
 **Triggers:**
-- Push to `main` branch (frontend files changed)
-- Pull requests
-- Manual dispatch
+- Push to `main` branch (detects which components changed)
+- Manual dispatch with component selection
+
+**Components:**
+- Backend API to AWS ECS Fargate
+- Frontend to AWS S3 + CloudFront
+- Marketing site to AWS S3
 
 **Requirements:**
-- `AZURE_STATIC_WEB_APPS_API_TOKEN_ORANGE_ISLAND_0A659D210` secret configured
+- `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` secrets configured
+
+### 🎨 Static Sites Deployment (`deploy-static-sites.yml`)
+Deploys frontend and marketing sites with pull request previews.
+
+**Triggers:**
+- Push to `main` branch (frontend/marketing files changed)
+- Pull requests (preview deployments)
+- Manual dispatch
+
+**Purpose:**
+- Frontend to AWS S3 + CloudFront
+- Marketing site to AWS S3
+- Preview deployments for PRs
+
+**Requirements:**
+- `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` secrets configured
 
 ## Quick Setup
 
-1. **Add Secrets to GitHub Repository:**
+1. **Add AWS Secrets to GitHub Repository:**
    - Go to Settings → Secrets and variables → Actions
-   - Add the two required secrets (see DEPLOYMENT.md for values)
+   - Add `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`
 
 2. **Push to main branch:**
    ```bash
@@ -50,4 +71,4 @@ You can manually trigger deployments:
 3. Click "Run workflow"
 4. Choose the branch and click "Run workflow"
 
-For detailed setup instructions, see [DEPLOYMENT.md](../../DEPLOYMENT.md).
+For detailed setup instructions, see [AWS_CONFIGURATION.md](../../AWS_CONFIGURATION.md).

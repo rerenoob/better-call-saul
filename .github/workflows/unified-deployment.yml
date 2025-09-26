@@ -1,0 +1,234 @@
+name: Unified Deployment
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'BetterCallSaul.API/**'
+      - 'BetterCallSaul.Core/**'
+      - 'BetterCallSaul.Infrastructure/**'
+      - 'better-call-saul-frontend/**'
+      - 'Marketing/**'
+      - '.github/workflows/unified-deployment.yml'
+  workflow_dispatch:
+    inputs:
+      deploy_backend:
+        description: 'Deploy backend API'
+        required: false
+        default: false
+        type: boolean
+      deploy_frontend:
+        description: 'Deploy frontend application'
+        required: false
+        default: false
+        type: boolean
+      deploy_marketing:
+        description: 'Deploy marketing site'
+        required: false
+        default: false
+        type: boolean
+
+env:
+  AWS_REGION: us-east-1
+  ECS_CLUSTER_NAME: bettercallsaul-cluster-production
+  ECS_SERVICE_NAME: bettercallsaul-api
+  ECR_REPOSITORY: bettercallsaul-api
+  CONTAINER_NAME: bettercallsaul-api
+  FRONTEND_S3_BUCKET: better-call-saul-frontend-production
+  MARKETING_S3_BUCKET: better-call-saul-marketing
+  FRONTEND_CLOUDFRONT_ID: E31UK0DRGK6P2Y
+  MARKETING_CLOUDFRONT_ID: ESFK92TFOJSWA
+
+jobs:
+  determine_deployments:
+    runs-on: ubuntu-latest
+    outputs:
+      deploy_backend: ${{ steps.check_files.outputs.deploy_backend || github.event.inputs.deploy_backend }}
+      deploy_frontend: ${{ steps.check_files.outputs.deploy_frontend || github.event.inputs.deploy_frontend }}
+      deploy_marketing: ${{ steps.check_files.outputs.deploy_marketing || github.event.inputs.deploy_marketing }}
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Check modified files
+        id: check_files
+        run: |
+          echo "Checking modified files for deployment triggers..."
+          
+          # Check for backend changes
+          if [[ "${{ github.event.head_commit.message }}" =~ (backend|BetterCallSaul\.API|BetterCallSaul\.Core|BetterCallSaul\.Infrastructure) ]] || 
+             [[ "${{ contains(github.event.head_commit.modified, 'BetterCallSaul.API') || contains(github.event.head_commit.modified, 'BetterCallSaul.Core') || contains(github.event.head_commit.modified, 'BetterCallSaul.Infrastructure') }}" == 'true' ]]; then
+            echo "deploy_backend=true" >> $GITHUB_OUTPUT
+          else
+            echo "deploy_backend=false" >> $GITHUB_OUTPUT
+          fi
+          
+          # Check for frontend changes
+          if [[ "${{ github.event.head_commit.message }}" =~ (frontend|better-call-saul-frontend) ]] || 
+             [[ "${{ contains(github.event.head_commit.modified, 'better-call-saul-frontend') }}" == 'true' ]]; then
+            echo "deploy_frontend=true" >> $GITHUB_OUTPUT
+          else
+            echo "deploy_frontend=false" >> $GITHUB_OUTPUT
+          fi
+          
+          # Check for marketing changes
+          if [[ "${{ github.event.head_commit.message }}" =~ (marketing|Marketing) ]] || 
+             [[ "${{ contains(github.event.head_commit.modified, 'Marketing') }}" == 'true' ]]; then
+            echo "deploy_marketing=true" >> $GITHUB_OUTPUT
+          else
+            echo "deploy_marketing=false" >> $GITHUB_OUTPUT
+          fi
+
+  deploy_backend:
+    needs: determine_deployments
+    if: needs.determine_deployments.outputs.deploy_backend == 'true'
+    runs-on: ubuntu-latest
+    name: Deploy Backend API
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup .NET Core
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Restore dependencies
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build --configuration Release --no-restore
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build Docker image
+        env:
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker build -t ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:$IMAGE_TAG .
+          docker tag ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:$IMAGE_TAG ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:latest
+
+      - name: Push Docker image to ECR
+        env:
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker push ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:$IMAGE_TAG
+          docker push ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:latest || echo "Latest tag already exists, using SHA tag"
+
+      - name: Download task definition
+        run: |
+          aws ecs describe-task-definition --task-definition ${{ env.ECS_SERVICE_NAME }} --query taskDefinition > task-definition.json
+
+      - name: Fill in the new image ID in the Amazon ECS task definition
+        id: task-def
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: task-definition.json
+          container-name: ${{ env.CONTAINER_NAME }}
+          image: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}
+
+      - name: Deploy Amazon ECS task definition
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+        with:
+          task-definition: ${{ steps.task-def.outputs.task-definition }}
+          service: ${{ env.ECS_SERVICE_NAME }}
+          cluster: ${{ env.ECS_CLUSTER_NAME }}
+          wait-for-service-stability: true
+
+  deploy_frontend:
+    needs: determine_deployments
+    if: needs.determine_deployments.outputs.deploy_frontend == 'true'
+    runs-on: ubuntu-latest
+    name: Deploy Frontend
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+          lfs: false
+          
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: better-call-saul-frontend/package-lock.json
+
+      - name: Install dependencies
+        run: |
+          cd better-call-saul-frontend
+          npm ci
+
+      - name: Build application
+        run: |
+          cd better-call-saul-frontend
+          npm run build
+        env:
+          VITE_API_BASE_URL: https://d2by2olohivk43.cloudfront.net
+          VITE_BUILD_TIME: ${{ github.run_id }}
+
+      - name: Deploy to S3
+        run: |
+          aws s3 sync better-call-saul-frontend/dist/ s3://${{ env.FRONTEND_S3_BUCKET }} --delete
+
+      - name: Invalidate CloudFront cache
+        run: |
+          aws cloudfront create-invalidation --distribution-id ${{ env.FRONTEND_CLOUDFRONT_ID }} --paths "/*"
+
+  deploy_marketing:
+    needs: determine_deployments
+    if: needs.determine_deployments.outputs.deploy_marketing == 'true'
+    runs-on: ubuntu-latest
+    name: Deploy Marketing Site
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+          lfs: false
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Deploy to S3
+        run: |
+          aws s3 sync Marketing/ s3://${{ env.MARKETING_S3_BUCKET }} --delete
+
+      - name: Invalidate CloudFront cache
+        run: |
+          if [ -n "${{ env.MARKETING_CLOUDFRONT_ID }}" ]; then
+            aws cloudfront create-invalidation --distribution-id ${{ env.MARKETING_CLOUDFRONT_ID }} --paths "/*"
+          else
+            echo "CloudFront distribution ID not set - skipping cache invalidation"
+          fi
+
+  deployment_summary:
+    needs: [deploy_backend, deploy_frontend, deploy_marketing]
+    runs-on: ubuntu-latest
+    name: Deployment Summary
+    if: always()
+    steps:
+      - name: Print deployment summary
+        run: |
+          echo "=== Deployment Summary ==="
+          echo "Backend: ${{ needs.deploy_backend.result || 'skipped' }}"
+          echo "Frontend: ${{ needs.deploy_frontend.result || 'skipped' }}"
+          echo "Marketing: ${{ needs.deploy_marketing.result || 'skipped' }}"
+          echo "========================="
