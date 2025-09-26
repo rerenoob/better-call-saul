@@ -7,6 +7,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace BetterCallSaul.Infrastructure.Services.AI;
 
@@ -534,19 +535,28 @@ public class AWSBedrockService : IAIService
 
     private class Claude3Response
     {
+        public string? Id { get; set; }
+        public string? Type { get; set; }
+        public string? Role { get; set; }
+        public string? Model { get; set; }
         public Claude3Content[]? Content { get; set; }
+        public string? StopReason { get; set; }
+        public string? StopSequence { get; set; }
         public Claude3Usage? Usage { get; set; }
     }
 
     private class Claude3Content
     {
-        public string? Text { get; set; }
         public string? Type { get; set; }
+        public string? Text { get; set; }
     }
 
     private class Claude3Usage
     {
+        [JsonPropertyName("input_tokens")]
         public int InputTokens { get; set; }
+
+        [JsonPropertyName("output_tokens")]
         public int OutputTokens { get; set; }
     }
 }
