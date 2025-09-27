@@ -230,25 +230,56 @@ public class AWSTextractService : ITextExtractionService
         try
         {
             var (bucketName, s3Key) = ParseS3Path(s3Path);
+            var extension = Path.GetExtension(fileName).ToLowerInvariant();
 
-            var detectDocumentTextRequest = new DetectDocumentTextRequest
+            string extractedText;
+            List<TextPage> pages;
+            double confidence;
+
+            // Use AnalyzeDocument for PDF files, DetectDocumentText for images
+            if (extension == ".pdf")
             {
-                Document = new AmazonTextractDocument
+                var analyzeDocumentRequest = new AnalyzeDocumentRequest
                 {
-                    S3Object = new Amazon.Textract.Model.S3Object
+                    Document = new AmazonTextractDocument
                     {
-                        Bucket = bucketName,
-                        Name = s3Key
+                        S3Object = new Amazon.Textract.Model.S3Object
+                        {
+                            Bucket = bucketName,
+                            Name = s3Key
+                        }
+                    },
+                    FeatureTypes = new List<string> { "TABLES", "FORMS" }
+                };
+
+                _logger.LogInformation("Sending S3 PDF document to AWS Textract AnalyzeDocument: s3://{Bucket}/{Key} ({Size} bytes)", bucketName, s3Key, fileSize);
+                var analyzeResponse = await _textractClient!.AnalyzeDocumentAsync(analyzeDocumentRequest);
+
+                extractedText = ExtractTextFromAnalysisResult(analyzeResponse);
+                pages = ExtractPagesFromAnalysisResult(analyzeResponse);
+                confidence = CalculateOverallConfidence(analyzeResponse);
+            }
+            else
+            {
+                var detectDocumentTextRequest = new DetectDocumentTextRequest
+                {
+                    Document = new AmazonTextractDocument
+                    {
+                        S3Object = new Amazon.Textract.Model.S3Object
+                        {
+                            Bucket = bucketName,
+                            Name = s3Key
+                        }
                     }
-                }
-            };
+                };
 
-            _logger.LogInformation("Sending S3 document to AWS Textract: s3://{Bucket}/{Key} ({Size} bytes)", bucketName, s3Key, fileSize);
-            var response = await _textractClient!.DetectDocumentTextAsync(detectDocumentTextRequest);
+                _logger.LogInformation("Sending S3 image document to AWS Textract DetectDocumentText: s3://{Bucket}/{Key} ({Size} bytes)", bucketName, s3Key, fileSize);
+                var detectResponse = await _textractClient!.DetectDocumentTextAsync(detectDocumentTextRequest);
 
-            var extractedText = ExtractTextFromResponse(response);
-            var pages = ExtractPagesFromResponse(response);
-            var confidence = CalculateOverallConfidence(response);
+                extractedText = ExtractTextFromResponse(detectResponse);
+                pages = ExtractPagesFromResponse(detectResponse);
+                confidence = CalculateOverallConfidence(detectResponse);
+            }
 
             if (string.IsNullOrWhiteSpace(extractedText))
             {
@@ -328,20 +359,47 @@ public class AWSTextractService : ITextExtractionService
                 };
             }
 
-            var detectDocumentTextRequest = new DetectDocumentTextRequest
+            var extension = Path.GetExtension(fileName).ToLowerInvariant();
+            string extractedText;
+            List<TextPage> pages;
+            double confidence;
+
+            // Use AnalyzeDocument for PDF files, DetectDocumentText for images
+            if (extension == ".pdf")
             {
-                Document = new AmazonTextractDocument
+                var analyzeDocumentRequest = new AnalyzeDocumentRequest
                 {
-                    Bytes = new MemoryStream(documentBytes)
-                }
-            };
+                    Document = new AmazonTextractDocument
+                    {
+                        Bytes = new MemoryStream(documentBytes)
+                    },
+                    FeatureTypes = new List<string> { "TABLES", "FORMS" }
+                };
 
-            _logger.LogInformation("Sending document to AWS Textract: {FileName} ({Size} bytes)", fileName, documentBytes.Length);
-            var response = await _textractClient!.DetectDocumentTextAsync(detectDocumentTextRequest);
+                _logger.LogInformation("Sending PDF document to AWS Textract AnalyzeDocument: {FileName} ({Size} bytes)", fileName, documentBytes.Length);
+                var analyzeResponse = await _textractClient!.AnalyzeDocumentAsync(analyzeDocumentRequest);
 
-            var extractedText = ExtractTextFromResponse(response);
-            var pages = ExtractPagesFromResponse(response);
-            var confidence = CalculateOverallConfidence(response);
+                extractedText = ExtractTextFromAnalysisResult(analyzeResponse);
+                pages = ExtractPagesFromAnalysisResult(analyzeResponse);
+                confidence = CalculateOverallConfidence(analyzeResponse);
+            }
+            else
+            {
+                var detectDocumentTextRequest = new DetectDocumentTextRequest
+                {
+                    Document = new AmazonTextractDocument
+                    {
+                        Bytes = new MemoryStream(documentBytes)
+                    }
+                };
+
+                _logger.LogInformation("Sending image document to AWS Textract DetectDocumentText: {FileName} ({Size} bytes)", fileName, documentBytes.Length);
+                var detectResponse = await _textractClient!.DetectDocumentTextAsync(detectDocumentTextRequest);
+
+                extractedText = ExtractTextFromResponse(detectResponse);
+                pages = ExtractPagesFromResponse(detectResponse);
+                confidence = CalculateOverallConfidence(detectResponse);
+            }
 
             if (string.IsNullOrWhiteSpace(extractedText))
             {
