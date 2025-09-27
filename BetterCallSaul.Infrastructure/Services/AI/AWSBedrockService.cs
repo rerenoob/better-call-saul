@@ -398,16 +398,24 @@ public class AWSBedrockService : IAIService
 
         try
         {
-            // Try Claude 3 format first
-            var claude3Response = JsonSerializer.Deserialize<Claude3Response>(responseText);
+            // Try Claude 3 format first with proper JsonSerializerOptions
+            var jsonOptions = new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true,
+                PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower
+            };
+            var claude3Response = JsonSerializer.Deserialize<Claude3Response>(responseText, jsonOptions);
+            _logger.LogInformation("Claude 3 deserialization result - Response null: {IsNull}, Content null: {ContentNull}, Content length: {ContentLength}",
+                claude3Response == null, claude3Response?.Content == null, claude3Response?.Content?.Length ?? -1);
             if (claude3Response?.Content != null && claude3Response.Content.Length > 0)
             {
-                _logger.LogInformation("Successfully parsed Claude 3 response with {ContentCount} content items",
-                    claude3Response.Content.Length);
+                var firstContent = claude3Response.Content[0];
+                _logger.LogInformation("Successfully parsed Claude 3 response with {ContentCount} content items, first content type: {ContentType}, text length: {TextLength}",
+                    claude3Response.Content.Length, firstContent?.Type, firstContent?.Text?.Length ?? 0);
                 return new AIResponse
                 {
                     Success = true,
-                    GeneratedText = claude3Response.Content[0].Text?.Trim(),
+                    GeneratedText = firstContent?.Text?.Trim(),
                     TokensUsed = claude3Response.Usage?.OutputTokens ?? 0,
                     ConfidenceScore = 0.85
                 };
