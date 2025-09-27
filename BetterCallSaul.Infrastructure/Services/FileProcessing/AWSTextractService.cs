@@ -248,8 +248,8 @@ public class AWSTextractService : ITextExtractionService
                             Bucket = bucketName,
                             Name = s3Key
                         }
-                    },
-                    FeatureTypes = new List<string> { "TABLES" }
+                    }
+                    // No FeatureTypes for basic text extraction from PDFs
                 };
 
                 _logger.LogInformation("Sending S3 PDF document to AWS Textract AnalyzeDocument: s3://{Bucket}/{Key} ({Size} bytes)", bucketName, s3Key, fileSize);
@@ -370,8 +370,8 @@ public class AWSTextractService : ITextExtractionService
                     Document = new AmazonTextractDocument
                     {
                         Bytes = new MemoryStream(documentBytes)
-                    },
-                    FeatureTypes = new List<string> { "TABLES" }
+                    }
+                    // No FeatureTypes for basic text extraction from PDFs
                 };
 
                 _logger.LogInformation("Sending PDF document to AWS Textract AnalyzeDocument: {FileName} ({Size} bytes)", fileName, documentBytes.Length);
