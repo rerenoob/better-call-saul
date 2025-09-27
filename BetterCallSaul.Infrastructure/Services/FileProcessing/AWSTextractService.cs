@@ -1,5 +1,6 @@
 using Amazon.Textract;
 using Amazon.Textract.Model;
+using Amazon.S3;
 using BetterCallSaul.Core.Configuration;
 using BetterCallSaul.Core.Models.Entities;
 using Microsoft.Extensions.Logging;
@@ -12,7 +13,8 @@ namespace BetterCallSaul.Infrastructure.Services.FileProcessing;
 public class AWSTextractService : ITextExtractionService
 {
     private readonly IAmazonTextract? _textractClient;
-    private readonly TextractOptions _options;
+    private readonly IAmazonS3? _s3Client;
+    private readonly AWSOptions _awsOptions;
     private readonly ILogger<AWSTextractService> _logger;
     private const long MaxSyncFileSize = 5 * 1024 * 1024; // 5MB for synchronous processing
     private const int MaxSyncPages = 3000; // Textract sync limit
@@ -21,36 +23,76 @@ public class AWSTextractService : ITextExtractionService
         IOptions<AWSOptions> awsOptions,
         ILogger<AWSTextractService> logger)
     {
-        _options = awsOptions.Value.Textract;
+        _awsOptions = awsOptions.Value;
         _logger = logger;
-        
-        // Only initialize Textract client if AWS is configured
-        if (!string.IsNullOrEmpty(_options.Region))
+
+        // Only initialize AWS clients if AWS is configured
+        if (!string.IsNullOrEmpty(_awsOptions.Textract.Region))
         {
-            var region = Amazon.RegionEndpoint.GetBySystemName(_options.Region);
+            var region = Amazon.RegionEndpoint.GetBySystemName(_awsOptions.Textract.Region);
             _textractClient = new AmazonTextractClient(region);
+            _s3Client = new AmazonS3Client(region);
         }
     }
 
     public async Task<TextExtractionResult> ExtractTextAsync(string filePath, string fileName)
     {
         var startTime = DateTime.UtcNow;
-        
+
         try
         {
-            if (!File.Exists(filePath))
-            {
-                return new TextExtractionResult
-                {
-                    Success = false,
-                    ErrorMessage = "File not found",
-                    Status = TextExtractionStatus.Failed,
-                    FileName = fileName
-                };
-            }
-
-            var fileInfo = new FileInfo(filePath);
             var extension = Path.GetExtension(fileName).ToLowerInvariant();
+            bool isS3Path = IsS3Path(filePath);
+            long fileSize = 0;
+
+            // Check if file exists (local) or is accessible (S3)
+            if (isS3Path)
+            {
+                if (_s3Client == null)
+                {
+                    return new TextExtractionResult
+                    {
+                        Success = false,
+                        ErrorMessage = "AWS S3 client is not configured for S3 path processing",
+                        Status = TextExtractionStatus.Failed,
+                        FileName = fileName
+                    };
+                }
+
+                var (bucketName, s3Key) = ParseS3Path(filePath);
+                try
+                {
+                    var metadata = await _s3Client.GetObjectMetadataAsync(bucketName, s3Key);
+                    fileSize = metadata.ContentLength;
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "S3 object not found or not accessible: s3://{Bucket}/{Key}", bucketName, s3Key);
+                    return new TextExtractionResult
+                    {
+                        Success = false,
+                        ErrorMessage = "File not found in S3",
+                        Status = TextExtractionStatus.Failed,
+                        FileName = fileName
+                    };
+                }
+            }
+            else
+            {
+                if (!File.Exists(filePath))
+                {
+                    return new TextExtractionResult
+                    {
+                        Success = false,
+                        ErrorMessage = "File not found",
+                        Status = TextExtractionStatus.Failed,
+                        FileName = fileName
+                    };
+                }
+
+                var fileInfo = new FileInfo(filePath);
+                fileSize = fileInfo.Length;
+            }
 
             // Check if Textract client is initialized
             if (_textractClient == null)
@@ -61,7 +103,7 @@ public class AWSTextractService : ITextExtractionService
                     ErrorMessage = "AWS Textract is not configured",
                     Status = TextExtractionStatus.Failed,
                     FileName = fileName,
-                    FileSize = fileInfo.Length
+                    FileSize = fileSize
                 };
             }
 
@@ -73,30 +115,49 @@ public class AWSTextractService : ITextExtractionService
                     ErrorMessage = $"File type not supported: {extension}",
                     Status = TextExtractionStatus.UnsupportedFormat,
                     FileName = fileName,
-                    FileSize = fileInfo.Length
+                    FileSize = fileSize
                 };
             }
 
             // Use AWS Textract to extract text
-            await using var fileStream = File.OpenRead(filePath);
-
-            // Choose processing method based on file size
             TextExtractionResult result;
-            if (fileInfo.Length <= MaxSyncFileSize)
+            if (isS3Path)
             {
-                result = await ProcessSynchronouslyAsync(fileStream, fileName, fileInfo.Length);
+                // For S3 files, use S3 location directly
+                if (fileSize <= MaxSyncFileSize)
+                {
+                    result = await ProcessS3SynchronouslyAsync(filePath, fileName, fileSize);
+                }
+                else
+                {
+                    // For async processing, fall back to sync processing if async is not configured
+                    _logger.LogWarning("Large S3 file {FileName} ({FileSize} bytes) requires async processing. Falling back to sync processing with size limit warning.",
+                        fileName, fileSize);
+                    result = await ProcessS3SynchronouslyAsync(filePath, fileName, fileSize);
+                }
             }
             else
             {
-                // For async processing, fall back to sync processing if S3 upload is not configured
-                _logger.LogWarning("Large file {FileName} ({FileSize} bytes) requires async processing. Falling back to sync processing with size limit warning.",
-                    fileName, fileInfo.Length);
-                result = await ProcessSynchronouslyAsync(fileStream, fileName, fileInfo.Length);
+                // For local files, read from file system
+                await using var fileStream = File.OpenRead(filePath);
+
+                // Choose processing method based on file size
+                if (fileSize <= MaxSyncFileSize)
+                {
+                    result = await ProcessSynchronouslyAsync(fileStream, fileName, fileSize);
+                }
+                else
+                {
+                    // For async processing, fall back to sync processing if S3 upload is not configured
+                    _logger.LogWarning("Large file {FileName} ({FileSize} bytes) requires async processing. Falling back to sync processing with size limit warning.",
+                        fileName, fileSize);
+                    result = await ProcessSynchronouslyAsync(fileStream, fileName, fileSize);
+                }
             }
 
             result.ProcessingTime = DateTime.UtcNow - startTime;
             result.FileName = fileName;
-            result.FileSize = fileInfo.Length;
+            result.FileSize = fileSize;
             
             return result;
         }
@@ -163,6 +224,87 @@ public class AWSTextractService : ITextExtractionService
         return Task.FromResult(supportedExtensions.Contains(extension));
     }
 
+
+    private async Task<TextExtractionResult> ProcessS3SynchronouslyAsync(string s3Path, string fileName, long fileSize)
+    {
+        try
+        {
+            var (bucketName, s3Key) = ParseS3Path(s3Path);
+
+            var detectDocumentTextRequest = new DetectDocumentTextRequest
+            {
+                Document = new AmazonTextractDocument
+                {
+                    S3Object = new Amazon.Textract.Model.S3Object
+                    {
+                        Bucket = bucketName,
+                        Name = s3Key
+                    }
+                }
+            };
+
+            _logger.LogInformation("Sending S3 document to AWS Textract: s3://{Bucket}/{Key} ({Size} bytes)", bucketName, s3Key, fileSize);
+            var response = await _textractClient!.DetectDocumentTextAsync(detectDocumentTextRequest);
+
+            var extractedText = ExtractTextFromResponse(response);
+            var pages = ExtractPagesFromResponse(response);
+            var confidence = CalculateOverallConfidence(response);
+
+            if (string.IsNullOrWhiteSpace(extractedText))
+            {
+                _logger.LogWarning("AWS Textract returned empty text for S3 file: s3://{Bucket}/{Key}", bucketName, s3Key);
+                return new TextExtractionResult
+                {
+                    Success = false,
+                    ErrorMessage = "No text could be extracted from the document",
+                    Status = TextExtractionStatus.Failed,
+                    FileName = fileName,
+                    FileSize = fileSize,
+                    Metadata = new Dictionary<string, object>
+                    {
+                        ["extraction_method"] = "aws_textract_s3_sync",
+                        ["s3_bucket"] = bucketName,
+                        ["s3_key"] = s3Key,
+                        ["blocks_found"] = response.Blocks?.Count ?? 0,
+                        ["extraction_empty"] = true
+                    }
+                };
+            }
+
+            _logger.LogInformation("AWS Textract successfully extracted {CharCount} characters from S3 file: s3://{Bucket}/{Key}",
+                extractedText.Length, bucketName, s3Key);
+
+            return new TextExtractionResult
+            {
+                Success = true,
+                ExtractedText = extractedText,
+                ConfidenceScore = confidence,
+                Status = TextExtractionStatus.Success,
+                Metadata = new Dictionary<string, object>
+                {
+                    ["file_type"] = Path.GetExtension(fileName).ToLowerInvariant(),
+                    ["extraction_method"] = "aws_textract_s3_sync",
+                    ["aws_operation_type"] = "synchronous_detect_document_text_s3",
+                    ["s3_bucket"] = bucketName,
+                    ["s3_key"] = s3Key,
+                    ["block_count"] = response.Blocks?.Count ?? 0
+                },
+                Pages = pages
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error in ProcessS3SynchronouslyAsync for file: {FileName} at {S3Path}", fileName, s3Path);
+            return new TextExtractionResult
+            {
+                Success = false,
+                ErrorMessage = $"S3 synchronous processing error: {ex.Message}",
+                Status = TextExtractionStatus.ProcessingError,
+                FileName = fileName,
+                FileSize = fileSize
+            };
+        }
+    }
 
     private async Task<TextExtractionResult> ProcessSynchronouslyAsync(Stream documentStream, string fileName, long fileSize)
     {
@@ -453,5 +595,22 @@ public class AWSTextractService : ITextExtractionService
             return 0.8;
 
         return confidences.Average() / 100.0; // Convert 0-100 to 0-1
+    }
+
+    private bool IsS3Path(string path)
+    {
+        return path.StartsWith("s3://", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private (string bucketName, string key) ParseS3Path(string s3Path)
+    {
+        if (!IsS3Path(s3Path))
+            throw new ArgumentException("Path is not a valid S3 path", nameof(s3Path));
+
+        var uri = new Uri(s3Path);
+        var bucketName = uri.Host;
+        var key = uri.AbsolutePath.TrimStart('/');
+
+        return (bucketName, key);
     }
 }
