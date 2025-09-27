@@ -255,8 +255,8 @@ public class AWSTextractService : ITextExtractionService
                 _logger.LogInformation("Sending S3 PDF document to AWS Textract AnalyzeDocument: s3://{Bucket}/{Key} ({Size} bytes)", bucketName, s3Key, fileSize);
                 var analyzeResponse = await _textractClient!.AnalyzeDocumentAsync(analyzeDocumentRequest);
 
-                extractedText = ExtractTextFromAnalysisResult(analyzeResponse);
-                pages = ExtractPagesFromAnalysisResult(analyzeResponse);
+                extractedText = ExtractTextFromAnalyzeDocumentResult(analyzeResponse);
+                pages = ExtractPagesFromAnalyzeDocumentResult(analyzeResponse);
                 confidence = CalculateOverallConfidence(analyzeResponse);
             }
             else
@@ -379,8 +379,8 @@ public class AWSTextractService : ITextExtractionService
                 _logger.LogInformation("Sending PDF document to AWS Textract AnalyzeDocument: {FileName} ({Size} bytes)", fileName, documentBytes.Length);
                 var analyzeResponse = await _textractClient!.AnalyzeDocumentAsync(analyzeDocumentRequest);
 
-                extractedText = ExtractTextFromAnalysisResult(analyzeResponse);
-                pages = ExtractPagesFromAnalysisResult(analyzeResponse);
+                extractedText = ExtractTextFromAnalyzeDocumentResult(analyzeResponse);
+                pages = ExtractPagesFromAnalyzeDocumentResult(analyzeResponse);
                 confidence = CalculateOverallConfidence(analyzeResponse);
             }
             else
@@ -531,6 +531,20 @@ public class AWSTextractService : ITextExtractionService
         return string.Join("\n", lines);
     }
 
+    private string ExtractTextFromAnalyzeDocumentResult(AnalyzeDocumentResponse response)
+    {
+        if (response?.Blocks == null)
+            return string.Empty;
+
+        var lines = response.Blocks
+            .Where(b => b.BlockType == BlockType.LINE)
+            .OrderBy(b => b.Page > 0 ? b.Page : 1)
+            .ThenBy(b => b.Geometry?.BoundingBox?.Top ?? 0)
+            .Select(b => b.Text);
+
+        return string.Join("\n", lines);
+    }
+
     private List<TextPage> ExtractPagesFromResponse(DetectDocumentTextResponse response)
     {
         var pages = new List<TextPage>();
@@ -623,6 +637,52 @@ public class AWSTextractService : ITextExtractionService
         return pages;
     }
 
+    private List<TextPage> ExtractPagesFromAnalyzeDocumentResult(AnalyzeDocumentResponse response)
+    {
+        var pages = new List<TextPage>();
+
+        if (response?.Blocks == null)
+            return pages;
+
+        var pageGroups = response.Blocks
+            .Where(b => b.BlockType == BlockType.PAGE || b.Page > 0)
+            .GroupBy(b => b.Page > 0 ? b.Page : 1);
+
+        foreach (var pageGroup in pageGroups)
+        {
+            var pageNumber = pageGroup.Key;
+            var pageBlocks = pageGroup.ToList();
+            
+            var pageLines = pageBlocks
+                .Where(b => b.BlockType == BlockType.LINE)
+                .Select(b => b.Text);
+            var pageText = string.Join("\n", pageLines);
+
+            var confidenceValues = pageBlocks
+                .Where(b => b.Confidence > 0)
+                .Select(b => (double)b.Confidence)
+                .ToList();
+            
+            var confidence = confidenceValues.Any() ? confidenceValues.Average() / 100.0 : 0.8;
+
+            pages.Add(new TextPage
+            {
+                PageNumber = pageNumber,
+                Text = pageText,
+                Confidence = confidence,
+                PageMetadata = new Dictionary<string, object>
+                {
+                    ["block_count"] = pageBlocks.Count,
+                    ["line_count"] = pageBlocks.Count(b => b.BlockType == BlockType.LINE),
+                    ["word_count"] = pageText.Split(' ', StringSplitOptions.RemoveEmptyEntries).Length,
+                    ["aws_page_confidence"] = confidence
+                }
+            });
+        }
+
+        return pages;
+    }
+
     private double CalculateOverallConfidence(DetectDocumentTextResponse response)
     {
         if (response?.Blocks == null || !response.Blocks.Any())
@@ -640,6 +700,22 @@ public class AWSTextractService : ITextExtractionService
     }
 
     private double CalculateOverallConfidence(GetDocumentAnalysisResponse response)
+    {
+        if (response?.Blocks == null || !response.Blocks.Any())
+            return 0.8; // Default confidence
+
+        var confidences = response.Blocks
+            .Where(b => b.Confidence > 0)
+            .Select(b => (double)b.Confidence)
+            .ToList();
+
+        if (!confidences.Any())
+            return 0.8;
+
+        return confidences.Average() / 100.0; // Convert 0-100 to 0-1
+    }
+
+    private double CalculateOverallConfidence(AnalyzeDocumentResponse response)
     {
         if (response?.Blocks == null || !response.Blocks.Any())
             return 0.8; // Default confidence
