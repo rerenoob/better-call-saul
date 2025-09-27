@@ -296,7 +296,6 @@ public class AWSTextractService : ITextExtractionService
                         ["extraction_method"] = "aws_textract_s3_sync",
                         ["s3_bucket"] = bucketName,
                         ["s3_key"] = s3Key,
-                        ["blocks_found"] = response.Blocks?.Count ?? 0,
                         ["extraction_empty"] = true
                     }
                 };
@@ -315,10 +314,9 @@ public class AWSTextractService : ITextExtractionService
                 {
                     ["file_type"] = Path.GetExtension(fileName).ToLowerInvariant(),
                     ["extraction_method"] = "aws_textract_s3_sync",
-                    ["aws_operation_type"] = "synchronous_detect_document_text_s3",
+                    ["aws_operation_type"] = extension == ".pdf" ? "analyze_document" : "detect_document_text",
                     ["s3_bucket"] = bucketName,
-                    ["s3_key"] = s3Key,
-                    ["block_count"] = response.Blocks?.Count ?? 0
+                    ["s3_key"] = s3Key
                 },
                 Pages = pages
             };
@@ -414,7 +412,6 @@ public class AWSTextractService : ITextExtractionService
                     Metadata = new Dictionary<string, object>
                     {
                         ["extraction_method"] = "aws_textract_sync",
-                        ["blocks_found"] = response.Blocks?.Count ?? 0,
                         ["extraction_empty"] = true
                     }
                 };
@@ -433,8 +430,7 @@ public class AWSTextractService : ITextExtractionService
                 {
                     ["file_type"] = Path.GetExtension(fileName).ToLowerInvariant(),
                     ["extraction_method"] = "aws_textract_sync",
-                    ["aws_operation_type"] = "synchronous_detect_document_text",
-                    ["block_count"] = response.Blocks?.Count ?? 0
+                    ["aws_operation_type"] = extension == ".pdf" ? "analyze_document" : "detect_document_text"
                 },
                 Pages = pages
             };
