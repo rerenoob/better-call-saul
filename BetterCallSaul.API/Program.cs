@@ -27,6 +27,15 @@ using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Configure ports for container environments
+if (!builder.Environment.IsDevelopment())
+{
+    builder.WebHost.ConfigureKestrel(options =>
+    {
+        options.ListenAnyIP(80); // Listen on port 80 for all interfaces in production
+    });
+}
+
 // Configure Serilog for structured logging
 Log.Logger = new LoggerConfiguration()
     .ReadFrom.Configuration(builder.Configuration)
