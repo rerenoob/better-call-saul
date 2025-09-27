@@ -1,5 +1,10 @@
 using BetterCallSaul.Core.Models.Entities;
+using BetterCallSaul.Core.Configuration;
+using BetterCallSaul.Core.Interfaces.Services;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+using Amazon.S3;
+using Amazon.S3.Model;
 using UglyToad.PdfPig;
 using UglyToad.PdfPig.Content;
 
@@ -12,24 +17,49 @@ namespace BetterCallSaul.Infrastructure.Services.FileProcessing;
 public class CompositeTextExtractionService : ITextExtractionService
 {
     private readonly AWSTextractService _awsTextractService;
+    private readonly IStorageService _storageService;
     private readonly ILogger<CompositeTextExtractionService> _logger;
+    private readonly IAmazonS3? _s3Client;
+    private readonly S3Options? _s3Options;
 
     public CompositeTextExtractionService(
         AWSTextractService awsTextractService,
+        IStorageService storageService,
+        IOptions<AWSOptions> awsOptions,
         ILogger<CompositeTextExtractionService> logger)
     {
         _awsTextractService = awsTextractService;
+        _storageService = storageService;
         _logger = logger;
+
+        // Initialize S3 client if AWS is configured
+        if (awsOptions.Value?.S3 != null && !string.IsNullOrEmpty(awsOptions.Value.S3.BucketName))
+        {
+            _s3Options = awsOptions.Value.S3;
+            var region = Amazon.RegionEndpoint.GetBySystemName(_s3Options.Region);
+            _s3Client = new AmazonS3Client(region);
+        }
     }
 
     public async Task<TextExtractionResult> ExtractTextAsync(string filePath, string fileName)
     {
         var startTime = DateTime.UtcNow;
         var extension = Path.GetExtension(fileName).ToLowerInvariant();
+        string? tempFilePath = null;
+        bool isS3Object = false;
 
         try
         {
             _logger.LogInformation("Starting text extraction for file: {FileName} (Type: {Extension})", fileName, extension);
+
+            // Check if filePath is an S3 key (doesn't exist as local file and contains S3 key pattern)
+            if (!File.Exists(filePath) && IsS3Key(filePath))
+            {
+                _logger.LogInformation("Detected S3 key, downloading file temporarily: {S3Key}", filePath);
+                tempFilePath = await DownloadS3FileAsync(filePath);
+                filePath = tempFilePath;
+                isS3Object = true;
+            }
 
             // Handle plain text files directly
             if (extension == ".txt")
@@ -97,6 +127,22 @@ public class CompositeTextExtractionService : ITextExtractionService
                 FileName = fileName,
                 ProcessingTime = DateTime.UtcNow - startTime
             };
+        }
+        finally
+        {
+            // Clean up temporary file if we downloaded from S3
+            if (isS3Object && !string.IsNullOrEmpty(tempFilePath) && File.Exists(tempFilePath))
+            {
+                try
+                {
+                    File.Delete(tempFilePath);
+                    _logger.LogDebug("Cleaned up temporary S3 file: {TempPath}", tempFilePath);
+                }
+                catch (Exception cleanupEx)
+                {
+                    _logger.LogWarning(cleanupEx, "Failed to clean up temporary S3 file: {TempPath}", tempFilePath);
+                }
+            }
         }
     }
 
@@ -441,5 +487,62 @@ public class CompositeTextExtractionService : ITextExtractionService
         }
 
         return pages;
+    }
+
+    /// <summary>
+    /// Determines if the given path is likely an S3 key rather than a local file path
+    /// </summary>
+    private bool IsS3Key(string filePath)
+    {
+        // S3 keys typically don't start with / or \ and contain forward slashes
+        // and don't contain Windows drive letters like C:
+        return !string.IsNullOrEmpty(filePath) &&
+               !Path.IsPathRooted(filePath) &&
+               filePath.Contains('/') &&
+               !filePath.StartsWith("\\") &&
+               !filePath.Contains('\\') &&
+               filePath.StartsWith("cases/");
+    }
+
+    /// <summary>
+    /// Downloads a file from S3 to a temporary local file for processing
+    /// </summary>
+    private async Task<string> DownloadS3FileAsync(string s3Key)
+    {
+        if (_s3Client == null || _s3Options == null)
+        {
+            throw new InvalidOperationException("S3 client not configured for downloading files");
+        }
+
+        try
+        {
+            var tempFilePath = Path.GetTempFileName();
+
+            var request = new GetObjectRequest
+            {
+                BucketName = _s3Options.BucketName,
+                Key = s3Key
+            };
+
+            using (var response = await _s3Client.GetObjectAsync(request))
+            using (var responseStream = response.ResponseStream)
+            using (var fileStream = File.Create(tempFilePath))
+            {
+                await responseStream.CopyToAsync(fileStream);
+            }
+
+            _logger.LogInformation("Successfully downloaded S3 object {S3Key} to temporary file {TempPath}", s3Key, tempFilePath);
+            return tempFilePath;
+        }
+        catch (AmazonS3Exception s3Ex)
+        {
+            _logger.LogError(s3Ex, "Failed to download S3 object {S3Key}: {Error}", s3Key, s3Ex.Message);
+            throw new FileNotFoundException($"S3 object not found: {s3Key}", s3Ex);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error downloading S3 object {S3Key}: {Error}", s3Key, ex.Message);
+            throw;
+        }
     }
 }

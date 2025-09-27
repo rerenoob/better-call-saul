@@ -79,6 +79,8 @@ public class FileUploadServiceTests : IDisposable
         };
         _textExtractionServiceMock.Setup(s => s.ExtractTextAsync(It.IsAny<string>(), It.IsAny<string>()))
             .ReturnsAsync(extractionResult);
+        _textExtractionServiceMock.Setup(s => s.SupportsFileTypeAsync(It.IsAny<string>()))
+            .ReturnsAsync(true);
 
         // Mock case document repository for user document collection
         _caseDocumentRepositoryMock.Setup(r => r.GetByUserIdAsync(userId))
