@@ -24,7 +24,8 @@ public class PdfFallbackExtractionTests
         optionsMock.Setup(x => x.Value).Returns(awsOptions);
         
         var awsTextractService = new AWSTextractService(optionsMock.Object, Mock.Of<ILogger<AWSTextractService>>());
-        var service = new CompositeTextExtractionService(awsTextractService, loggerMock.Object);
+        var storageServiceMock = new Mock<BetterCallSaul.Core.Interfaces.Services.IStorageService>();
+        var service = new CompositeTextExtractionService(awsTextractService, storageServiceMock.Object, optionsMock.Object, loggerMock.Object);
         
         // Use a test PDF file from the test-case-files directory
         var testPdfPath = Path.Combine(Directory.GetCurrentDirectory(), "..", "..", "..", "test-case-files", "mdfl-civil-script-goldilocks-v-the-three-bears.pdf");
@@ -62,7 +63,8 @@ public class PdfFallbackExtractionTests
         optionsMock.Setup(x => x.Value).Returns(awsOptions);
         
         var awsTextractService = new AWSTextractService(optionsMock.Object, Mock.Of<ILogger<AWSTextractService>>());
-        var service = new CompositeTextExtractionService(awsTextractService, loggerMock.Object);
+        var storageServiceMock = new Mock<BetterCallSaul.Core.Interfaces.Services.IStorageService>();
+        var service = new CompositeTextExtractionService(awsTextractService, storageServiceMock.Object, optionsMock.Object, loggerMock.Object);
         
         // Create a non-existent PDF path
         var invalidPdfPath = Path.Combine(Path.GetTempPath(), "nonexistent-test-file.pdf");
@@ -91,7 +93,8 @@ public class PdfFallbackExtractionTests
         optionsMock.Setup(x => x.Value).Returns(awsOptions);
         
         var awsTextractService = new AWSTextractService(optionsMock.Object, Mock.Of<ILogger<AWSTextractService>>());
-        var service = new CompositeTextExtractionService(awsTextractService, loggerMock.Object);
+        var storageServiceMock = new Mock<BetterCallSaul.Core.Interfaces.Services.IStorageService>();
+        var service = new CompositeTextExtractionService(awsTextractService, storageServiceMock.Object, optionsMock.Object, loggerMock.Object);
         
         // Create an empty PDF file for testing
         var emptyPdfPath = Path.GetTempFileName() + ".pdf";
