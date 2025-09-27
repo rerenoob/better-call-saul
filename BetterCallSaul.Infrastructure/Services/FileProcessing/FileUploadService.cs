@@ -252,7 +252,8 @@ public class FileUploadService : IFileUploadService, IStorageService
     private async Task<string> StoreFileToStorageAsync(IFormFile file, string fileName, Guid caseId, Guid userId)
     {
         // Delegate to the configured storage service (Local in dev, S3 in production)
-        if (_storageService != this) // Avoid circular dependency
+        // Use reference equality check to avoid circular dependency
+        if (!ReferenceEquals(_storageService, this))
         {
             var storageResult = await _storageService.UploadFileAsync(file, caseId, userId, "");
             if (storageResult.Success)
