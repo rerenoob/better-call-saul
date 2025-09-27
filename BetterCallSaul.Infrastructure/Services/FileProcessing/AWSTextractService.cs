@@ -202,18 +202,127 @@ public class AWSTextractService : ITextExtractionService
 
     public async Task<TextExtractionResult> ExtractTextFromBytesAsync(byte[] fileContent, string fileName)
     {
-        var tempFilePath = Path.GetTempFileName();
+        var startTime = DateTime.UtcNow;
+
         try
         {
-            await File.WriteAllBytesAsync(tempFilePath, fileContent);
-            return await ExtractTextAsync(tempFilePath, fileName);
-        }
-        finally
-        {
-            if (File.Exists(tempFilePath))
+            if (fileContent == null || fileContent.Length == 0)
             {
-                File.Delete(tempFilePath);
+                return new TextExtractionResult
+                {
+                    Success = false,
+                    ErrorMessage = "No file content provided",
+                    Status = TextExtractionStatus.Failed,
+                    FileName = fileName,
+                    FileSize = 0,
+                    ProcessingTime = DateTime.UtcNow - startTime
+                };
             }
+
+            // Check if Textract client is initialized
+            if (_textractClient == null)
+            {
+                return new TextExtractionResult
+                {
+                    Success = false,
+                    ErrorMessage = "AWS Textract is not configured",
+                    Status = TextExtractionStatus.Failed,
+                    FileName = fileName,
+                    FileSize = fileContent.Length,
+                    ProcessingTime = DateTime.UtcNow - startTime
+                };
+            }
+
+            var extension = Path.GetExtension(fileName).ToLowerInvariant();
+            string extractedText;
+            List<TextPage> pages;
+            double confidence;
+
+            // For files larger than sync limit, use async processing
+            if (fileContent.Length > MaxSyncFileSize)
+            {
+                // For large files, we need S3 upload first for async processing
+                // For now, fall back to sync with warning
+                _logger.LogWarning("Large byte array {FileName} ({FileSize} bytes) requires async processing. Consider using S3 upload first.",
+                    fileName, fileContent.Length);
+            }
+
+            // Use async StartDocumentTextDetection for better performance
+            // First upload to S3 for async processing (simplified approach)
+            if (_s3Client != null && fileContent.Length > MaxSyncFileSize)
+            {
+                // This would require S3 upload implementation
+                _logger.LogInformation("Large document detected, would benefit from S3 upload and async processing");
+            }
+
+            // Use DetectDocumentText for direct byte processing
+            var detectDocumentTextRequest = new DetectDocumentTextRequest
+            {
+                Document = new AmazonTextractDocument
+                {
+                    Bytes = new MemoryStream(fileContent)
+                }
+            };
+
+            _logger.LogInformation("Sending byte array to AWS Textract DetectDocumentText: {FileName} ({Size} bytes)", fileName, fileContent.Length);
+            var detectResponse = await _textractClient!.DetectDocumentTextAsync(detectDocumentTextRequest);
+
+            extractedText = ExtractTextFromResponse(detectResponse);
+            pages = ExtractPagesFromResponse(detectResponse);
+            confidence = CalculateOverallConfidence(detectResponse);
+
+            if (string.IsNullOrWhiteSpace(extractedText))
+            {
+                _logger.LogWarning("AWS Textract returned empty text for byte array: {FileName}", fileName);
+                return new TextExtractionResult
+                {
+                    Success = false,
+                    ErrorMessage = "No text could be extracted from the document",
+                    Status = TextExtractionStatus.Failed,
+                    FileName = fileName,
+                    FileSize = fileContent.Length,
+                    ProcessingTime = DateTime.UtcNow - startTime,
+                    Metadata = new Dictionary<string, object>
+                    {
+                        ["extraction_method"] = "aws_textract_bytes_sync",
+                        ["extraction_empty"] = true
+                    }
+                };
+            }
+
+            _logger.LogInformation("AWS Textract successfully extracted {CharCount} characters from byte array: {FileName}",
+                extractedText.Length, fileName);
+
+            return new TextExtractionResult
+            {
+                Success = true,
+                ExtractedText = extractedText,
+                ConfidenceScore = confidence,
+                Status = TextExtractionStatus.Success,
+                FileName = fileName,
+                FileSize = fileContent.Length,
+                ProcessingTime = DateTime.UtcNow - startTime,
+                Metadata = new Dictionary<string, object>
+                {
+                    ["file_type"] = extension,
+                    ["extraction_method"] = "aws_textract_bytes_sync",
+                    ["aws_operation_type"] = "detect_document_text"
+                },
+                Pages = pages
+            };
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error in ExtractTextFromBytesAsync for file: {FileName}", fileName);
+            return new TextExtractionResult
+            {
+                Success = false,
+                ErrorMessage = $"Byte array processing error: {ex.Message}",
+                Status = TextExtractionStatus.ProcessingError,
+                FileName = fileName,
+                FileSize = fileContent?.Length ?? 0,
+                ProcessingTime = DateTime.UtcNow - startTime
+            };
         }
     }
 
@@ -236,10 +345,10 @@ public class AWSTextractService : ITextExtractionService
             List<TextPage> pages;
             double confidence;
 
-            // Use DetectDocumentText for all file types (PDFs and images)
-            var detectDocumentTextRequest = new DetectDocumentTextRequest
+            // Use async StartDocumentTextDetection for better performance and larger document support
+            var startRequest = new StartDocumentTextDetectionRequest
             {
-                Document = new AmazonTextractDocument
+                DocumentLocation = new DocumentLocation
                 {
                     S3Object = new Amazon.Textract.Model.S3Object
                     {
@@ -249,12 +358,51 @@ public class AWSTextractService : ITextExtractionService
                 }
             };
 
-            _logger.LogInformation("Sending S3 document to AWS Textract DetectDocumentText: s3://{Bucket}/{Key} ({Size} bytes)", bucketName, s3Key, fileSize);
-            var detectResponse = await _textractClient!.DetectDocumentTextAsync(detectDocumentTextRequest);
+            _logger.LogInformation("Starting async AWS Textract text detection: s3://{Bucket}/{Key} ({Size} bytes)", bucketName, s3Key, fileSize);
+            var startResponse = await _textractClient!.StartDocumentTextDetectionAsync(startRequest);
+            var jobId = startResponse.JobId;
 
-            extractedText = ExtractTextFromResponse(detectResponse);
-            pages = ExtractPagesFromResponse(detectResponse);
-            confidence = CalculateOverallConfidence(detectResponse);
+            _logger.LogInformation("AWS Textract job started with ID: {JobId}", jobId);
+
+            // Poll for completion
+            GetDocumentTextDetectionResponse getResponse;
+            int maxAttempts = 30; // Maximum 5 minutes (30 * 10 seconds)
+            int attempt = 0;
+
+            do
+            {
+                await Task.Delay(10000); // Wait 10 seconds between polls
+                attempt++;
+
+                var getRequest = new GetDocumentTextDetectionRequest { JobId = jobId };
+                getResponse = await _textractClient!.GetDocumentTextDetectionAsync(getRequest);
+
+                _logger.LogInformation("AWS Textract job {JobId} status: {Status} (attempt {Attempt}/{MaxAttempts})",
+                    jobId, getResponse.JobStatus, attempt, maxAttempts);
+
+                if (getResponse.JobStatus == JobStatus.FAILED)
+                {
+                    throw new InvalidOperationException($"AWS Textract job {jobId} failed: {getResponse.StatusMessage}");
+                }
+
+                if (attempt >= maxAttempts)
+                {
+                    throw new TimeoutException($"AWS Textract job {jobId} timed out after {maxAttempts} attempts");
+                }
+
+            } while (getResponse.JobStatus == JobStatus.IN_PROGRESS);
+
+            if (getResponse.JobStatus == JobStatus.SUCCEEDED)
+            {
+                _logger.LogInformation("AWS Textract job {JobId} completed successfully", jobId);
+                extractedText = ExtractTextFromAsyncResponse(getResponse);
+                pages = ExtractPagesFromAsyncResponse(getResponse);
+                confidence = CalculateOverallConfidence(getResponse);
+            }
+            else
+            {
+                throw new InvalidOperationException($"AWS Textract job {jobId} ended with unexpected status: {getResponse.JobStatus}");
+            }
 
             if (string.IsNullOrWhiteSpace(extractedText))
             {
@@ -666,6 +814,82 @@ public class AWSTextractService : ITextExtractionService
     }
 
     private double CalculateOverallConfidence(AnalyzeDocumentResponse response)
+    {
+        if (response?.Blocks == null || !response.Blocks.Any())
+            return 0.8; // Default confidence
+
+        var confidences = response.Blocks
+            .Where(b => b.Confidence > 0)
+            .Select(b => (double)b.Confidence)
+            .ToList();
+
+        if (!confidences.Any())
+            return 0.8;
+
+        return confidences.Average() / 100.0; // Convert 0-100 to 0-1
+    }
+
+    private string ExtractTextFromAsyncResponse(GetDocumentTextDetectionResponse response)
+    {
+        if (response?.Blocks == null)
+            return string.Empty;
+
+        var lines = response.Blocks
+            .Where(b => b.BlockType == BlockType.LINE)
+            .OrderBy(b => b.Page > 0 ? b.Page : 1)
+            .ThenBy(b => b.Geometry?.BoundingBox?.Top ?? 0)
+            .Select(b => b.Text);
+
+        return string.Join("\n", lines);
+    }
+
+    private List<TextPage> ExtractPagesFromAsyncResponse(GetDocumentTextDetectionResponse response)
+    {
+        var pages = new List<TextPage>();
+
+        if (response?.Blocks == null)
+            return pages;
+
+        var pageGroups = response.Blocks
+            .Where(b => b.BlockType == BlockType.PAGE || b.Page > 0)
+            .GroupBy(b => b.Page > 0 ? b.Page : 1);
+
+        foreach (var pageGroup in pageGroups)
+        {
+            var pageNumber = pageGroup.Key;
+            var pageBlocks = pageGroup.ToList();
+
+            var pageLines = pageBlocks
+                .Where(b => b.BlockType == BlockType.LINE)
+                .Select(b => b.Text);
+            var pageText = string.Join("\n", pageLines);
+
+            var confidenceValues = pageBlocks
+                .Where(b => b.Confidence > 0)
+                .Select(b => (double)b.Confidence)
+                .ToList();
+
+            var confidence = confidenceValues.Any() ? confidenceValues.Average() / 100.0 : 0.8;
+
+            pages.Add(new TextPage
+            {
+                PageNumber = pageNumber,
+                Text = pageText,
+                Confidence = confidence,
+                PageMetadata = new Dictionary<string, object>
+                {
+                    ["block_count"] = pageBlocks.Count,
+                    ["line_count"] = pageBlocks.Count(b => b.BlockType == BlockType.LINE),
+                    ["word_count"] = pageText.Split(' ', StringSplitOptions.RemoveEmptyEntries).Length,
+                    ["aws_page_confidence"] = confidence
+                }
+            });
+        }
+
+        return pages;
+    }
+
+    private double CalculateOverallConfidence(GetDocumentTextDetectionResponse response)
     {
         if (response?.Blocks == null || !response.Blocks.Any())
             return 0.8; // Default confidence
