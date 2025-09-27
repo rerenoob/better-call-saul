@@ -40,8 +40,31 @@ env:
   MARKETING_CLOUDFRONT_ID: ESFK92TFOJSWA
 
 jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      backend: ${{ steps.filter.outputs.backend }}
+      frontend: ${{ steps.filter.outputs.frontend }}
+      marketing: ${{ steps.filter.outputs.marketing }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            backend:
+              - 'BetterCallSaul.API/**'
+              - 'BetterCallSaul.Core/**'
+              - 'BetterCallSaul.Infrastructure/**'
+              - '.github/workflows/unified-deployment.yml'
+            frontend:
+              - 'better-call-saul-frontend/**'
+            marketing:
+              - 'Marketing/**'
+
   deploy_backend:
-    if: contains(github.event.commits.*.modified, 'BetterCallSaul.API') || contains(github.event.commits.*.modified, 'BetterCallSaul.Core') || contains(github.event.commits.*.modified, 'BetterCallSaul.Infrastructure') || github.event.inputs.deploy_backend == 'true'
+    needs: changes
+    if: needs.changes.outputs.backend == 'true' || github.event.inputs.deploy_backend == 'true'
     runs-on: ubuntu-latest
     name: Deploy Backend API
     steps:
@@ -103,9 +126,11 @@ jobs:
           service: ${{ env.ECS_SERVICE_NAME }}
           cluster: ${{ env.ECS_CLUSTER_NAME }}
           wait-for-service-stability: true
+          wait-for-minutes: 15
 
   deploy_frontend:
-    if: contains(github.event.commits.*.modified, 'better-call-saul-frontend') || github.event.inputs.deploy_frontend == 'true'
+    needs: changes
+    if: needs.changes.outputs.frontend == 'true' || github.event.inputs.deploy_frontend == 'true'
     runs-on: ubuntu-latest
     name: Deploy Frontend
     steps:
@@ -150,7 +175,8 @@ jobs:
           aws cloudfront create-invalidation --distribution-id ${{ env.FRONTEND_CLOUDFRONT_ID }} --paths "/*"
 
   deploy_marketing:
-    if: contains(github.event.commits.*.modified, 'Marketing') || github.event.inputs.deploy_marketing == 'true'
+    needs: changes
+    if: needs.changes.outputs.marketing == 'true' || github.event.inputs.deploy_marketing == 'true'
     runs-on: ubuntu-latest
     name: Deploy Marketing Site
     steps:
