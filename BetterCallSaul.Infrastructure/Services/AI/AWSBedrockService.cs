@@ -535,19 +535,37 @@ public class AWSBedrockService : IAIService
 
     private class Claude3Response
     {
+        [JsonPropertyName("id")]
         public string? Id { get; set; }
+
+        [JsonPropertyName("type")]
         public string? Type { get; set; }
+
+        [JsonPropertyName("role")]
         public string? Role { get; set; }
+
+        [JsonPropertyName("model")]
         public string? Model { get; set; }
+
+        [JsonPropertyName("content")]
         public Claude3Content[]? Content { get; set; }
+
+        [JsonPropertyName("stop_reason")]
         public string? StopReason { get; set; }
+
+        [JsonPropertyName("stop_sequence")]
         public string? StopSequence { get; set; }
+
+        [JsonPropertyName("usage")]
         public Claude3Usage? Usage { get; set; }
     }
 
     private class Claude3Content
     {
+        [JsonPropertyName("type")]
         public string? Type { get; set; }
+
+        [JsonPropertyName("text")]
         public string? Text { get; set; }
     }
 
