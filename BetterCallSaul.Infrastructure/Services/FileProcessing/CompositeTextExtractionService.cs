@@ -55,7 +55,31 @@ public class CompositeTextExtractionService : ITextExtractionService
             // Check if filePath is an S3 key (doesn't exist as local file and contains S3 key pattern)
             if (!File.Exists(filePath) && IsS3Key(filePath))
             {
-                _logger.LogInformation("Detected S3 key, downloading file temporarily: {S3Key}", filePath);
+                _logger.LogInformation("Detected S3 key, constructing S3 path for Textract: {S3Key}", filePath);
+
+                // For AWS Textract supported files, construct S3 path instead of downloading
+                if (await _awsTextractService.SupportsFileTypeAsync(fileName))
+                {
+                    // Construct s3:// path for Textract to process directly
+                    var s3Path = $"s3://{_s3Options?.BucketName}/{filePath}";
+                    _logger.LogInformation("Using direct S3 path for Textract: {S3Path}", s3Path);
+
+                    var textractResult = await _awsTextractService.ExtractTextAsync(s3Path, fileName);
+                    if (textractResult.Success)
+                    {
+                        _logger.LogInformation("AWS Textract extraction successful via S3 path for {FileName}: {CharCount} characters extracted",
+                            fileName, textractResult.ExtractedText?.Length ?? 0);
+                        return textractResult;
+                    }
+                    else
+                    {
+                        _logger.LogWarning("AWS Textract failed via S3 path for {FileName}: {Error}. Falling back to download method.",
+                            fileName, textractResult.ErrorMessage);
+                    }
+                }
+
+                // Fallback: Download file for non-Textract files or if S3 path method failed
+                _logger.LogInformation("Downloading S3 file temporarily for processing: {S3Key}", filePath);
                 tempFilePath = await DownloadS3FileAsync(filePath);
                 filePath = tempFilePath;
                 isS3Object = true;
@@ -73,7 +97,7 @@ public class CompositeTextExtractionService : ITextExtractionService
                 return await ExtractFromDocxFileAsync(filePath, fileName);
             }
 
-            // Use AWS Textract for PDF and image files
+            // Use AWS Textract for PDF and image files (including downloaded S3 objects)
             if (await _awsTextractService.SupportsFileTypeAsync(fileName))
             {
                 var result = await _awsTextractService.ExtractTextAsync(filePath, fileName);
