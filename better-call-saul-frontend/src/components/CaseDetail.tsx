@@ -14,7 +14,7 @@ interface ChatMessage {
 export const CaseDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const [caseData, setCaseData] = useState<Case | null>(null);
   const [documents, setDocuments] = useState<Array<{ id: string; name: string }>>([]);
   const [loading, setLoading] = useState(true);
@@ -266,7 +266,10 @@ export const CaseDetail: React.FC = () => {
               <p className="text-xs text-slate-400">{user?.roles?.[0] || 'Public Defender'}</p>
             </div>
           </div>
-          <button className="w-full mt-4 flex items-center justify-center text-sm text-slate-300 hover:text-white bg-slate-700/50 hover:bg-slate-700 py-2 rounded-lg transition-colors">
+          <button 
+            onClick={() => logout()}
+            className="w-full mt-4 flex items-center justify-center text-sm text-slate-300 hover:text-white bg-slate-700/50 hover:bg-slate-700 py-2 rounded-lg transition-colors"
+          >
             <svg className="mr-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
                 strokeLinecap="round"
